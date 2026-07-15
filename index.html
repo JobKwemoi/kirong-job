@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Meta Kirong AI 🌍💜</title>
+  <title>Kirong Job AI 🌍💜</title>
   <link rel="stylesheet" href="style.css">
   <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
 </head>
@@ -12,7 +12,7 @@
 
     <header class="header">
       <div class="header-left">
-        <h1>Meta Kirong AI 🌍💜</h1>
+        <h1>Kirong Job AI 🌍💜</h1>
         <select id="langSelect" class="lang-select">
           <option value="English">English</option>
           <option value="Swahili">Kiswahili</option>
@@ -26,11 +26,11 @@
 
     <div id="chatBox">
       <div class="message ai-message">
-        <p>Habari mkuu! I'm Meta Kirong AI 💜🔥<br>Your Universal Assistant. I code, teach, design, write, and help with anything.</p>
+        <p>Habari mkuu! I'm Kirong Job AI 💜🔥<br>Your Universal Assistant. I code, teach, design, write, and help with anything.</p>
       </div>
     </div>
 
-    <div id="typing" class="hidden">Meta Kirong is thinking...</div>
+    <div id="typing" class="hidden"> Kirong Job is thinking...</div>
 
     <div class="quick-btns">
       <button class="quick-btn" data-prompt="Write me code for">Code 💻</button>
@@ -50,7 +50,16 @@
       </select>
       <button id="uploadBtn" title="Upload File">📎</button>
       <input type="file" id="fileInput" hidden>
-      <input type="text" id="userInput" placeholder="Ask Meta Kirong anything..." autocomplete="off">
+      <div class="top-controls">
+  <select id="personalitySelect">
+    <option value="Normal">Kirong Normal</option>
+    <option value="Funny">Kirong Funny 😂</option>
+    <option value="Teacher">Kirong Teacher 🧠</option>
+    <option value="Hustler">Kirong Hustler 💪</option>
+  </select>
+  <button id="pdfBtn">📄 PDF</button>
+</div>
+      <input type="text" id="userInput" placeholder="Ask Kirong Job anything..." autocomplete="off">
       <button id="micBtn" title="Speak">🎤</button>
       <button id="sendBtn">Send</button>
     </div>
