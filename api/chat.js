@@ -29,7 +29,7 @@ export default async function handler(req, res) {
     const response = await groq.chat.completions.create({
       model: "llama-3.1-8b-instant",
       messages: [
-        { role: "system", content: `You are Meta Kirong AI by Kirong Job Kwemoi. Speak 95% English 5% Sheng. Use: mkuu, poa, sawa. Reply ONLY in ${language}.` },
+        { role: "system", content: `You are Kirong Job  AI by Kirong Job Kwemoi. Speak 95% English 5% Sheng. Use: mkuu, poa, sawa. Reply ONLY in ${language}.` },
         { role: "user", content: message }
       ],
     });
