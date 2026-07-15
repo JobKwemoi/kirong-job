@@ -13,51 +13,52 @@
     <header class="header">
       <div class="header-left">
         <h1>Meta Kirong AI 🌍</h1>
-        <select id="langSelect" class="lang-select">
-          <option value="en">English</option>
-          <option value="sw">Kiswahili</option>
-          <option value="fr">French</option>
-          <option value="hi">Hindi</option>
-          <option value="es">Spanish</option>
+        <select id="language-select" class="lang-select">
+          <option value="English">English</option>
+          <option value="Swahili">Kiswahili</option>
+          <option value="French">French</option>
+          <option value="Hindi">Hindi</option>
+          <option value="Spanish">Spanish</option>
         </select>
       </div>
       <button id="themeBtn" class="icon-btn" title="Toggle Theme">🌙</button>
     </header>
 
-    <div id="chatBox">
-      <div class="message ai-message">
+    <div id="chat-box">
+      <div class="message bot">
         <p>Habari mkuu! I'm Meta Kirong AI 💜🔥<br>Your Universal Assistant. I code, teach, design, write, and help with anything.</p>
       </div>
     </div>
 
-    <div id="typing" class="hidden">Meta Kirong is thinking...</div>
+    <div id="thinking" class="hidden">Meta Kirong is thinking...</div>
 
-    <div class="quick-btns">
-      <button class="quick-btn" data-prompt="Write me code for">Code 💻</button>
-      <button class="quick-btn" data-prompt="Create an image of">Image 🎨</button>
-      <button class="quick-btn" data-prompt="Explain this like I am 5:">Explain 🧠</button>
-      <button class="quick-btn" data-prompt="Write a post about">Write ✍️</button>
-      <button class="quick-btn" data-prompt="Send email to">Email 📧</button>
-      <button id="pinBtn" class="quick-btn">Pin 📌</button>
-      <button id="locationBtn" class="quick-btn">Location 📍</button>
+    <!-- HAPA NDIO NIMEWEKA UPLOAD BUTTON JUU -->
+    <div class="action-buttons">
+      <button class="action-btn" data-action="Code">Code 💻</button>
+      <button class="action-btn" data-action="Image">Image 🎨</button>
+      <button class="action-btn" data-action="Explain">Explain 🧠</button>
+      <button class="action-btn" data-action="Write">Write ✍️</button>
+      <button class="action-btn" data-action="Email">Email 📧</button>
+      <button id="uploadBtn" class="action-btn">Upload 📎</button> <!-- IMEKUJA HAPA -->
+      <button id="pinBtn" class="action-btn">Pin 📌</button>
+      <button id="locationBtn" class="action-btn">Location 📍</button>
     </div>
 
     <div class="input-area">
-      <select id="voiceSelect" title="Voice">
+      <select id="voice-select" title="Voice">
         <option value="en-US">EN Voice</option>
         <option value="en-GB">UK Voice</option>
         <option value="sw-KE">SW Voice</option>
       </select>
-      <button id="uploadBtn" title="Upload File">📎</button>
-      <input type="file" id="fileInput" hidden>
-      <input type="text" id="userInput" placeholder="Ask Meta Kirong anything...">
+      <input type="file" id="fileInput" hidden> <!-- HII INABAKI HIDDEN -->
+      <input type="text" id="user-input" placeholder="Ask Meta Kirong anything..." autocomplete="off">
       <button id="micBtn" title="Speak">🎤</button>
-      <button id="sendBtn">Send</button>
+      <button id="send-btn">Send</button>
     </div>
 
     <div class="footer-btns">
       <button id="exportBtn">Export Chat 💾</button>
-      <button id="clearBtn">Clear Chat 🗑️</button>
+      <button id="clear-btn">Clear Chat 🗑️</button>
     </div>
 
   </div>
