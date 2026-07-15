@@ -193,3 +193,13 @@ button { opacity: 1!important; cursor: pointer!important; }
   #voiceSelect { display: none; }
 .header h1 { font-size: 19px; }
 }
+
+.hidden { display: none; }
+.message { padding: 12px 16px; border-radius: 18px; margin: 8px 0; max-width: 85%; }
+.message.user { background: #a855f7; margin-left: auto; }
+.message.bot { background: #2a004d; margin-right: auto; }
+#thinking { opacity: 0.7; font-style: italic; }
+
+.action-buttons { display: flex; gap: 8px; overflow-x: auto; margin-bottom: 12px; padding-bottom: 5px; }
+.action-btn { background: #4c1d95; border: 1px solid #7e22ce; color: #fff; padding: 8px 14px; border-radius: 20px; cursor: pointer; white-space: nowrap; transition: 0.2s; }
+.action-btn:hover { background: #7e22ce; transform: translateY(-2px); }
