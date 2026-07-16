@@ -3,69 +3,64 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Kirong AI 👑</title>
+  <title>Meta Kirong AI 🌍💜</title>
   <link rel="stylesheet" href="style.css">
+  <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
 </head>
 <body>
   <div class="container">
-    <div class="header">
+
+    <header class="header">
       <div class="header-left">
-        <h1>Kirong AI 💜</h1>
-        <span style="font-size: 12px; opacity: 0.8;">by Kirong Job Kwemoi</span>
+        <h1>Meta Kirong AI 🌍</h1>
+        <select id="langSelect" class="lang-select">
+          <option value="en">English</option>
+          <option value="sw">Kiswahili</option>
+          <option value="fr">French</option>
+          <option value="hi">Hindi</option>
+          <option value="es">Spanish</option>
+        </select>
       </div>
-      <button id="themeBtn" class="icon-btn">🌙</button>
-    </div>
+      <button id="themeBtn" class="icon-btn" title="Toggle Theme">🌙</button>
+    </header>
 
     <div id="chatBox">
       <div class="message ai-message">
-        <p id="welcomeMsg">Hello! I'm Kirong AI. How can I help you today? 💜</p>
+        <p>Habari mkuu! I'm Meta Kirong AI 💜🔥<br>Your Universal Assistant. I code, teach, design, write, and help with anything.</p>
       </div>
     </div>
 
-    <div id="typing" class="hidden">Kirong AI is typing...</div>
+    <div id="typing" class="hidden">Meta Kirong is thinking...</div>
 
-    <!-- QUICK BTNS -->
     <div class="quick-btns">
-      <button class="quick-btn" data-prompt="Write code for">💻 Code</button>
-      <button class="quick-btn" data-prompt="Generate an image of">🎨 Image</button>
-      <button class="quick-btn" data-prompt="Explain">📚 Explain</button>
-      <button class="quick-btn" data-prompt="Write">✍️ Write</button>
-      <button class="quick-btn" data-prompt="Write an email about">📧 Email</button>
-      <button class="quick-btn" data-prompt="Pin this">📌 Pin</button>
-      <button class="quick-btn" data-prompt="My location is">📍 Location</button>
-    </div>
-
-    <!-- BOTTOM CONTROLS -->
-    <div class="bottom-controls">
-      <button id="micBtn">🎤 Voice</button>
-      <button id="uploadBtn">📎 Upload</button>
-      <button id="pdfBtn">📄 PDF</button>
-      <button id="pinBtn">📌 Favorites</button>
-      <button id="locationBtn">📍 Location</button>
-      <button id="clearBtn">🗑️ Clear</button>
-      <button id="exportBtn">⬇️ Export</button>
+      <button class="quick-btn" data-prompt="Write me code for">Code 💻</button>
+      <button class="quick-btn" data-prompt="Create an image of">Image 🎨</button>
+      <button class="quick-btn" data-prompt="Explain this like I am 5:">Explain 🧠</button>
+      <button class="quick-btn" data-prompt="Write a post about">Write ✍️</button>
+      <button class="quick-btn" data-prompt="Send email to">Email 📧</button>
+      <button id="pinBtn" class="quick-btn">Pin 📌</button>
+      <button id="locationBtn" class="quick-btn">Location 📍</button>
     </div>
 
     <div class="input-area">
-      <select id="personalitySelect">
-        <option value="Normal">Normal</option>
-        <option value="Funny">Funny 😂</option>
-        <option value="Teacher">Teacher 🧠</option>
-        <option value="Hustler">Hustler 💪</option>
+      <select id="voiceSelect" title="Voice">
+        <option value="en-US">EN Voice</option>
+        <option value="en-GB">UK Voice</option>
+        <option value="sw-KE">SW Voice</option>
       </select>
-      <input type="text" id="userInput" placeholder="Ask Kirong AI anything...">
+      <button id="uploadBtn" title="Upload File">📎</button>
+      <input type="file" id="fileInput" hidden>
+      <input type="text" id="userInput" placeholder="Ask Meta Kirong anything...">
+      <button id="micBtn" title="Speak">🎤</button>
       <button id="sendBtn">Send</button>
     </div>
 
-    <input type="file" id="fileInput" style="display:none;">
-  </div>
+    <div class="footer-btns">
+      <button id="exportBtn">Export Chat 💾</button>
+      <button id="clearBtn">Clear Chat 🗑️</button>
+    </div>
 
-  <!-- CONTACT FOOTER -->
-  <div style="text-align:center; padding: 10px; font-size: 11px; color: white; opacity: 0.7;">
-    Contact: 0792442670 | 0736232188 | FB: Job White
   </div>
-
-  <script src="chat.js"></script>
   <script src="app.js"></script>
 </body>
 </html>
