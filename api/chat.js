@@ -1,43 +1,17 @@
-import Groq from "groq-sdk";
+function getAIResponse(prompt, personality, userName){
+  let prefix = '';
+  if(personality === 'Teacher') prefix = `Teacher ${userName}: `;
+  if(personality === 'Hustler') prefix = `Boss ${userName} let's get it: `;
+  if(personality === 'Funny') prefix = `Yo ${userName} 😂 `;
 
-export default async function handler(req, res) {
-  res.setHeader('Content-Type', 'application/json');
+  const lower = prompt.toLowerCase();
+  if(lower.includes('cv') || lower.includes('resume')) return `${prefix}Send me your details and I'll build you a pro CV 💼`;
+  if(lower.includes('job') || lower.includes('work')) return `${prefix}I got you ${userName}. What's your field and experience?`;
+  if(lower.includes('interview')) return `${prefix}Let's prep for that interview ${userName}! What role are you targeting?`;
+  if(lower.includes('code')) return `${prefix}Sure! What language and what do you want to build?`;
+  if(lower.includes('email')) return `${prefix}Got it. Who is the email for and what's it about?`;
+  if(lower.includes('contact')) return `${prefix}You can reach Kirong Job Kwemoi at: 0792442670 | 0736232188 | Facebook: Job White`;
+  if(lower.includes('help')) return `${prefix}I'm Kirong AI. I'm here to help you 💜 What do you need?`;
 
-  if (req.method !== 'POST') {
-    return res.status(405).json({ text: 'POST only mkuu' });
-  }
-
-  if (!process.env.GROQ_API_KEY) {
-    return res.status(500).json({ text: 'GROQ_API_KEY missing mkuu. Weka kwa Vercel Settings' });
-  }
-
-  try {
-    // Hakikisha body iko
-    let body = req.body;
-    if (!body || typeof body === 'string') {
-      body = JSON.parse(req.body);
-    }
-    
-    const { message, language = 'English' } = body;
-    
-    if (!message) {
-      return res.status(400).json({ text: 'Message is empty mkuu' });
-    }
-
-    const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
-    
-    const response = await groq.chat.completions.create({
-      model: "llama-3.1-8b-instant",
-      messages: [
-        { role: "system", content: `You are Kirong Job  AI by Kirong Job Kwemoi. Speak 95% English 5% Sheng. Use: mkuu, poa, sawa. Reply ONLY in ${language}.` },
-        { role: "user", content: message }
-      ],
-    });
-
-    res.status(200).json({ text: response.choices[0].message.content });
-    
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ text: `Error: ${error.message}` });
-  }
+  return `${prefix}About "${prompt}" - here's the breakdown:`;
 }
