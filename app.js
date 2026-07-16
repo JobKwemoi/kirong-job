@@ -15,6 +15,9 @@ document.addEventListener('DOMContentLoaded', () => {
   const themeBtn = document.getElementById('themeBtn');
   const quickBtns = document.querySelectorAll('.quick-btn');
 
+  // WEKA GROQ API KEY HAPA MKUU
+  const GROQ_API_KEY = "gsk_YOUR_API_KEY_HERE"; 
+
   let chatHistory = JSON.parse(localStorage.getItem('kirongAIChat')) || [];
   let favorites = JSON.parse(localStorage.getItem('kirongAIFav')) || [];
   let userName = localStorage.getItem('kirongAIName') || 'Boss';
@@ -33,7 +36,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   chatHistory.forEach(msg => addMessage(msg.text, msg.className, true));
 
-  const sendMessage = () => {
+  const sendMessage = async () => {
     const text = userInput.value.trim();
     if(!text) return;
 
@@ -45,20 +48,60 @@ document.addEventListener('DOMContentLoaded', () => {
 
     addMessage(text, 'user-message');
     userInput.value = '';
-    typing.classList.remove('hidden'); // ONGEZA HII
+    typing.classList.remove('hidden');
 
     const lowerText = text.toLowerCase();
     const personality = personalitySelect.value;
     const isImage = lowerText.includes('image') || lowerText.includes('generate') || lowerText.includes('picture') || lowerText.includes('draw');
 
-    setTimeout(() => {
-      typing.classList.add('hidden'); // FICHA TYPING
-      if(isImage) {
-        generateImage(text);
-      } else {
-        generateText(text, personality); // HII NDIO ILIKUWA HAIFANYI
+    if(isImage) {
+      typing.classList.add('hidden');
+      generateImage(text);
+    } else {
+      await generateTextWithGroq(text, personality); // TUMA KWA GROQ
+    }
+  }
+
+  async function generateTextWithGroq(prompt, personality) {
+    try {
+      let systemPrompt = `You are Kirong AI, created by Kirong Job Kwemoi. Be helpful, friendly, and professional.`;
+      if(personality === 'Teacher') systemPrompt = `You are Kirong AI acting as a Teacher. Be patient and educational.`;
+      if(personality === 'Hustler') systemPrompt = `You are Kirong AI acting as a Hustler. Be motivating and direct.`;
+      if(personality === 'Funny') systemPrompt = `You are Kirong AI acting as Funny. Be witty and use emojis.`;
+
+      const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${GROQ_API_KEY}`,
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          model: "llama-3.1-8b-instant", // Ni fast na free
+          messages: [
+            { role: "system", content: systemPrompt },
+            { role: "user", content: prompt }
+          ],
+          temperature: 0.7,
+          max_tokens: 500
+        })
+      });
+
+      const data = await response.json();
+      const reply = data.choices[0].message.content;
+
+      typing.classList.add('hidden');
+      addMessage(reply, 'ai-message');
+
+      // AUTO SPEAK
+      if('speechSynthesis' in window) {
+        speechSynthesis.speak(new SpeechSynthesisUtterance(reply));
       }
-    }, 1200); // ONGEZA KWA 1.2s ili ionekane inafikiria
+
+    } catch (error) {
+      typing.classList.add('hidden');
+      addMessage("Sorry, I couldn't connect to Groq. Check your API key 💜", 'ai-message');
+      console.error(error);
+    }
   }
 
   function addMessage(content, className, noSave=false) {
@@ -71,16 +114,6 @@ document.addEventListener('DOMContentLoaded', () => {
     if(!noSave){
       chatHistory.push({text: content, className});
       localStorage.setItem('kirongAIChat', JSON.stringify(chatHistory));
-    }
-  }
-
-  function generateText(prompt, personality){
-    const reply = getAIResponse(prompt, personality, userName);
-    addMessage(reply, 'ai-message');
-
-    // AUTO SPEAK
-    if('speechSynthesis' in window) {
-      speechSynthesis.speak(new SpeechSynthesisUtterance(reply));
     }
   }
 
