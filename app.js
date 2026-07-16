@@ -45,17 +45,20 @@ document.addEventListener('DOMContentLoaded', () => {
 
     addMessage(text, 'user-message');
     userInput.value = '';
-    typing.classList.remove('hidden');
+    typing.classList.remove('hidden'); // ONGEZA HII
 
     const lowerText = text.toLowerCase();
     const personality = personalitySelect.value;
-    const isImage = lowerText.includes('image') || lowerText.includes('generate') || lowerText.includes('picture');
+    const isImage = lowerText.includes('image') || lowerText.includes('generate') || lowerText.includes('picture') || lowerText.includes('draw');
 
     setTimeout(() => {
-      typing.classList.add('hidden');
-      if(isImage) generateImage(text);
-      else generateText(text, personality);
-    }, 800);
+      typing.classList.add('hidden'); // FICHA TYPING
+      if(isImage) {
+        generateImage(text);
+      } else {
+        generateText(text, personality); // HII NDIO ILIKUWA HAIFANYI
+      }
+    }, 1200); // ONGEZA KWA 1.2s ili ionekane inafikiria
   }
 
   function addMessage(content, className, noSave=false) {
@@ -74,11 +77,19 @@ document.addEventListener('DOMContentLoaded', () => {
   function generateText(prompt, personality){
     const reply = getAIResponse(prompt, personality, userName);
     addMessage(reply, 'ai-message');
+
+    // AUTO SPEAK
+    if('speechSynthesis' in window) {
+      speechSynthesis.speak(new SpeechSynthesisUtterance(reply));
+    }
   }
+
   function generateImage(prompt){
     addMessage(`Creating image: "${prompt}"...`, 'ai-message');
     const imgUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(prompt)},4:3?width=600&height=450`;
-    chatBox.lastElementChild.innerHTML = `<p>Here you go 👑</p><img src="${imgUrl}">`;
+    setTimeout(() => {
+      chatBox.lastElementChild.innerHTML = `<p>Here you go 👑</p><img src="${imgUrl}" onerror="this.parentElement.innerHTML='<p>Failed to generate image. Try again.</p>'">`;
+    }, 1000);
   }
 
   window.saveFavorite = (text) => {
@@ -88,10 +99,12 @@ document.addEventListener('DOMContentLoaded', () => {
   sendBtn.addEventListener('click', sendMessage);
   userInput.addEventListener('keypress', (e) => { if(e.key === 'Enter') sendMessage(); });
   quickBtns.forEach(btn => btn.addEventListener('click', () => { userInput.value = btn.dataset.prompt + ' '; userInput.focus(); }));
+
   micBtn.addEventListener('click', () => {
     const lastAi = [...document.querySelectorAll('.ai-message p')].pop();
     if(lastAi && 'speechSynthesis' in window) speechSynthesis.speak(new SpeechSynthesisUtterance(lastAi.innerText));
   });
+
   uploadBtn.addEventListener('click', () => fileInput.click());
   fileInput.addEventListener('change', (e) => { if(e.target.files[0]) addMessage(`Uploaded: ${e.target.files[0].name}`, 'user-message'); });
   pdfBtn.addEventListener('click', () => window.print());
