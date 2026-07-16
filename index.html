@@ -2,75 +2,56 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Kirong Job AI 🌍💜</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Kirong Job AI 👑</title>
   <link rel="stylesheet" href="style.css">
-  <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
 </head>
 <body>
   <div class="container">
+    
+    <!-- HEADER -->
+    <div class="header">
+      <h1>Kirong Job AI 💜</h1>
+      <button id="themeBtn">🌙</button>
+    </div>
 
-    <header class="header">
-      <div class="header-left">
-        <h1>Kirong Job AI 🌍💜</h1>
-        <select id="langSelect" class="lang-select">
-          <option value="English">English</option>
-          <option value="Swahili">Kiswahili</option>
-          <option value="French">French</option>
-          <option value="Hindi">Hindi</option>
-          <option value="Spanish">Spanish</option>
-        </select>
-      </div>
-      <button id="themeBtn" class="icon-btn" title="Toggle Theme">🌙</button>
-    </header>
-
+    <!-- CHAT BOX -->
     <div id="chatBox">
       <div class="message ai-message">
-        <p>Habari mkuu! I'm Kirong Job AI 👑🔥<br>Your Universal Assistant. I code, teach, design, write, and help with anything.</p>
+        <p>Habari ${localStorage.getItem('kirongName') || 'Mkuu'}! Niko hapa kukusaidia 💜</p>
       </div>
     </div>
+    
+    <div id="typing" class="hidden">Kirong anaandika...</div>
 
-    <div id="typing" class="hidden"> Kirong Job is thinking...</div>
-
-    <div class="quick-btns">
-      <button class="quick-btn" data-prompt="Write me code for">Code 💻</button>
-      <button class="quick-btn" data-prompt="Create an image of">Image 🎨</button>
-      <button class="quick-btn" data-prompt="Explain this like I am 5:">Explain 🧠</button>
-      <button class="quick-btn" data-prompt="Write me a">Write ✍️</button>
-      <button class="quick-btn" data-prompt="Draft an email about">Email 📧</button>
-      <button id="pinBtn" class="quick-btn">Pin 📌</button>
-      <button id="locationBtn" class="quick-btn">Location 📍</button>
+    <!-- BUTTONS ZOTE CHINI -->
+    <div class="bottom-controls">
+      <button id="micBtn">🎤 Voice</button>
+      <button id="uploadBtn">📎 Upload</button>
+      <button id="pdfBtn">📄 PDF</button>
+      <button id="pinBtn">📌 Favorites</button>
+      <button id="locationBtn">📍 Location</button>
+      <button id="clearBtn">🗑️ Clear</button>
+      <button id="exportBtn">⬇️ Export</button>
     </div>
 
+    <!-- INPUT AREA -->
     <div class="input-area">
-      <select id="voiceSelect" title="Voice">
-        <option value="en-US">EN Voice</option>
-        <option value="en-GB">UK Voice</option>
-        <option value="sw-KE">SW Voice</option>
+      <select id="personalitySelect">
+        <option value="Normal">Normal</option>
+        <option value="Funny">Funny 😂</option>
+        <option value="Teacher">Teacher 🧠</option>
+        <option value="Hustler">Hustler 💪</option>
       </select>
-      <button id="uploadBtn" title="Upload File">📎</button>
-      <input type="file" id="fileInput" hidden>
-      <div class="top-controls">
-  <select id="personalitySelect">
-    <option value="Normal">Kirong Normal</option>
-    <option value="Funny">Kirong Funny 😂</option>
-    <option value="Teacher">Kirong Teacher 🧠</option>
-    <option value="Hustler">Kirong Hustler 💪</option>
-  </select>
-  <button id="pdfBtn">📄 PDF</button>
-</div>
-      <input type="text" id="userInput" placeholder="Ask Kirong Job anything..." autocomplete="off">
-      <button id="micBtn" title="Speak">🎤</button>
+      <input type="text" id="userInput" placeholder="Ask Kirong Job anything...">
       <button id="sendBtn">Send</button>
     </div>
 
-    <div class="footer-btns">
-      <button id="exportBtn">Export Chat 💾</button>
-      <button id="clearBtn">Clear Chat 🗑️</button>
-    </div>
+    <!-- HIDDEN FILE INPUT -->
+    <input type="file" id="fileInput" style="display:none;">
 
   </div>
+
   <script src="app.js"></script>
-  <script src="chat.js"></script>
 </body>
 </html>
