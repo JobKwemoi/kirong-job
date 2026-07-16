@@ -1,28 +1,9 @@
 {
   "name": "kirong-ai",
-  "version": "3.1.0",
-  "description": "Kirong AI by Kirong Job Kwemoi - International AI Assistant with Purple Glass UI",
-  "main": "index.html",
-  "scripts": {
-    "dev": "live-server --port=3000",
-    "start": "live-server --port=3000",
-    "build": "echo 'Static site - no build needed'"
-  },
-  "keywords": [
-    "ai",
-    "chatbot",
-    "kirong",
-    "career",
-    "assistant",
-    "purple-glass"
-  ],
-  "author": "Kirong Job Kwemoi",
-  "license": "MIT",
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/kirong-job/kirong-ai"
-  },
-  "devDependencies": {
-    "live-server": "^1.2.2"
+  "version": "1.0.0",
+  "type": "module",
+  "dependencies": {
+    "@google/genai": "^1.16.0",
+    "formidable": "^3.5.4"
   }
 }
