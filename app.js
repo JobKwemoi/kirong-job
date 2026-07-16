@@ -1,151 +1,198 @@
-document.addEventListener('DOMContentLoaded', () => {
-  const chatBox = document.getElementById('chatBox');
-  const userInput = document.getElementById('userInput');
-  const sendBtn = document.getElementById('sendBtn');
-  const typing = document.getElementById('typing');
-  const personalitySelect = document.getElementById('personalitySelect');
-  const micBtn = document.getElementById('micBtn');
-  const uploadBtn = document.getElementById('uploadBtn');
-  const fileInput = document.getElementById('fileInput');
-  const pdfBtn = document.getElementById('pdfBtn');
-  const pinBtn = document.getElementById('pinBtn');
-  const locationBtn = document.getElementById('locationBtn');
-  const clearBtn = document.getElementById('clearBtn');
-  const exportBtn = document.getElementById('exportBtn');
-  const themeBtn = document.getElementById('themeBtn');
-  const quickBtns = document.querySelectorAll('.quick-btn');
+const $ = id => document.getElementById(id);
+const chatBox = $('chatBox'), userInput = $('userInput'), sendBtn = $('sendBtn'), typing = $('typing');
+const themeBtn = $('themeBtn'), micBtn = $('micBtn'), uploadBtn = $('uploadBtn'), fileInput = $('fileInput');
+const quickBtns = document.querySelectorAll('.quick-btn'), voiceSelect = $('voiceSelect');
+const exportBtn = $('exportBtn'), langSelect = $('langSelect'), clearBtn = $('clearBtn'), locationBtn = $('locationBtn'), pinBtn = $('pinBtn');
 
-  // WEKA GROQ API KEY HAPA MKUU
-  const GROQ_API_KEY = "gsk_YOUR_API_KEY_HERE"; 
+let isRecording = false, recognition, uploadedFile = null;
+(function(){ if(window.emailjs) emailjs.init("Lf6crGOOwC-GmgF5x"); })();
 
-  let chatHistory = JSON.parse(localStorage.getItem('kirongAIChat')) || [];
-  let favorites = JSON.parse(localStorage.getItem('kirongAIFav')) || [];
-  let userName = localStorage.getItem('kirongAIName') || 'Boss';
+const langNames = { en: "English", sw: "Kiswahili", fr: "French", hi: "Hindi", es: "Spanish" }
 
-  document.getElementById('welcomeMsg').innerText = `Hello ${userName}! I'm Kirong AI. How can I help you today? 💜`;
+// 1. Ongeza message
+function addMessage(text, type){
+  const div = document.createElement('div');
+  div.classList.add('message', type + '-message');
+  div.innerHTML = `<p>${text}</p>`;
+  chatBox.appendChild(div);
+  chatBox.scrollTop = chatBox.scrollHeight;
+  localStorage.setItem('kirongAI_history', chatBox.innerHTML);
+}
 
-  if(localStorage.getItem('theme') === 'dark') {
+// 2. Generate Image
+function generateImage(prompt) {
+    const imageUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(prompt + ', 8k, ultra detailed, cinematic, purple glow')}`;
+    addMessage(`<p>Here is your image mkuu 🔥:</p><img src="${imageUrl}" />`, 'ai');
+    speak(`Here is the image of ${prompt}`);
+}
+
+// 3. TTS - Sauti
+function speak(text) {
+  if(!voiceSelect ||!window.speechSynthesis) return;
+  window.speechSynthesis.cancel();
+  const speech = new SpeechSynthesisUtterance(text.replace(/emoji/gi, ''));
+  speech.lang = voiceSelect.value;
+  speech.rate = 0.9;
+  speech.pitch = 1.1;
+  window.speechSynthesis.speak(speech);
+}
+
+// 4. Tuma message kwa /api/chat
+async function sendMessage() {
+  const message = userInput.value.trim();
+  if(!message &&!uploadedFile) return;
+
+  // EMAIL FEATURE
+  const emailMatch = message.match(/[\w.]+@[\w.]+\.\w+/);
+  if(message.toLowerCase().includes('send email') && emailMatch){
+    addMessage(`Sending email to ${emailMatch[0]}... 📧`, 'ai');
+    try {
+      await emailjs.send("service_flo123", "template_shyvb2c", {
+        to_email: emailMatch[0],
+        subject: "From Meta Kirong AI",
+        message
+      });
+      addMessage(`Email imetumwa kwa ${emailMatch[0]} 🔥`, 'ai');
+    }
+    catch (e) { addMessage("Email imefail mkuu: " + e.text, 'ai'); }
+    userInput.value = '';
+    return;
+  }
+
+  // Onyesha user message
+  addMessage(uploadedFile? `[File: ${uploadedFile.name}] ${message}` : message, 'user');
+  userInput.value = '';
+  if(typing) typing.classList.remove('hidden');
+
+  const selectedLang = langSelect? langSelect.value : 'en';
+  const formData = new FormData();
+  formData.append('message', message);
+  formData.append('language', langNames[selectedLang]);
+  if(uploadedFile) formData.append('file', uploadedFile);
+
+  try {
+    const res = await fetch('/api/chat', { method: 'POST', body: formData });
+    const data = await res.json();
+    if(typing) typing.classList.add('hidden');
+    uploadedFile = null;
+    fileInput.value = '';
+
+    // Kama ni image
+    if(data.text.startsWith('IMAGE:')) generateImage(data.text.replace('IMAGE:', '').trim());
+    else {
+      addMessage(data.text, 'ai');
+      speak(data.text);
+    }
+  } catch(err) {
+    if(typing) typing.classList.add('hidden');
+    addMessage(`Error: ${err.message}`, 'ai');
+  }
+}
+
+// 5. QUICK BUTTONS
+quickBtns.forEach(btn => btn.addEventListener('click', () => {
+  userInput.value = btn.dataset.prompt;
+  sendMessage();
+}));
+
+// 6. UPLOAD FILE
+uploadBtn.addEventListener('click', () => fileInput.click());
+fileInput.addEventListener('change', e => {
+  uploadedFile = e.target.files[0];
+  if(uploadedFile) addMessage(`📎 Uploaded: ${uploadedFile.name}`, 'user');
+});
+
+// 7. THEME TOGGLE
+themeBtn.addEventListener('click', () => {
+  document.body.classList.toggle('dark');
+  localStorage.setItem('theme', document.body.classList.contains('dark')? 'dark' : 'light');
+  themeBtn.textContent = document.body.classList.contains('dark')? '☀️' : '🌙';
+});
+
+// 8. CLEAR CHAT
+clearBtn.addEventListener('click', () => {
+  if(confirm("Clear all chat history?")) {
+    localStorage.removeItem('kirongAI_history');
+    chatBox.innerHTML = `<div class="message ai-message"><p>Chat imeclear mkuu. Meta Kirong ako ready kukusaidia 🔥</p></div>`;
+  }
+});
+
+// 9. EXPORT CHAT
+exportBtn.addEventListener('click', () => {
+  const chatText = chatBox.innerText;
+  const blob = new Blob([chatText], {type: 'text/plain'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'MetaKirongAI_Chat.txt';
+  a.click();
+});
+
+// 10. LOCATION
+locationBtn.addEventListener('click', () => {
+  addMessage("Getting your location... 📍", 'ai');
+  navigator.geolocation.getCurrentPosition(
+    pos => {
+      const mapUrl = `https://www.google.com/maps?q=${pos.coords.latitude},${pos.coords.longitude}`;
+      addMessage(`Got you mkuu! <a href="${mapUrl}" target="_blank" style="color:#a855f7; text-decoration:underline;">Open in Google Maps</a>`, 'ai');
+    },
+    () => addMessage("Could not get location 😭", 'ai')
+  );
+});
+
+// 11. PIN BUTTON
+pinBtn.addEventListener('click', () => {
+  addMessage("Pinned! Meta Kirong anakukumbuka mkuu 👑", 'ai');
+  pinBtn.style.background = "rgba(250, 204, 21, 0.6)";
+  pinBtn.style.boxShadow = "0 0 25px rgba(250,204,21,0.8)";
+  setTimeout(() => {
+    pinBtn.style.background = "rgba(250, 204, 21, 0.25)";
+    pinBtn.style.boxShadow = "0 0 15px rgba(250,204,21,0.3)";
+  }, 1200);
+});
+
+// 12. MIC / SPEECH TO TEXT
+if ('webkitSpeechRecognition' in window) {
+  recognition = new webkitSpeechRecognition();
+  recognition.continuous = false;
+  recognition.onresult = e => {
+    userInput.value = e.results[0][0].transcript;
+    sendMessage();
+  };
+  recognition.onend = () => {
+    isRecording = false;
+    micBtn.classList.remove('recording');
+  };
+  micBtn.addEventListener('click', () => {
+    recognition.lang = voiceSelect.value;
+    if(!isRecording){
+      recognition.start();
+      isRecording = true;
+      micBtn.classList.add('recording');
+    }
+    else {
+      recognition.stop();
+    }
+  });
+} else {
+  micBtn.style.display = 'none';
+}
+
+// 13. ENTER KEY
+userInput.addEventListener('keypress', e => {
+  if(e.key === 'Enter' &&!e.shiftKey) {
+    e.preventDefault();
+    sendMessage();
+  }
+});
+
+// 14. LOAD SAVED HISTORY + THEME
+window.addEventListener('load', () => {
+  if(localStorage.getItem('theme') === 'dark'){
     document.body.classList.add('dark');
     themeBtn.textContent = '☀️';
   }
-  themeBtn.addEventListener('click', () => {
-    document.body.classList.toggle('dark');
-    themeBtn.textContent = document.body.classList.contains('dark')? '☀️' : '🌙';
-    localStorage.setItem('theme', document.body.classList.contains('dark')? 'dark' : 'light');
-  });
-
-  chatHistory.forEach(msg => addMessage(msg.text, msg.className, true));
-
-  const sendMessage = async () => {
-    const text = userInput.value.trim();
-    if(!text) return;
-
-    if(text.toLowerCase().includes('my name is') || text.toLowerCase().includes('call me')) {
-      userName = text.split(' ').pop();
-      localStorage.setItem('kirongAIName', userName);
-      document.getElementById('welcomeMsg').innerText = `Hello ${userName}! I'm Kirong AI. How can I help you today? 💜`;
-    }
-
-    addMessage(text, 'user-message');
-    userInput.value = '';
-    typing.classList.remove('hidden');
-
-    const lowerText = text.toLowerCase();
-    const personality = personalitySelect.value;
-    const isImage = lowerText.includes('image') || lowerText.includes('generate') || lowerText.includes('picture') || lowerText.includes('draw');
-
-    if(isImage) {
-      typing.classList.add('hidden');
-      generateImage(text);
-    } else {
-      await generateTextWithGroq(text, personality); // TUMA KWA GROQ
-    }
-  }
-
-  async function generateTextWithGroq(prompt, personality) {
-    try {
-      let systemPrompt = `You are Kirong AI, created by Kirong Job Kwemoi. Be helpful, friendly, and professional.`;
-      if(personality === 'Teacher') systemPrompt = `You are Kirong AI acting as a Teacher. Be patient and educational.`;
-      if(personality === 'Hustler') systemPrompt = `You are Kirong AI acting as a Hustler. Be motivating and direct.`;
-      if(personality === 'Funny') systemPrompt = `You are Kirong AI acting as Funny. Be witty and use emojis.`;
-
-      const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
-        method: "POST",
-        headers: {
-          "Authorization": `Bearer ${GROQ_API_KEY}`,
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-          model: "llama-3.1-8b-instant", // Ni fast na free
-          messages: [
-            { role: "system", content: systemPrompt },
-            { role: "user", content: prompt }
-          ],
-          temperature: 0.7,
-          max_tokens: 500
-        })
-      });
-
-      const data = await response.json();
-      const reply = data.choices[0].message.content;
-
-      typing.classList.add('hidden');
-      addMessage(reply, 'ai-message');
-
-      // AUTO SPEAK
-      if('speechSynthesis' in window) {
-        speechSynthesis.speak(new SpeechSynthesisUtterance(reply));
-      }
-
-    } catch (error) {
-      typing.classList.add('hidden');
-      addMessage("Sorry, I couldn't connect to Groq. Check your API key 💜", 'ai-message');
-      console.error(error);
-    }
-  }
-
-  function addMessage(content, className, noSave=false) {
-    const msgDiv = document.createElement('div');
-    msgDiv.classList.add('message', className);
-    let saveBtn = className === 'ai-message'? `<button class="save-btn" onclick="saveFavorite('${content.replace(/'/g, "\\'")}')">⭐ Save</button>` : '';
-    msgDiv.innerHTML = `<p>${content}</p>${saveBtn}`;
-    chatBox.appendChild(msgDiv);
-    chatBox.scrollTop = chatBox.scrollHeight;
-    if(!noSave){
-      chatHistory.push({text: content, className});
-      localStorage.setItem('kirongAIChat', JSON.stringify(chatHistory));
-    }
-  }
-
-  function generateImage(prompt){
-    addMessage(`Creating image: "${prompt}"...`, 'ai-message');
-    const imgUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(prompt)},4:3?width=600&height=450`;
-    setTimeout(() => {
-      chatBox.lastElementChild.innerHTML = `<p>Here you go 👑</p><img src="${imgUrl}" onerror="this.parentElement.innerHTML='<p>Failed to generate image. Try again.</p>'">`;
-    }, 1000);
-  }
-
-  window.saveFavorite = (text) => {
-    if(!favorites.includes(text)){ favorites.push(text); localStorage.setItem('kirongAIFav', JSON.stringify(favorites)); alert('Saved to Favorites 💜'); }
-  }
-
-  sendBtn.addEventListener('click', sendMessage);
-  userInput.addEventListener('keypress', (e) => { if(e.key === 'Enter') sendMessage(); });
-  quickBtns.forEach(btn => btn.addEventListener('click', () => { userInput.value = btn.dataset.prompt + ' '; userInput.focus(); }));
-
-  micBtn.addEventListener('click', () => {
-    const lastAi = [...document.querySelectorAll('.ai-message p')].pop();
-    if(lastAi && 'speechSynthesis' in window) speechSynthesis.speak(new SpeechSynthesisUtterance(lastAi.innerText));
-  });
-
-  uploadBtn.addEventListener('click', () => fileInput.click());
-  fileInput.addEventListener('change', (e) => { if(e.target.files[0]) addMessage(`Uploaded: ${e.target.files[0].name}`, 'user-message'); });
-  pdfBtn.addEventListener('click', () => window.print());
-  pinBtn.addEventListener('click', () => alert(`Favorites:\n${favorites.join('\n- ') || 'None yet'}`));
-  locationBtn.addEventListener('click', () => navigator.geolocation?.getCurrentPosition(pos => addMessage(`Location: ${pos.coords.latitude.toFixed(2)}, ${pos.coords.longitude.toFixed(2)}`, 'user-message')));
-  clearBtn.addEventListener('click', () => { chatBox.innerHTML = `<p id="welcomeMsg">Hello ${userName}! I'm Kirong AI. How can I help you today? 💜</p>`; chatHistory = []; localStorage.removeItem('kirongAIChat'); });
-  exportBtn.addEventListener('click', () => {
-    const blob = new Blob([chatHistory.map(m => m.text).join('\n')], {type: 'text/plain'});
-    const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'KirongAI_Chat.txt'; a.click();
-  });
+  const saved = localStorage.getItem('kirongAI_history');
+  if(saved) chatBox.innerHTML = saved;
 });
+
+console.log("Meta Kirong AI Universal Loaded Successfully 🌍🔥💜");
