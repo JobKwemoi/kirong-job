@@ -3,28 +3,39 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Kirong Job AI 👑</title>
+  <title>Kirong AI 👑</title>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
   <div class="container">
-    
-    <!-- HEADER -->
     <div class="header">
-      <h1>Kirong Job AI 💜</h1>
-      <button id="themeBtn">🌙</button>
+      <div class="header-left">
+        <h1>Kirong AI 💜</h1>
+        <span style="font-size: 12px; opacity: 0.8;">by Kirong Job Kwemoi</span>
+      </div>
+      <button id="themeBtn" class="icon-btn">🌙</button>
     </div>
 
-    <!-- CHAT BOX -->
     <div id="chatBox">
       <div class="message ai-message">
-        <p>Habari ${localStorage.getItem('kirongName') || 'Mkuu'}! Niko hapa kukusaidia 💜</p>
+        <p id="welcomeMsg">Hello! I'm Kirong AI. How can I help you today? 💜</p>
       </div>
     </div>
-    
-    <div id="typing" class="hidden">Kirong anaandika...</div>
 
-    <!-- BUTTONS ZOTE CHINI -->
+    <div id="typing" class="hidden">Kirong AI is typing...</div>
+
+    <!-- QUICK BTNS -->
+    <div class="quick-btns">
+      <button class="quick-btn" data-prompt="Write code for">💻 Code</button>
+      <button class="quick-btn" data-prompt="Generate an image of">🎨 Image</button>
+      <button class="quick-btn" data-prompt="Explain">📚 Explain</button>
+      <button class="quick-btn" data-prompt="Write">✍️ Write</button>
+      <button class="quick-btn" data-prompt="Write an email about">📧 Email</button>
+      <button class="quick-btn" data-prompt="Pin this">📌 Pin</button>
+      <button class="quick-btn" data-prompt="My location is">📍 Location</button>
+    </div>
+
+    <!-- BOTTOM CONTROLS -->
     <div class="bottom-controls">
       <button id="micBtn">🎤 Voice</button>
       <button id="uploadBtn">📎 Upload</button>
@@ -35,7 +46,6 @@
       <button id="exportBtn">⬇️ Export</button>
     </div>
 
-    <!-- INPUT AREA -->
     <div class="input-area">
       <select id="personalitySelect">
         <option value="Normal">Normal</option>
@@ -43,15 +53,19 @@
         <option value="Teacher">Teacher 🧠</option>
         <option value="Hustler">Hustler 💪</option>
       </select>
-      <input type="text" id="userInput" placeholder="Ask Kirong Job anything...">
+      <input type="text" id="userInput" placeholder="Ask Kirong AI anything...">
       <button id="sendBtn">Send</button>
     </div>
 
-    <!-- HIDDEN FILE INPUT -->
     <input type="file" id="fileInput" style="display:none;">
-
   </div>
 
+  <!-- CONTACT FOOTER -->
+  <div style="text-align:center; padding: 10px; font-size: 11px; color: white; opacity: 0.7;">
+    Contact: 0792442670 | 0736232188 | FB: Job White
+  </div>
+
+  <script src="chat.js"></script>
   <script src="app.js"></script>
 </body>
 </html>
