@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Meta Kirong AI 🌍💜</title>
   <link rel="stylesheet" href="style.css">
   <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
@@ -12,13 +12,13 @@
 
     <header class="header">
       <div class="header-left">
-        <h1>Meta Kirong AI 🌍</h1>
+        <h1>Meta Kirong AI 🌍💜</h1>
         <select id="langSelect" class="lang-select">
-          <option value="en">English</option>
-          <option value="sw">Kiswahili</option>
-          <option value="fr">French</option>
-          <option value="hi">Hindi</option>
-          <option value="es">Spanish</option>
+          <option value="English">English</option>
+          <option value="Swahili">Kiswahili</option>
+          <option value="French">French</option>
+          <option value="Hindi">Hindi</option>
+          <option value="Spanish">Spanish</option>
         </select>
       </div>
       <button id="themeBtn" class="icon-btn" title="Toggle Theme">🌙</button>
@@ -36,8 +36,8 @@
       <button class="quick-btn" data-prompt="Write me code for">Code 💻</button>
       <button class="quick-btn" data-prompt="Create an image of">Image 🎨</button>
       <button class="quick-btn" data-prompt="Explain this like I am 5:">Explain 🧠</button>
-      <button class="quick-btn" data-prompt="Write a post about">Write ✍️</button>
-      <button class="quick-btn" data-prompt="Send email to">Email 📧</button>
+      <button class="quick-btn" data-prompt="Write me a">Write ✍️</button>
+      <button class="quick-btn" data-prompt="Draft an email about">Email 📧</button>
       <button id="pinBtn" class="quick-btn">Pin 📌</button>
       <button id="locationBtn" class="quick-btn">Location 📍</button>
     </div>
@@ -50,7 +50,7 @@
       </select>
       <button id="uploadBtn" title="Upload File">📎</button>
       <input type="file" id="fileInput" hidden>
-      <input type="text" id="userInput" placeholder="Ask Meta Kirong anything...">
+      <input type="text" id="userInput" placeholder="Ask Meta Kirong anything..." autocomplete="off">
       <button id="micBtn" title="Speak">🎤</button>
       <button id="sendBtn">Send</button>
     </div>
@@ -62,5 +62,6 @@
 
   </div>
   <script src="app.js"></script>
+  <script src="chat.js"></script>
 </body>
 </html>
