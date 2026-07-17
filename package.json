@@ -1,8 +1,21 @@
 {
-  "name": "meta-kirong-ai",
-  "version": "1.0.0",
+  "name": "kirong-ai",
+  "version": "4.0.0",
+  "description": "Kirong AI by Kirong Job Kwemoi - Debate Mode + Groq",
   "type": "module",
+  "scripts": {
+    "dev": "live-server --port=3000",
+    "server": "node server.js",
+    "start": "npm run server"
+  },
   "dependencies": {
-    "groq-sdk": "^0.12.0"
-  }
+    "cors": "^2.8.5",
+    "express": "^4.18.2",
+    "node-fetch": "^3.3.2"
+  },
+  "devDependencies": {
+    "live-server": "^1.2.2"
+  },
+  "author": "Kirong Job Kwemoi",
+  "license": "MIT"
 }
