@@ -1,21 +1,14 @@
-import express from 'express';
-import fetch from 'node-fetch';
-import cors from 'cors';
-const app = express();
-app.use(cors()); app.use(express.json()); app.use(express.static('.'));
-const GROQ_API_KEY = "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
+function getAIResponse(prompt, personality, userName){
+  let prefix = '';
+  if(personality === 'Teacher') prefix = `Teacher ${userName}: `;
+  if(personality === 'Hustler') prefix = `Boss ${userName} let's get it: `;
+  if(personality === 'Funny') prefix = `Yo ${userName} 😂 `;
 
+  const lower = prompt.toLowerCase();
+  if(lower.includes('cv') || lower.includes('resume')) return `${prefix}Send me your details and I'll build you a pro CV 💼`;
+  if(lower.includes('job') || lower.includes('work')) return `${prefix}I got you ${userName}. What's your field and experience?`;
+  if(lower.includes('interview')) return `${prefix}Let's prep for that interview ${userName}! What role are you targeting?`;
+  if(lower.includes('help')) return `${prefix}I'm here to help you land your dream job 💜 What do you need?`;
 
-
-"; // WEKA KEY YAKO
-
-app.post('/api/chat', async (req, res) => {
-  try {
-    const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
-      method: "POST", headers: { "Authorization": `Bearer ${GROQ_API_KEY}`, "Content-Type": "application/json" },
-      body: JSON.stringify(req.body)
-    });
-    const data = await response.json(); res.json(data);
-  } catch (error) { res.status(500).json({error: error.message}); }
-});
-app.listen(3001, () => console.log("🔥 Kirong AI Backend running on http://localhost:3001"));
+  return `${prefix}About "${prompt}" - here's the breakdown:`;
+}
