@@ -1,7 +1,7 @@
 * { margin: 0; padding: 0; box-sizing: border-box; }
 body {
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-  background: linear-gradient(135deg, #a855f7 0%, #7e22ce 100%); /* PURPLE MKALI */
+  background: linear-gradient(135deg, #a855f7 0%, #7e22ce 100%);
   background-attachment: fixed;
   height: 100vh; display: flex; justify-content: center; align-items: center; padding: 20px;
   transition: 0.4s;
@@ -10,202 +10,34 @@ body.dark { background: linear-gradient(135deg, #581c87 0%, #3b0764 100%); }
 
 .container {
   width: 100%; max-width: 900px; height: 92vh;
-  background: rgba(168, 85, 247, 0.12); /* PURPLE GLASS */
-  backdrop-filter: blur(30px); -webkit-backdrop-filter: blur(30px);
-  border: 1px solid rgba(168, 85, 247, 0.3); /* PURPLE BORDER */
+  background: rgba(168, 85, 247, 0.12);
+  backdrop-filter: blur(30px);
+  border: 1px solid rgba(168, 85, 247, 0.3);
   border-radius: 24px;
-  box-shadow: 0 25px 70px rgba(168,85,247,0.5), 0 0 40px rgba(168,85,247,0.3); /* GLOW YA PURPLE */
+  box-shadow: 0 25px 70px rgba(168,85,247,0.5);
   display: flex; flex-direction: column; overflow: hidden;
-  animation: fadeIn 0.6s ease;
-}
-@keyframes fadeIn { from {opacity: 0; transform: translateY(20px);} to {opacity: 1; transform: translateY(0);} }
-
-body.dark .container { 
-  background: rgba(88, 28, 135, 0.2); 
-  border: 1px solid rgba(168, 85, 247, 0.2); 
-  box-shadow: 0 25px 70px rgba(0,0,0,0.6), 0 0 50px rgba(168,85,247,0.2);
 }
 
-.header {
-  background: rgba(168, 85, 247, 0.18); /* PURPLE GLASS */
-  backdrop-filter: blur(20px);
-  color: white; padding: 18px 20px; display: flex; justify-content: space-between; align-items: center;
-  border-bottom: 1px solid rgba(168,85,247,0.2);
-  flex-wrap: wrap; gap: 10px;
-}
-body.dark .header { background: rgba(59, 7, 100, 0.4); }
+.header { background: rgba(168, 85, 247, 0.18); backdrop-filter: blur(20px); color: white; padding: 18px 20px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(168,85,247,0.2); }
+.header h1 { font-size: 22px; font-weight: 900; text-shadow: 0 0 15px rgba(168,85,247,0.8); }
 
-.header h1 { 
-  font-size: 22px; font-weight: 900; 
-  text-shadow: 0 0 15px rgba(168,85,247,0.8); /* GLOW YA TITLE */
-}
+#chat-box { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 14px; }
 
-/* 💊 GLOW YA EMOJIS */
-.header h1, .quick-btn, .footer-btns button {
-  text-shadow: 0 0 8px rgba(168,85,247,0.6);
-}
-.quick-btn:hover {
-  text-shadow: 0 0 15px rgba(255,255,255,0.9);
-}
+.message { padding: 14px 18px; border-radius: 20px; max-width: 78%; line-height: 1.6; backdrop-filter: blur(10px); }
 
-.header-left { display: flex; align-items: center; gap: 12px; }
+.bot { background: rgba(168,85,247,0.22); border: 1px solid rgba(168,85,247,0.3); color: white; align-self: flex-start; box-shadow: 0 4px 15px rgba(168,85,247,0.2); }
+.user { background: rgba(124, 58, 237, 0.85); border: 1px solid rgba(168,85,247,0.4); color: white; align-self: flex-end; box-shadow: 0 4px 15px rgba(124,58,237,0.4); }
+body.dark .bot { background: rgba(88,28,135,0.3); }
 
-.lang-select {
-  padding: 9px 11px; border-radius: 12px; border: 1px solid rgba(168,85,247,0.4);
-  background: rgba(168,85,247,0.15); backdrop-filter: blur(8px); color: white; font-size: 13px; font-weight: 700;
-}
-.lang-select option { color: black; }
-.icon-btn { background: none; border: none; font-size: 24px; cursor: pointer; color: white; filter: drop-shadow(0 0 8px rgba(168,85,247,0.7)); }
-
-#chatBox { 
-  flex: 1; 
-  overflow-y: auto; 
-  padding: 20px 20px 8px 20px;
-  display: flex; 
-  flex-direction: column; 
-  gap: 14px; 
-  min-height: 200px;
-}
-
-.message { 
-  padding: 14px 18px; border-radius: 20px;
-  max-width: 78%; line-height: 1.6; backdrop-filter: blur(10px); animation: popIn 0.3s ease; 
-}
-@keyframes popIn { from {transform: scale(0.95); opacity: 0;} to {transform: scale(1); opacity: 1;} }
-
-.ai-message { 
-  background: rgba(168,85,247,0.22); /* PURPLE GLASS */
-  border: 1px solid rgba(168,85,247,0.3); 
-  color: white; align-self: flex-start; 
-  box-shadow: 0 4px 15px rgba(168,85,247,0.2);
-}
-.user-message { 
-  background: rgba(124, 58, 237, 0.85); /* PURPLE MKALI */
-  border: 1px solid rgba(168,85,247,0.4); 
-  color: white; align-self: flex-end; 
-  box-shadow: 0 4px 15px rgba(124,58,237,0.4);
-}
-body.dark .ai-message { background: rgba(88,28,135,0.3); }
-
-/* 💊 PICHA NA GLOW */
-.message img {
-  max-width: 100%;
-  border-radius: 15px;
-  margin-top: 10px;
-  box-shadow: 0 8px 30px rgba(168,85,247,0.5), 0 0 20px rgba(168,85,247,0.3);
-  border: 2px solid rgba(168,85,247,0.4);
-}
-
-.quick-btns {
-  display: flex; gap: 9px; padding: 12px 16px 8px 16px;
-  margin-bottom: 0; overflow-x: auto; 
-  background: rgba(168,85,247,0.12); backdrop-filter: blur(20px);
-  border-top: 1px solid rgba(168,85,247,0.2);
-}
-.quick-btn {
-  padding: 10px 15px; background: rgba(168,85,247,0.18); backdrop-filter: blur(8px);
-  border: 1px solid rgba(168,85,247,0.3); border-radius: 22px;
-  white-space: nowrap; cursor: pointer; font-size: 13px; font-weight: 800; color: white; transition: 0.3s;
-}
-.quick-btn:hover { 
-  background: rgba(168,85,247,0.35); 
-  transform: translateY(-3px) scale(1.05);
-  box-shadow: 0 0 20px rgba(168,85,247,0.6); /* GLOW ON HOVER */
-}
-
-#pinBtn { 
-  background: rgba(250, 204, 21, 0.25); 
-  border: 1px solid rgba(250, 204, 21, 0.5); 
-  box-shadow: 0 0 15px rgba(250,204,21,0.3);
-}
-#locationBtn { 
-  background: rgba(59, 130, 246, 0.25);
-  border: 1px solid rgba(59, 130, 246, 0.5); 
-  box-shadow: 0 0 15px rgba(59,130,246,0.3);
-}
-
-.input-area {
-  display: flex; padding: 12px 16px 14px 16px;
-  gap: 10px; background: rgba(168,85,247,0.12); backdrop-filter: blur(20px);
-  border-top: 1px solid rgba(168,85,247,0.2); align-items: center;
-}
-body.dark .input-area { background: rgba(59, 7, 100, 0.3); }
-
-#voiceSelect, #userInput {
-  padding: 12px; border-radius: 16px; border: 1px solid rgba(168,85,247,0.4);
-  background: rgba(168,85,247,0.15); backdrop-filter: blur(8px); color: white; font-size: 15px;
-}
-#userInput { flex: 1; outline: none; }
-#userInput::placeholder { color: rgba(255,255,255,0.8); }
-
-#uploadBtn, #micBtn {
-  padding: 12px; background: rgba(168,85,247,0.18); backdrop-filter: blur(8px);
-  border: none; border-radius: 16px; cursor: pointer; font-size: 20px; color: white; transition: 0.25s;
-  filter: drop-shadow(0 0 8px rgba(168,85,247,0.5));
-}
-#uploadBtn:hover, #micBtn:hover { 
-  background: rgba(168,85,247,0.35); 
-  transform: scale(1.1); 
-  filter: drop-shadow(0 0 15px rgba(168,85,247,0.8));
-}
-#micBtn.recording { 
-  background: rgba(239,68,68,0.7); 
-  animation: pulse 1s infinite; 
-  filter: drop-shadow(0 0 20px rgba(239,68,68,0.8));
-}
-@keyframes pulse { 0%{transform:scale(1);} 50%{transform:scale(1.15);} 100%{transform:scale(1);} }
-
-#sendBtn {
-  padding: 12px 22px; background: rgba(255,255,255,0.95); backdrop-filter: blur(8px);
-  color: #7e22ce; /* PURPLE */
-  border: none; border-radius: 16px; cursor: pointer; font-weight: 900; font-size: 15px; transition: 0.25s;
-  box-shadow: 0 0 20px rgba(168,85,247,0.5);
-}
-#sendBtn:hover { 
-  background: white; 
-  transform: scale(1.06); 
-  box-shadow: 0 0 30px rgba(168,85,247,0.8);
-}
-
-.footer-btns {
-  display: flex; gap: 11px; padding: 14px 16px;
-  background: rgba(168,85,247,0.12); backdrop-filter: blur(20px);
-}
-.footer-btns button {
-  flex: 1; padding: 12px; border: 1px solid rgba(168,85,247,0.3);
-  background: rgba(168,85,247,0.15); backdrop-filter: blur(8px);
-  color: white; border-radius: 15px; cursor: pointer; font-weight: 800; transition: 0.25s;
-}
-.footer-btns button:hover { 
-  background: rgba(168,85,247,0.3); 
-  box-shadow: 0 0 20px rgba(168,85,247,0.5);
-}
-
-#typing { text-align: center; padding: 9px; color: white; font-style: italic; font-weight: 700; text-shadow: 0 0 10px rgba(168,85,247,0.7); }
+#thinking { text-align: center; padding: 9px; color: white; font-style: italic; font-weight: 700; }
 .hidden { display: none; }
-button { opacity: 1!important; cursor: pointer!important; }
 
-@media (max-width: 768px) {
-  body { padding: 0; }
-.container { height: 100vh; max-width: 100%; border-radius: 0; border: none; }
-  .quick-btns { padding: 10px 12px 6px 12px; }
-.input-area { padding: 10px 12px 12px 12px; }
-  #voiceSelect { display: none; }
-.header h1 { font-size: 19px; }
-}
+.action-buttons { display: flex; gap: 9px; padding: 12px 16px; overflow-x: auto; background: rgba(168,85,247,0.12); }
+.action-btn { padding: 10px 15px; background: rgba(168,85,247,0.18); border: 1px solid rgba(168,85,247,0.3); border-radius: 22px; white-space: nowrap; cursor: pointer; font-size: 13px; font-weight: 800; color: white; }
 
-/* FIX YA INPUT LINE IKUE NDOGO */
-.input-area {
-  flex-wrap: wrap;
-}
-#voiceSelect { 
-  order: 4; 
-  width: 100%; 
-  margin-top: 6px; 
-  font-size: 13px; 
-  padding: 8px;
-}
-#micBtn { order: 3; }
-#userInput { order: 2; }
-#sendBtn { order: 1; }
-#uploadBtn { order: 0; }
+.input-area { display: flex; padding: 12px 16px; gap: 10px; background: rgba(168,85,247,0.12); border-top: 1px solid rgba(168,85,247,0.2); }
+#user-input { flex: 1; padding: 12px; border-radius: 16px; border: 1px solid rgba(168,85,247,0.4); background: rgba(168,85,247,0.15); color: white; }
+#send-btn { padding: 12px 22px; background: white; color: #7e22ce; border: none; border-radius: 16px; cursor: pointer; font-weight: 900; }
+
+.footer-btns { display: flex; gap: 11px; padding: 14px 16px; }
+.footer-btns button { flex: 1; padding: 12px; border: 1px solid rgba(168,85,247,0.3); background: rgba(168,85,247,0.15); color: white; border-radius: 15px; cursor: pointer; font-weight: 800; }
