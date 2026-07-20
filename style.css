@@ -193,3 +193,19 @@ button { opacity: 1!important; cursor: pointer!important; }
   #voiceSelect { display: none; }
 .header h1 { font-size: 19px; }
 }
+
+/* FIX YA INPUT LINE IKUE NDOGO */
+.input-area {
+  flex-wrap: wrap;
+}
+#voiceSelect { 
+  order: 4; 
+  width: 100%; 
+  margin-top: 6px; 
+  font-size: 13px; 
+  padding: 8px;
+}
+#micBtn { order: 3; }
+#userInput { order: 2; }
+#sendBtn { order: 1; }
+#uploadBtn { order: 0; }
