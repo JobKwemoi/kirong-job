@@ -1,14 +1,26 @@
-function getAIResponse(prompt, personality, userName){
-  let prefix = '';
-  if(personality === 'Teacher') prefix = `Teacher ${userName}: `;
-  if(personality === 'Hustler') prefix = `Boss ${userName} let's get it: `;
-  if(personality === 'Funny') prefix = `Yo ${userName} 😂 `;
+import Groq from "groq-sdk";
 
-  const lower = prompt.toLowerCase();
-  if(lower.includes('cv') || lower.includes('resume')) return `${prefix}Send me your details and I'll build you a pro CV 💼`;
-  if(lower.includes('job') || lower.includes('work')) return `${prefix}I got you ${userName}. What's your field and experience?`;
-  if(lower.includes('interview')) return `${prefix}Let's prep for that interview ${userName}! What role are you targeting?`;
-  if(lower.includes('help')) return `${prefix}I'm here to help you land your dream job 💜 What do you need?`;
+export default async function handler(req, res) {
+  if (req.method !== 'POST') return res.status(405).json({ text: 'POST only' });
+  
+  if (!process.env.GROQ_API_KEY) {
+    return res.status(500).json({ text: 'GROQ_API_KEY missing mkuu. Weka kwa Vercel Settings' });
+  }
 
-  return `${prefix}About "${prompt}" - here's the breakdown:`;
+  try {
+    const { message, language = 'English' } = req.body;
+    const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
+    
+    const response = await groq.chat.completions.create({
+      model: "llama-3.1-8b-instant", // FAST + FREE
+      messages: [
+        { role: "system", content: `You are Meta Kirong AI by Kirong Job Kwemoi. Speak 95% English 5% Sheng. Use: mkuu, poa, sawa. Reply ONLY in ${language}.` },
+        { role: "user", content: message }
+      ],
+    });
+
+    res.status(200).json({ text: response.choices[0].message.content });
+  } catch (error) {
+    res.status(500).json({ text: `Error: ${error.message}` });
+  }
 }
