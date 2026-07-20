@@ -3,60 +3,64 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Job AI by Kirong 👑</title>
+  <title>Meta Kirong AI 🌍💜</title>
   <link rel="stylesheet" href="style.css">
+  <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
 </head>
 <body>
   <div class="container">
-    <div class="header">
+
+    <header class="header">
       <div class="header-left">
-        <h1>Job AI by Kirong 💜</h1>
+        <h1>Meta Kirong AI 🌍</h1>
+        <select id="language-select" class="lang-select"> <!-- NILIBADILISHA ID -->
+          <option value="English">English</option>
+          <option value="Swahili">Kiswahili</option>
+          <option value="French">French</option>
+          <option value="Hindi">Hindi</option>
+          <option value="Spanish">Spanish</option>
+        </select>
       </div>
-      <button id="themeBtn" class="icon-btn">🌙</button>
-    </div>
+      <button id="themeBtn" class="icon-btn" title="Toggle Theme">🌙</button>
+    </header>
 
-    <div id="chatBox">
-      <div class="message ai-message">
-        <p id="welcomeMsg">Hello! I'm Job AI by Kirong. How can I help you today? 💜</p>
+    <div id="chat-box"> <!-- NILIBADILISHA ID kutoka chatBox -->
+      <div class="message bot"> <!-- NILIBADILISHA CLASS -->
+        <p>Habari mkuu! I'm Meta Kirong AI 💜🔥<br>Your Universal Assistant. I code, teach, design, write, and help with anything.</p>
       </div>
     </div>
 
-    <div id="typing" class="hidden">Job AI is typing...</div>
+    <div id="thinking" class="hidden">Meta Kirong is thinking...</div> <!-- NILIBADILISHA ID -->
 
-    <!-- QUICK BTNS -->
-    <div class="quick-btns">
-      <button class="quick-btn" data-prompt="Write my CV">📄 CV</button>
-      <button class="quick-btn" data-prompt="Help me find a job">💼 Jobs</button>
-      <button class="quick-btn" data-prompt="Generate an image of">🎨 Image</button>
-      <button class="quick-btn" data-prompt="Latest news">📰 News</button>
-    </div>
-
-    <!-- BOTTOM CONTROLS -->
-    <div class="bottom-controls">
-      <button id="micBtn">🎤 Voice</button>
-      <button id="uploadBtn">📎 Upload</button>
-      <button id="pdfBtn">📄 PDF</button>
-      <button id="pinBtn">📌 Favorites</button>
-      <button id="locationBtn">📍 Location</button>
-      <button id="clearBtn">🗑️ Clear</button>
-      <button id="exportBtn">⬇️ Export</button>
+    <div class="action-buttons"> <!-- NILIBADILISHA CLASS -->
+      <button class="action-btn" data-action="Code">Code 💻</button> <!-- NILIONGEZA data-action -->
+      <button class="action-btn" data-action="Image">Image 🎨</button>
+      <button class="action-btn" data-action="Explain">Explain 🧠</button>
+      <button class="action-btn" data-action="Write">Write ✍️</button>
+      <button class="action-btn" data-action="Email">Email 📧</button>
+      <button id="pinBtn" class="action-btn">Pin 📌</button>
+      <button id="locationBtn" class="action-btn">Location 📍</button>
     </div>
 
     <div class="input-area">
-      <select id="personalitySelect">
-        <option value="Normal">Normal</option>
-        <option value="Funny">Funny 😂</option>
-        <option value="Teacher">Teacher 🧠</option>
-        <option value="Hustler">Hustler 💪</option>
+      <select id="voice-select" title="Voice"> <!-- NILIBADILISHA ID -->
+        <option value="en-US">EN Voice</option>
+        <option value="en-GB">UK Voice</option>
+        <option value="sw-KE">SW Voice</option>
       </select>
-      <input type="text" id="userInput" placeholder="Ask Job AI anything...">
-      <button id="sendBtn">Send</button>
+      <button id="uploadBtn" title="Upload File">📎</button>
+      <input type="file" id="fileInput" hidden>
+      <input type="text" id="user-input" placeholder="Ask Meta Kirong anything..." autocomplete="off"> <!-- NILIONGEZA autocomplete -->
+      <button id="micBtn" title="Speak">🎤</button>
+      <button id="send-btn">Send</button> <!-- NILIBADILISHA ID -->
     </div>
 
-    <input type="file" id="fileInput" style="display:none;">
-  </div>
+    <div class="footer-btns">
+      <button id="exportBtn">Export Chat 💾</button>
+      <button id="clear-btn">Clear Chat 🗑️</button> <!-- NILIBADILISHA ID -->
+    </div>
 
-  <script src="chat.js"></script>
+  </div>
   <script src="app.js"></script>
 </body>
 </html>
