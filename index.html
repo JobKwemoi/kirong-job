@@ -3,17 +3,16 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Meta Kirong AI 🌍💜</title>
+  <title>Kirong Job AI 🌍💜</title>
   <link rel="stylesheet" href="style.css">
   <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
 </head>
 <body>
   <div class="container">
-
     <header class="header">
       <div class="header-left">
-        <h1>Meta Kirong AI 🌍</h1>
-        <select id="language-select" class="lang-select"> <!-- NILIBADILISHA ID -->
+        <h1>Kirong Job AI 🌍</h1>
+        <select id="language-select" class="lang-select">
           <option value="English">English</option>
           <option value="Swahili">Kiswahili</option>
           <option value="French">French</option>
@@ -24,16 +23,16 @@
       <button id="themeBtn" class="icon-btn" title="Toggle Theme">🌙</button>
     </header>
 
-    <div id="chat-box"> <!-- NILIBADILISHA ID kutoka chatBox -->
-      <div class="message bot"> <!-- NILIBADILISHA CLASS -->
-        <p>Habari mkuu! I'm Meta Kirong AI 💜🔥<br>Your Universal Assistant. I code, teach, design, write, and help with anything.</p>
+    <div id="chat-box">
+      <div class="message bot">
+        <p>Habari mkuu! I'm Kirong Job AI 💜🔥<br>Your Universal Assistant. I code, teach, design, write, and help with anything.</p>
       </div>
     </div>
 
-    <div id="thinking" class="hidden">Meta Kirong is thinking...</div> <!-- NILIBADILISHA ID -->
+    <div id="thinking" class="hidden">Kirong Job AI is thinking...</div>
 
-    <div class="action-buttons"> <!-- NILIBADILISHA CLASS -->
-      <button class="action-btn" data-action="Code">Code 💻</button> <!-- NILIONGEZA data-action -->
+    <div class="action-buttons">
+      <button class="action-btn" data-action="Code">Code 💻</button>
       <button class="action-btn" data-action="Image">Image 🎨</button>
       <button class="action-btn" data-action="Explain">Explain 🧠</button>
       <button class="action-btn" data-action="Write">Write ✍️</button>
@@ -43,23 +42,22 @@
     </div>
 
     <div class="input-area">
-      <select id="voice-select" title="Voice"> <!-- NILIBADILISHA ID -->
+      <select id="voice-select" title="Voice">
         <option value="en-US">EN Voice</option>
         <option value="en-GB">UK Voice</option>
         <option value="sw-KE">SW Voice</option>
       </select>
       <button id="uploadBtn" title="Upload File">📎</button>
       <input type="file" id="fileInput" hidden>
-      <input type="text" id="user-input" placeholder="Ask Meta Kirong anything..." autocomplete="off"> <!-- NILIONGEZA autocomplete -->
+      <input type="text" id="user-input" placeholder="Ask Kirong Job anything..." autocomplete="off">
       <button id="micBtn" title="Speak">🎤</button>
-      <button id="send-btn">Send</button> <!-- NILIBADILISHA ID -->
+      <button id="send-btn">Send</button>
     </div>
 
     <div class="footer-btns">
       <button id="exportBtn">Export Chat 💾</button>
-      <button id="clear-btn">Clear Chat 🗑️</button> <!-- NILIBADILISHA ID -->
+      <button id="clear-btn">Clear Chat 🗑️</button>
     </div>
-
   </div>
   <script src="app.js"></script>
 </body>
