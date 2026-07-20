@@ -3,20 +3,17 @@ const userInput = document.getElementById('user-input');
 const sendBtn = document.getElementById('send-btn');
 const langSelect = document.getElementById('language-select');
 const voiceSelect = document.getElementById('voice-select');
+const thinking = document.getElementById('thinking');
 
-let messages = [];
-
-// Tuma message ukibonyeza Enter au Send
 sendBtn.addEventListener('click', sendMessage);
 userInput.addEventListener('keypress', (e) => {
   if (e.key === 'Enter') sendMessage();
 });
 
-// BUTTONS ZA CODE, IMAGE, EXPLAIN
 document.querySelectorAll('.action-btn').forEach(btn => {
   btn.addEventListener('click', () => {
     const action = btn.dataset.action;
-    const msg = userInput.value || "Explain this";
+    const msg = userInput.value || "Help me with";
     userInput.value = `${action}: ${msg}`;
     sendMessage();
   });
@@ -29,61 +26,50 @@ async function sendMessage() {
   const language = langSelect.value;
   addMessage(message, 'user');
   userInput.value = '';
-  
-  addMessage('Meta Kirong AI is thinking...', 'bot', true);
+  thinking.classList.remove('hidden');
 
   try {
     const res = await fetch('/api/chat', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' }, // MUHIMU SANA
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ message: message, language: language })
     });
 
     const data = await res.json();
-    removeThinking();
+    thinking.classList.add('hidden');
     
     if (res.ok) {
       addMessage(data.text, 'bot');
-      speakText(data.text); // Sauti
+      speakText(data.text);
     } else {
       addMessage(`Error: ${data.text}`, 'bot');
     }
 
   } catch (error) {
-    removeThinking();
+    thinking.classList.add('hidden');
     addMessage(`Network Error mkuu: ${error.message}`, 'bot');
   }
 }
 
-function addMessage(text, sender, isThinking = false) {
+function addMessage(text, sender) {
   const msgDiv = document.createElement('div');
   msgDiv.className = `message ${sender}`;
-  if(isThinking) msgDiv.id = 'thinking';
-  msgDiv.innerText = text; // Tumia innerText ili isionyeshe "undefined"
+  msgDiv.innerText = text;
   chatBox.appendChild(msgDiv);
   chatBox.scrollTop = chatBox.scrollHeight;
-  messages.push({role: sender, content: text});
 }
 
-function removeThinking() {
-  const thinking = document.getElementById('thinking');
-  if (thinking) thinking.remove();
-}
-
-// SAUTI
 function speakText(text) {
   if (!('speechSynthesis' in window)) return;
+  speechSynthesis.cancel();
   const utterance = new SpeechSynthesisUtterance(text);
-  utterance.lang = voiceSelect.value === 'Swahili' ? 'sw-KE' : 'en-US';
+  utterance.lang = voiceSelect.value;
   utterance.rate = 1;
   speechSynthesis.speak(utterance);
 }
 
-// LOCATION
-if (navigator.geolocation) {
-  navigator.geolocation.getCurrentPosition(() => {
-    console.log("Location got");
-  }, () => {
-    addMessage("Could not get location", "bot");
-  });
-}
+// THEME TOGGLE
+document.getElementById('themeBtn').addEventListener('click', () => {
+  document.body.classList.toggle('dark');
+  document.getElementById('themeBtn').innerText = document.body.classList.contains('dark') ? '☀️' : '🌙';
+});
