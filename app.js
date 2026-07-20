@@ -1,105 +1,89 @@
-document.addEventListener('DOMContentLoaded', () => {
-  const chatBox = document.getElementById('chatBox');
-  const userInput = document.getElementById('userInput');
-  const sendBtn = document.getElementById('sendBtn');
-  const typing = document.getElementById('typing');
-  const personalitySelect = document.getElementById('personalitySelect');
-  const micBtn = document.getElementById('micBtn');
-  const uploadBtn = document.getElementById('uploadBtn');
-  const fileInput = document.getElementById('fileInput');
-  const pdfBtn = document.getElementById('pdfBtn');
-  const pinBtn = document.getElementById('pinBtn');
-  const locationBtn = document.getElementById('locationBtn');
-  const clearBtn = document.getElementById('clearBtn');
-  const exportBtn = document.getElementById('exportBtn');
-  const themeBtn = document.getElementById('themeBtn');
-  const quickBtns = document.querySelectorAll('.quick-btn');
+const chatBox = document.getElementById('chat-box');
+const userInput = document.getElementById('user-input');
+const sendBtn = document.getElementById('send-btn');
+const langSelect = document.getElementById('language-select');
+const voiceSelect = document.getElementById('voice-select');
 
-  let chatHistory = JSON.parse(localStorage.getItem('jobAIChat')) || [];
-  let favorites = JSON.parse(localStorage.getItem('jobAIFav')) || [];
-  let userName = localStorage.getItem('jobAIName') || 'Boss';
+let messages = [];
 
-  document.getElementById('welcomeMsg').innerText = `Hello ${userName}! I'm Job AI by Kirong. How can I help you today? 💜`;
+// Tuma message ukibonyeza Enter au Send
+sendBtn.addEventListener('click', sendMessage);
+userInput.addEventListener('keypress', (e) => {
+  if (e.key === 'Enter') sendMessage();
+});
 
-  if(localStorage.getItem('theme') === 'dark') {
-    document.body.classList.add('dark');
-    themeBtn.textContent = '☀️';
-  }
-  themeBtn.addEventListener('click', () => {
-    document.body.classList.toggle('dark');
-    themeBtn.textContent = document.body.classList.contains('dark')? '☀️' : '🌙';
-    localStorage.setItem('theme', document.body.classList.contains('dark')? 'dark' : 'light');
-  });
-
-  chatHistory.forEach(msg => addMessage(msg.text, msg.className, true));
-
-  const sendMessage = () => {
-    const text = userInput.value.trim();
-    if(!text) return;
-
-    if(text.toLowerCase().includes('my name is') || text.toLowerCase().includes('call me')) {
-      userName = text.split(' ').pop();
-      localStorage.setItem('jobAIName', userName);
-      document.getElementById('welcomeMsg').innerText = `Hello ${userName}! I'm Job AI by Kirong. How can I help you today? 💜`;
-    }
-
-    addMessage(text, 'user-message');
-    userInput.value = '';
-    typing.classList.remove('hidden');
-
-    const lowerText = text.toLowerCase();
-    const personality = personalitySelect.value;
-    const isImage = lowerText.includes('image') || lowerText.includes('generate') || lowerText.includes('picture');
-
-    setTimeout(() => {
-      typing.classList.add('hidden');
-      if(isImage) generateImage(text);
-      else generateText(text, personality);
-    }, 800);
-  }
-
-  function addMessage(content, className, noSave=false) {
-    const msgDiv = document.createElement('div');
-    msgDiv.classList.add('message', className);
-    let saveBtn = className === 'ai-message'? `<button class="save-btn" onclick="saveFavorite('${content.replace(/'/g, "\\'")}')">⭐ Save</button>` : '';
-    msgDiv.innerHTML = `<p>${content}</p>${saveBtn}`;
-    chatBox.appendChild(msgDiv);
-    chatBox.scrollTop = chatBox.scrollHeight;
-    if(!noSave){
-      chatHistory.push({text: content, className});
-      localStorage.setItem('jobAIChat', JSON.stringify(chatHistory));
-    }
-  }
-
-  function generateText(prompt, personality){
-    const reply = getAIResponse(prompt, personality, userName);
-    addMessage(reply, 'ai-message');
-  }
-  function generateImage(prompt){
-    addMessage(`Creating image: "${prompt}"...`, 'ai-message');
-    const imgUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(prompt)},4:3?width=600&height=450`;
-    chatBox.lastElementChild.innerHTML = `<p>Here you go 👑</p><img src="${imgUrl}">`;
-  }
-
-  window.saveFavorite = (text) => {
-    if(!favorites.includes(text)){ favorites.push(text); localStorage.setItem('jobAIFav', JSON.stringify(favorites)); alert('Saved to Favorites 💜'); }
-  }
-
-  sendBtn.addEventListener('click', sendMessage);
-  userInput.addEventListener('keypress', (e) => { if(e.key === 'Enter') sendMessage(); });
-  quickBtns.forEach(btn => btn.addEventListener('click', () => { userInput.value = btn.dataset.prompt; sendMessage(); }));
-  micBtn.addEventListener('click', () => {
-    const lastAi = [...document.querySelectorAll('.ai-message p')].pop();
-    if(lastAi && 'speechSynthesis' in window) speechSynthesis.speak(new SpeechSynthesisUtterance(lastAi.innerText));
-  });
-  uploadBtn.addEventListener('click', () => fileInput.click());
-  fileInput.addEventListener('change', (e) => { if(e.target.files[0]) addMessage(`Uploaded: ${e.target.files[0].name}`, 'user-message'); });
-  pdfBtn.addEventListener('click', () => window.print());
-  pinBtn.addEventListener('click', () => alert(`Favorites:\n${favorites.join('\n- ') || 'None yet'}`));
-  locationBtn.addEventListener('click', () => navigator.geolocation?.getCurrentPosition(pos => addMessage(`Location: ${pos.coords.latitude.toFixed(2)}, ${pos.coords.longitude.toFixed(2)}`, 'user-message')));
-  clearBtn.addEventListener('click', () => { chatBox.innerHTML = `<p id="welcomeMsg">Hello ${userName}! I'm Job AI by Kirong. How can I help you today? 💜</p>`; chatHistory = []; localStorage.removeItem('jobAIChat'); });
-  exportBtn.addEventListener('click', () => {
-    const blob = new Blob([chatHistory.map(m => m.text).join('\n')], {type: 'text/plain'});
-    const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'JobAI_Chat.txt'; a.click();
+// BUTTONS ZA CODE, IMAGE, EXPLAIN
+document.querySelectorAll('.action-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const action = btn.dataset.action;
+    const msg = userInput.value || "Explain this";
+    userInput.value = `${action}: ${msg}`;
+    sendMessage();
   });
 });
+
+async function sendMessage() {
+  const message = userInput.value.trim();
+  if (!message) return;
+
+  const language = langSelect.value;
+  addMessage(message, 'user');
+  userInput.value = '';
+  
+  addMessage('Meta Kirong AI is thinking...', 'bot', true);
+
+  try {
+    const res = await fetch('/api/chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' }, // MUHIMU SANA
+      body: JSON.stringify({ message: message, language: language })
+    });
+
+    const data = await res.json();
+    removeThinking();
+    
+    if (res.ok) {
+      addMessage(data.text, 'bot');
+      speakText(data.text); // Sauti
+    } else {
+      addMessage(`Error: ${data.text}`, 'bot');
+    }
+
+  } catch (error) {
+    removeThinking();
+    addMessage(`Network Error mkuu: ${error.message}`, 'bot');
+  }
+}
+
+function addMessage(text, sender, isThinking = false) {
+  const msgDiv = document.createElement('div');
+  msgDiv.className = `message ${sender}`;
+  if(isThinking) msgDiv.id = 'thinking';
+  msgDiv.innerText = text; // Tumia innerText ili isionyeshe "undefined"
+  chatBox.appendChild(msgDiv);
+  chatBox.scrollTop = chatBox.scrollHeight;
+  messages.push({role: sender, content: text});
+}
+
+function removeThinking() {
+  const thinking = document.getElementById('thinking');
+  if (thinking) thinking.remove();
+}
+
+// SAUTI
+function speakText(text) {
+  if (!('speechSynthesis' in window)) return;
+  const utterance = new SpeechSynthesisUtterance(text);
+  utterance.lang = voiceSelect.value === 'Swahili' ? 'sw-KE' : 'en-US';
+  utterance.rate = 1;
+  speechSynthesis.speak(utterance);
+}
+
+// LOCATION
+if (navigator.geolocation) {
+  navigator.geolocation.getCurrentPosition(() => {
+    console.log("Location got");
+  }, () => {
+    addMessage("Could not get location", "bot");
+  });
+}
