@@ -1,7 +1,8 @@
 {
-  "name": "meta-kirong-ai",
+  "name": "kirong-job-ai",
   "version": "1.0.0",
   "type": "module",
+  "description": "Kirong Job AI - Your Universal Assistant",
   "dependencies": {
     "groq-sdk": "^0.12.0"
   }
