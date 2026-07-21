@@ -1,75 +1,353 @@
-const chatBox = document.getElementById('chat-box');
-const userInput = document.getElementById('user-input');
-const sendBtn = document.getElementById('send-btn');
-const langSelect = document.getElementById('language-select');
-const voiceSelect = document.getElementById('voice-select');
-const thinking = document.getElementById('thinking');
+// ==========================
+// KIRONG AI v2
+// ==========================
 
-sendBtn.addEventListener('click', sendMessage);
-userInput.addEventListener('keypress', (e) => {
-  if (e.key === 'Enter') sendMessage();
-});
+const chatBox = document.getElementById("chatBox");
+const userInput = document.getElementById("userInput");
+const sendBtn = document.getElementById("sendBtn");
+const themeBtn = document.getElementById("themeBtn");
+const thinking = document.getElementById("thinking");
 
-document.querySelectorAll('.action-btn').forEach(btn => {
-  btn.addEventListener('click', () => {
-    const action = btn.dataset.action;
-    const msg = userInput.value || "Help me with";
-    userInput.value = `${action}: ${msg}`;
-    sendMessage();
-  });
-});
+let chatHistory = [];
 
-async function sendMessage() {
-  const message = userInput.value.trim();
-  if (!message) return;
+// ==========================
+// ADD MESSAGE
+// ==========================
 
-  const language = langSelect.value;
-  addMessage(message, 'user');
-  userInput.value = '';
-  thinking.classList.remove('hidden');
+function addMessage(text, sender){
 
-  try {
-    const res = await fetch('/api/chat', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ message: message, language: language })
-    });
+const message = document.createElement("div");
 
-    const data = await res.json();
-    thinking.classList.add('hidden');
-    
-    if (res.ok) {
-      addMessage(data.text, 'bot');
-      speakText(data.text);
-    } else {
-      addMessage(`Error: ${data.text}`, 'bot');
-    }
+message.className = `message ${sender}`;
 
-  } catch (error) {
-    thinking.classList.add('hidden');
-    addMessage(`Network Error mkuu: ${error.message}`, 'bot');
-  }
+message.innerHTML = `<p>${text}</p>`;
+
+chatBox.appendChild(message);
+
+chatBox.scrollTop = chatBox.scrollHeight;
+
 }
 
-function addMessage(text, sender) {
-  const msgDiv = document.createElement('div');
-  msgDiv.className = `message ${sender}`;
-  msgDiv.innerText = text;
-  chatBox.appendChild(msgDiv);
-  chatBox.scrollTop = chatBox.scrollHeight;
+// ==========================
+// THINKING
+// ==========================
+
+function showThinking(){
+
+thinking.classList.remove("hidden");
+
 }
 
-function speakText(text) {
-  if (!('speechSynthesis' in window)) return;
-  speechSynthesis.cancel();
-  const utterance = new SpeechSynthesisUtterance(text);
-  utterance.lang = voiceSelect.value;
-  utterance.rate = 1;
-  speechSynthesis.speak(utterance);
+function hideThinking(){
+
+thinking.classList.add("hidden");
+
 }
 
-// THEME TOGGLE
-document.getElementById('themeBtn').addEventListener('click', () => {
-  document.body.classList.toggle('dark');
-  document.getElementById('themeBtn').innerText = document.body.classList.contains('dark') ? '☀️' : '🌙';
+// ==========================
+// SEND MESSAGE
+// ==========================
+
+async function sendMessage(){
+
+const text = userInput.value.trim();
+
+if(!text) return;
+
+  if(isImagePrompt(text)){
+
+hideThinking();
+
+generateImage(text);
+
+return;
+
+}
+
+addMessage(text,"user");
+
+userInput.value="";
+
+showThinking();
+
+try{
+
+const response = await fetch("/api/chat",{
+
+method:"POST",
+
+headers:{
+"Content-Type":"application/json"
+},
+
+body:JSON.stringify({
+
+message:text,
+
+history:chatHistory
+
+})
+
 });
+
+const data = await response.json();
+
+hideThinking();
+
+addMessage(data.text,"ai");
+
+chatHistory.push({
+
+role:"user",
+
+content:text
+
+});
+
+chatHistory.push({
+
+role:"assistant",
+
+content:data.text
+
+});
+
+}catch(error){
+
+hideThinking();
+
+addMessage("⚠️ Something went wrong.","ai");
+
+console.error(error);
+
+}
+
+}
+
+// ==========================
+// IMAGE GENERATOR
+// ==========================
+
+function generateImage(prompt){
+
+const imageUrl =
+`https://image.pollinations.ai/prompt/${encodeURIComponent(prompt + ", ultra detailed, 4k, realistic")}`;
+
+addMessage(
+
+`
+<p><strong>🎨 Image Generated</strong></p>
+
+<img
+src="${imageUrl}"
+alt="Generated Image"
+style="
+margin-top:12px;
+max-width:100%;
+border-radius:15px;
+">
+
+<br><br>
+
+<a
+href="${imageUrl}"
+target="_blank">
+
+<button>
+
+📥 Download Image
+
+</button>
+
+</a>
+
+`
+
+,"ai");
+
+}
+
+// ==========================
+// DETECT IMAGE REQUEST
+// ==========================
+
+function isImagePrompt(text){
+
+const prompt=text.toLowerCase();
+
+return(
+
+prompt.startsWith("image")||
+
+prompt.startsWith("draw")||
+
+prompt.startsWith("create image")||
+
+prompt.startsWith("generate image")||
+
+prompt.startsWith("paint")||
+
+prompt.startsWith("illustrate")
+
+);
+
+}
+
+// ==========================
+// EVENTS
+// ==========================
+
+// Send button
+sendBtn.addEventListener("click", sendMessage);
+
+// Enter key
+userInput.addEventListener("keydown",(e)=>{
+
+if(e.key==="Enter"){
+
+sendMessage();
+
+}
+
+});
+
+// ==========================
+// THEME
+// ==========================
+
+if(localStorage.getItem("theme")==="dark"){
+
+document.body.classList.add("dark");
+
+themeBtn.textContent="☀️";
+
+}
+
+themeBtn.addEventListener("click",()=>{
+
+document.body.classList.toggle("dark");
+
+const dark=document.body.classList.contains("dark");
+
+themeBtn.textContent=dark?"☀️":"🌙";
+
+localStorage.setItem("theme",dark?"dark":"light");
+
+});
+
+// ==========================
+// QUICK BUTTONS
+// ==========================
+
+document.querySelectorAll(".quickBtn").forEach(btn=>{
+
+btn.onclick=()=>{
+
+userInput.value=btn.dataset.action+" ";
+
+userInput.focus();
+
+};
+
+});
+
+// ==========================
+// CLEAR CHAT
+// ==========================
+
+document.getElementById("clearBtn").onclick=()=>{
+
+chatBox.innerHTML=`
+<div class="message ai">
+<p>Hello 👋<br>I am Kirong AI.</p>
+</div>
+`;
+
+chatHistory=[];
+
+};
+
+// ==========================
+// EXPORT CHAT
+// ==========================
+
+document.getElementById("exportBtn").onclick=()=>{
+
+const text=[...document.querySelectorAll(".message")]
+
+.map(x=>x.innerText)
+
+.join("\n\n");
+
+const blob=new Blob([text],{
+
+type:"text/plain"
+
+});
+
+const a=document.createElement("a");
+
+a.href=URL.createObjectURL(blob);
+
+a.download="KirongAI_Chat.txt";
+
+a.click();
+
+};
+
+// ==========================
+// LOCATION
+// ==========================
+
+document.getElementById("locationBtn").onclick=()=>{
+
+if(!navigator.geolocation){
+
+addMessage("Location not supported.","ai");
+
+return;
+
+}
+
+navigator.geolocation.getCurrentPosition(pos=>{
+
+addMessage(
+
+`📍 Latitude: ${pos.coords.latitude.toFixed(4)}<br>
+Longitude: ${pos.coords.longitude.toFixed(4)}`,
+
+"ai"
+
+);
+
+});
+
+};
+
+// ==========================
+// FILE UPLOAD
+// ==========================
+
+const fileInput=document.getElementById("fileInput");
+
+document.getElementById("uploadBtn").onclick=()=>{
+
+fileInput.click();
+
+};
+
+fileInput.onchange=()=>{
+
+if(fileInput.files.length){
+
+addMessage(
+
+`📎 ${fileInput.files[0].name}`,
+
+"user"
+
+);
+
+}
+
+};
