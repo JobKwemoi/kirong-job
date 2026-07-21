@@ -175,6 +175,25 @@ word-wrap:break-word;
 
 }
 
+.message img{
+
+display:block;
+
+margin:auto;
+
+margin-top:12px;
+
+width:100%;
+
+max-width:420px;
+
+border-radius:20px;
+
+box-shadow:0 15px 40px rgba(0,0,0,.3);
+
+}
+
+
 .ai{
 
 align-self:flex-start;
