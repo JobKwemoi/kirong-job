@@ -1,13 +1,11 @@
 import Groq from "groq-sdk";
 import OpenAI from "openai";
-import Replicate from "replicate";
 
 // =====================================================
 // ⚡ KIRONG AI v4.2
 // Intelligent Router
-// Groq + OpenAI + OpenAI Image + FLUX/Replicate
+// Groq + OpenAI + Pollinations FLUX
 // =====================================================
-
 
 // =====================================================
 // 🤖 AI CLIENTS
@@ -19,17 +17,9 @@ const groq = process.env.GROQ_API_KEY
     })
   : null;
 
-
 const openai = process.env.OPENAI_API_KEY
   ? new OpenAI({
       apiKey: process.env.OPENAI_API_KEY,
-    })
-  : null;
-
-
-const replicate = process.env.REPLICATE_API_TOKEN
-  ? new Replicate({
-      auth: process.env.REPLICATE_API_TOKEN,
     })
   : null;
 
@@ -45,14 +35,12 @@ function detectIntent(message) {
     .trim()
     .replace(/[!?.,;:()[\]{}]/g, " ");
 
-
   // ===================================================
   // 🎨 IMAGE REQUESTS
   // ===================================================
 
   const imageRequests = [
 
-    // English
     "generate image",
     "generate an image",
     "create image",
@@ -88,6 +76,7 @@ function detectIntent(message) {
     "create design",
 
     // Kiswahili
+
     "tengeneza picha",
     "tengenezee picha",
     "nitengenezee picha",
@@ -107,6 +96,7 @@ function detectIntent(message) {
     "nitengenezee design",
 
     // Kenyan typing
+
     "generetie poster",
     "nigeneretie poster",
 
@@ -122,7 +112,6 @@ function detectIntent(message) {
     "designie logo",
     "nidesignie logo",
   ];
-
 
   if (
     imageRequests.some((phrase) =>
@@ -158,7 +147,6 @@ function detectIntent(message) {
     "nichoree",
   ];
 
-
   const visualWords = [
 
     "image",
@@ -181,18 +169,15 @@ function detectIntent(message) {
     "nembo",
   ];
 
-
   const hasCreationWord =
     creationWords.some((word) =>
       text.includes(word)
     );
 
-
   const hasVisualWord =
     visualWords.some((word) =>
       text.includes(word)
     );
-
 
   if (
     hasCreationWord &&
@@ -218,7 +203,6 @@ function detectIntent(message) {
     "wallpaper",
     "thumbnail",
   ];
-
 
   if (
     strongVisualWords.some((word) =>
@@ -271,7 +255,6 @@ function detectIntent(message) {
     "debug code",
   ];
 
-
   if (
     codeWords.some((word) =>
       text.includes(word)
@@ -303,7 +286,6 @@ function detectIntent(message) {
     "linganisha zote",
     "maoni zote",
   ];
-
 
   if (
     bothWords.some((word) =>
@@ -338,7 +320,6 @@ function detectIntent(message) {
     "chambua document",
     "soma document",
   ];
-
 
   if (
     fileWords.some((word) =>
@@ -381,7 +362,6 @@ function chooseRoute(message) {
     "linganisha zote",
   ];
 
-
   if (
     bothKeywords.some((word) =>
       text.includes(word)
@@ -408,7 +388,6 @@ function chooseRoute(message) {
     "security architecture",
     "full stack architecture",
   ];
-
 
   if (
     deepKeywords.some((word) =>
@@ -612,12 +591,121 @@ INSTRUCTIONS:
 
 
 // =====================================================
+// 🎨 POLLINATIONS FLUX IMAGE ENGINE
+// =====================================================
+
+async function generatePollinationsImage(userPrompt) {
+
+  if (!process.env.POLLINATIONS_API_KEY) {
+
+    throw new Error(
+      "POLLINATIONS_API_KEY is missing."
+    );
+  }
+
+
+  const prompt =
+    createImagePrompt(
+      userPrompt
+    );
+
+
+  const encodedPrompt =
+    encodeURIComponent(
+      prompt
+    );
+
+
+  const imageUrl =
+    `https://gen.pollinations.ai/image/${encodedPrompt}?model=flux&width=1024&height=1024`;
+
+
+  console.log(
+    "🎨 POLLINATIONS → FLUX"
+  );
+
+
+  const response =
+    await fetch(
+      imageUrl,
+      {
+        method:
+          "GET",
+
+        headers: {
+          Authorization:
+            `Bearer ${process.env.POLLINATIONS_API_KEY}`,
+        },
+      }
+    );
+
+
+  if (!response.ok) {
+
+    const errorText =
+      await response.text();
+
+    console.error(
+      "❌ POLLINATIONS ERROR:",
+      response.status,
+      errorText
+    );
+
+    throw new Error(
+      `Pollinations failed with status ${response.status}`
+    );
+  }
+
+
+  const arrayBuffer =
+    await response.arrayBuffer();
+
+
+  if (!arrayBuffer) {
+
+    throw new Error(
+      "Pollinations returned empty image data."
+    );
+  }
+
+
+  const base64 =
+    Buffer
+      .from(arrayBuffer)
+      .toString("base64");
+
+
+  const contentType =
+    response.headers.get(
+      "content-type"
+    ) ||
+    "image/png";
+
+
+  return {
+
+    image:
+      `data:${contentType};base64,${base64}`,
+
+    provider:
+      "Pollinations / FLUX",
+
+    route:
+      "POLLINATIONS FLUX",
+  };
+}
+
+
+// =====================================================
 // 🎨 OPENAI IMAGE
 // =====================================================
 
-async function generateOpenAIImage(userPrompt) {
+async function generateOpenAIImage(
+  userPrompt
+) {
 
   if (!openai) {
+
     throw new Error(
       "OPENAI_API_KEY is missing."
     );
@@ -668,177 +756,9 @@ async function generateOpenAIImage(userPrompt) {
 
     provider:
       "OpenAI Image Engine",
-  };
-}
 
-
-// =====================================================
-// 🎨 FLUX / REPLICATE
-// =====================================================
-
-async function generateFluxImage(userPrompt) {
-
-  if (!replicate) {
-
-    throw new Error(
-      "REPLICATE_API_TOKEN is missing."
-    );
-  }
-
-
-  console.log(
-    "🎨 FLUX: starting generation..."
-  );
-
-
-  const input = {
-
-    prompt:
-      createImagePrompt(
-        userPrompt
-      ),
-
-    go_fast:
-      true,
-
-    megapixels:
-      "1",
-
-    num_outputs:
-      1,
-
-    aspect_ratio:
-      "1:1",
-
-    output_format:
-      "webp",
-
-    output_quality:
-      90,
-
-    num_inference_steps:
-      4,
-  };
-
-
-  console.log(
-    "🎨 FLUX input prepared."
-  );
-
-
-  const output =
-    await replicate.run(
-      "black-forest-labs/flux-schnell",
-      {
-        input,
-      }
-    );
-
-
-  console.log(
-    "🎨 FLUX generation completed."
-  );
-
-
-  if (
-    !output ||
-    !Array.isArray(output) ||
-    output.length === 0
-  ) {
-
-    console.error(
-      "❌ FLUX empty output:",
-      output
-    );
-
-    throw new Error(
-      "FLUX returned an empty output."
-    );
-  }
-
-
-  const firstOutput =
-    output[0];
-
-
-  if (!firstOutput) {
-
-    throw new Error(
-      "FLUX first output is missing."
-    );
-  }
-
-
-  // ===================================================
-  // Replicate v1 FileOutput
-  // ===================================================
-
-  let imageUrl = null;
-
-
-  if (
-    typeof firstOutput.url === "function"
-  ) {
-
-    imageUrl =
-      firstOutput.url();
-
-  }
-
-
-  // ===================================================
-  // Compatibility with possible URL property
-  // ===================================================
-
-  if (
-    !imageUrl &&
-    typeof firstOutput.url === "string"
-  ) {
-
-    imageUrl =
-      firstOutput.url;
-  }
-
-
-  // ===================================================
-  // String output fallback
-  // ===================================================
-
-  if (
-    !imageUrl &&
-    typeof firstOutput === "string"
-  ) {
-
-    imageUrl =
-      firstOutput;
-  }
-
-
-  if (!imageUrl) {
-
-    console.error(
-      "❌ FLUX output object:",
-      firstOutput
-    );
-
-    throw new Error(
-      "FLUX returned an image but no URL was available."
-    );
-  }
-
-
-  console.log(
-    "✅ FLUX image URL obtained."
-  );
-
-
-  return {
-
-    image:
-      imageUrl,
-
-    provider:
-      "Replicate / FLUX Schnell",
+    route:
+      "OPENAI IMAGE",
   };
 }
 
@@ -846,8 +766,18 @@ async function generateFluxImage(userPrompt) {
 // =====================================================
 // 🧠 IMAGE ROUTER
 // =====================================================
+//
+// PRIMARY:
+// OpenAI Image
+//
+// FALLBACK:
+// Pollinations FLUX
+//
+// =====================================================
 
-async function generateImage(userPrompt) {
+async function generateImage(
+  userPrompt
+) {
 
   // ===================================================
   // PRIMARY → OPENAI
@@ -868,13 +798,7 @@ async function generateImage(userPrompt) {
         );
 
 
-      return {
-
-        ...result,
-
-        route:
-          "OPENAI IMAGE",
-      };
+      return result;
 
     }
 
@@ -888,45 +812,36 @@ async function generateImage(userPrompt) {
 
 
       console.log(
-        "🔄 IMAGE ROUTER → FLUX FALLBACK"
+        "🔄 FALLBACK → POLLINATIONS FLUX"
       );
     }
   }
 
 
   // ===================================================
-  // FALLBACK → FLUX
+  // FALLBACK → POLLINATIONS
   // ===================================================
 
-  if (replicate) {
+  if (
+    process.env.POLLINATIONS_API_KEY
+  ) {
 
     try {
 
-      console.log(
-        "🎨 IMAGE ROUTER → REPLICATE / FLUX"
-      );
-
-
       const result =
-        await generateFluxImage(
+        await generatePollinationsImage(
           userPrompt
         );
 
 
-      return {
-
-        ...result,
-
-        route:
-          "FLUX FALLBACK",
-      };
+      return result;
 
     }
 
     catch (error) {
 
       console.error(
-        "❌ FLUX IMAGE FAILED:",
+        "❌ POLLINATIONS IMAGE FAILED:",
         error?.message ||
         error
       );
@@ -969,13 +884,13 @@ export default async function handler(
 
 
   // ===================================================
-  // PROVIDERS
+  // PROVIDER CHECK
   // ===================================================
 
   if (
     !groq &&
     !openai &&
-    !replicate
+    !process.env.POLLINATIONS_API_KEY
   ) {
 
     return res.status(500).json({
@@ -1027,6 +942,19 @@ export default async function handler(
       message.trim();
 
 
+    if (!cleanMessage) {
+
+      return res.status(400).json({
+
+        type:
+          "error",
+
+        text:
+          "Please enter a message.",
+      });
+    }
+
+
     const safeHistory =
       Array.isArray(history)
         ? history.slice(-20)
@@ -1034,7 +962,7 @@ export default async function handler(
 
 
     // =================================================
-    // INTENT
+    // 🧠 INTENT
     // =================================================
 
     const intent =
@@ -1066,9 +994,8 @@ export default async function handler(
 
 
         console.log(
-          "✅ IMAGE SUCCESS:",
-          result.provider,
-          result.route
+          "✅ IMAGE GENERATED:",
+          result.provider
         );
 
 
@@ -1099,7 +1026,6 @@ export default async function handler(
 
         console.error(
           "🔥 IMAGE ROUTER FINAL ERROR:",
-          imageError?.message ||
           imageError
         );
 
@@ -1110,7 +1036,7 @@ export default async function handler(
             "error",
 
           text:
-            "🎨 Samahani, image engines hazijaweza kutengeneza picha kwa sasa. Tafadhali jaribu tena.",
+            "🎨 Samahani, image engine haikuweza kutengeneza picha kwa sasa. Tafadhali jaribu tena.",
 
           provider:
             "Image Router",
@@ -1229,7 +1155,6 @@ export default async function handler(
 
           console.error(
             "Groq BOTH error:",
-            error?.message ||
             error
           );
         }
@@ -1267,7 +1192,6 @@ export default async function handler(
 
           console.error(
             "OpenAI BOTH error:",
-            error?.message ||
             error
           );
         }
@@ -1376,7 +1300,6 @@ export default async function handler(
 
         console.error(
           "OpenAI DEEP error:",
-          openAIError?.message ||
           openAIError
         );
 
@@ -1418,7 +1341,6 @@ export default async function handler(
 
             console.error(
               "Groq fallback error:",
-              fallbackError?.message ||
               fallbackError
             );
           }
@@ -1482,14 +1404,13 @@ export default async function handler(
 
       console.error(
         "Groq FAST error:",
-        groqError?.message ||
         groqError
       );
 
 
-      // ------------------------------------------------
+      // -----------------------------------------------
       // OPENAI FALLBACK
-      // ------------------------------------------------
+      // -----------------------------------------------
 
       if (openai) {
 
@@ -1528,7 +1449,6 @@ export default async function handler(
 
           console.error(
             "OpenAI fallback error:",
-            fallbackError?.message ||
             fallbackError
           );
         }
@@ -1540,11 +1460,14 @@ export default async function handler(
 
   }
 
+  // ===================================================
+  // GLOBAL ERROR
+  // ===================================================
+
   catch (error) {
 
     console.error(
       "🔥 KIRONG AI GLOBAL ERROR:",
-      error?.message ||
       error
     );
 
