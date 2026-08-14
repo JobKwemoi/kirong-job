@@ -1,10 +1,9 @@
 import Groq from "groq-sdk";
 import OpenAI from "openai";
 
-
 // =====================================================
-// KIRONG AI V4
-// SMART INTENT + GROQ + OPENAI
+// KIRONG AI
+// Intelligent Kenyan AI Assistant
 // =====================================================
 
 
@@ -22,27 +21,28 @@ const openai = new OpenAI({
 
 
 // =====================================================
-// INTENT DETECTOR
+// 🧠 SMART INTENT DETECTOR
 // =====================================================
 
 function detectIntent(message) {
 
-  const text = message
+  const text = String(message || "")
     .toLowerCase()
-    .trim();
+    .trim()
+    .replace(/[!?.,;:()[\]{}]/g, " ");
 
 
   // ===================================================
-  // 🎨 IMAGE
+  // 🎨 IMAGE / DESIGN INTENT
   // ===================================================
 
-  const imagePatterns = [
+  const imageRequests = [
 
+    // English
     "generate an image",
     "generate image",
     "create an image",
     "create image",
-
     "make an image",
     "make image",
 
@@ -53,36 +53,70 @@ function detectIntent(message) {
     "draw an image",
     "draw image",
 
-    "draw for me",
-    "design for me",
-
     "generate a poster",
     "create a poster",
     "make a poster",
+
+    "generate poster",
+    "create poster",
+    "make poster",
 
     "generate a logo",
     "create a logo",
     "make a logo",
 
+    "generate logo",
+    "create logo",
+    "make logo",
+
+    "design an image",
+    "design image",
+
+    "design poster",
+    "design logo",
+
+    // Kiswahili
     "nifanyie picha",
     "nitengenezee picha",
     "tengeneza picha",
 
     "nichoree picha",
+    "chorea picha",
+
     "nifanyie poster",
     "nitengenezee poster",
     "tengeneza poster",
 
     "nifanyie logo",
     "nitengenezee logo",
-    "tengeneza logo"
+    "tengeneza logo",
+
+    "nifanyie design",
+    "nitengenezee design",
+    "tengeneza design",
+
+    // Mixed / common typing
+    "generetie poster",
+    "nigeneretie poster",
+
+    "generetie picha",
+    "nigeneretie picha",
+
+    "generetie logo",
+    "nigeneretie logo",
+
+    "designie poster",
+    "nidesignie poster",
+
+    "designie logo",
+    "nidesignie logo"
 
   ];
 
 
   if (
-    imagePatterns.some(pattern =>
-      text.includes(pattern)
+    imageRequests.some(
+      phrase => text.includes(phrase)
     )
   ) {
 
@@ -92,40 +126,178 @@ function detectIntent(message) {
 
 
   // ===================================================
-  // 💻 CODE
+  // 🎨 IMAGE WORDS + CREATION WORDS
   // ===================================================
 
-  const codePatterns = [
+  const creationWords = [
 
-    "write code",
-    "generate code",
-    "write me code",
+    "generate",
+    "generated",
+    "generating",
 
-    "build a website",
-    "build an app",
+    "generete",
+    "generetie",
 
-    "create a website",
-    "create an app",
+    "create",
+    "created",
+    "creating",
 
-    "code this",
+    "make",
+    "making",
 
-    "fix my code",
-    "debug this",
+    "draw",
+    "drawing",
 
-    "andika code",
+    "design",
 
-    "nitengenezee website",
-    "tengeneza website",
+    "tengeneza",
+    "tengenezee",
+    "nitengenezee",
 
-    "nitengenezee app",
-    "tengeneza app"
+    "tengeneze",
+
+    "fanya",
+    "fanyie",
+    "nifanyie",
+
+    "chora",
+    "choree",
+    "nichoree",
+
+    "nionyeshe"
+
+  ];
+
+
+  const visualWords = [
+
+    "image",
+    "picture",
+    "photo",
+
+    "poster",
+    "logo",
+
+    "drawing",
+    "illustration",
+    "artwork",
+
+    "graphic",
+    "design",
+
+    "wallpaper",
+    "flyer",
+    "banner",
+    "thumbnail",
+
+    "picha",
+    "mchoro",
+    "nembo"
+
+  ];
+
+
+  const hasCreationWord =
+    creationWords.some(
+      word => text.includes(word)
+    );
+
+
+  const hasVisualWord =
+    visualWords.some(
+      word => text.includes(word)
+    );
+
+
+  if (
+    hasCreationWord &&
+    hasVisualWord
+  ) {
+
+    return "image";
+
+  }
+
+
+  // ===================================================
+  // 🎨 VISUAL REQUESTS
+  // ===================================================
+
+  const strongVisualWords = [
+
+    "poster",
+    "logo",
+    "picha",
+    "image",
+    "picture",
+    "flyer",
+    "banner",
+    "wallpaper",
+    "thumbnail"
 
   ];
 
 
   if (
-    codePatterns.some(pattern =>
-      text.includes(pattern)
+    strongVisualWords.some(
+      word => text.includes(word)
+    )
+  ) {
+
+    return "image";
+
+  }
+
+
+  // ===================================================
+  // 💻 CODE INTENT
+  // ===================================================
+
+  const codeWords = [
+
+    "code",
+    "coding",
+    "program",
+    "programming",
+
+    "javascript",
+    "html",
+    "css",
+    "python",
+
+    "react",
+    "node",
+    "api",
+
+    "website",
+    "web app",
+    "application",
+    "app",
+
+    "debug",
+    "bug",
+    "error",
+
+    "andika code",
+    "tengeneza code",
+    "nitengenezee code",
+    "nisaidie code",
+
+    "build website",
+    "create website",
+
+    "build app",
+    "create app",
+
+    "fix code",
+    "debug code"
+
+  ];
+
+
+  if (
+    codeWords.some(
+      word => text.includes(word)
     )
   ) {
 
@@ -135,15 +307,61 @@ function detectIntent(message) {
 
 
   // ===================================================
+  // 🤝 BOTH AI
+  // ===================================================
+
+  const bothWords = [
+
+    "use both",
+    "both ai",
+    "both models",
+
+    "compare both",
+
+    "second opinion",
+    "two opinions",
+
+    "compare answers",
+    "compare the answers",
+
+    "critique this",
+    "get both opinions",
+
+    "tumia zote",
+    "tumia ai zote",
+
+    "linganisha zote",
+    "maoni zote"
+
+  ];
+
+
+  if (
+    bothWords.some(
+      word => text.includes(word)
+    )
+  ) {
+
+    return "both";
+
+  }
+
+
+  // ===================================================
   // 📎 FILE / DOCUMENT
   // ===================================================
 
-  const filePatterns = [
+  const fileWords = [
+
+    "file",
+    "document",
+    "pdf",
 
     "analyze this file",
     "analyse this file",
 
     "read this file",
+    "read this document",
 
     "summarize this file",
     "summarise this file",
@@ -151,54 +369,22 @@ function detectIntent(message) {
     "analyze this document",
     "analyse this document",
 
-    "read this document",
+    "chambua hii file",
+    "soma hii file",
 
-    "summarize this document",
-    "summarise this document"
+    "chambua document",
+    "soma document"
 
   ];
 
 
   if (
-    filePatterns.some(pattern =>
-      text.includes(pattern)
+    fileWords.some(
+      word => text.includes(word)
     )
   ) {
 
     return "file";
-
-  }
-
-
-  // ===================================================
-  // 🤝 BOTH AI
-  // ===================================================
-
-  const bothPatterns = [
-
-    "use both",
-    "both ai",
-
-    "compare both",
-
-    "two opinions",
-
-    "second opinion",
-
-    "compare the answers",
-
-    "critique this"
-
-  ];
-
-
-  if (
-    bothPatterns.some(pattern =>
-      text.includes(pattern)
-    )
-  ) {
-
-    return "both";
 
   }
 
@@ -213,12 +399,12 @@ function detectIntent(message) {
 
 
 // =====================================================
-// SMART MODEL ROUTER
+// 🧭 SMART MODEL ROUTER
 // =====================================================
 
 function chooseRoute(message) {
 
-  const text = message
+  const text = String(message || "")
     .toLowerCase()
     .trim();
 
@@ -231,18 +417,28 @@ function chooseRoute(message) {
 
     "use both",
     "both ai",
+    "both models",
+
     "compare both",
-    "two opinions",
+
     "second opinion",
-    "compare the answers",
-    "critique this"
+    "two opinions",
+
+    "compare answers",
+
+    "critique this",
+
+    "tumia zote",
+    "tumia ai zote",
+
+    "linganisha zote"
 
   ];
 
 
   if (
-    bothKeywords.some(word =>
-      text.includes(word)
+    bothKeywords.some(
+      word => text.includes(word)
     )
   ) {
 
@@ -258,18 +454,19 @@ function chooseRoute(message) {
   const deepKeywords = [
 
     "complex",
+
     "architecture",
     "system design",
 
-    "build a saas",
+    "saas",
 
     "business plan",
     "business strategy",
 
     "strategy",
 
-    "analyze deeply",
     "deep analysis",
+    "analyze deeply",
 
     "debug this entire",
 
@@ -285,8 +482,8 @@ function chooseRoute(message) {
 
 
   if (
-    deepKeywords.some(word =>
-      text.includes(word)
+    deepKeywords.some(
+      word => text.includes(word)
     )
   ) {
 
@@ -296,6 +493,7 @@ function chooseRoute(message) {
 
 
   // Long requests
+
   if (text.length > 1200) {
 
     return "deep";
@@ -304,7 +502,7 @@ function chooseRoute(message) {
 
 
   // ===================================================
-  // ⚡ FAST
+  // ⚡ DEFAULT = GROQ
   // ===================================================
 
   return "fast";
@@ -313,7 +511,7 @@ function chooseRoute(message) {
 
 
 // =====================================================
-// SYSTEM PROMPT
+// 🧠 SYSTEM PROMPT
 // =====================================================
 
 function createSystemPrompt(language) {
@@ -322,7 +520,8 @@ function createSystemPrompt(language) {
 
 You are Kirong AI.
 
-You were created by Kirong Job Kwemoi, a Kenyan software developer.
+You were created by Kirong Job Kwemoi,
+a Kenyan software developer.
 
 PERSONALITY:
 
@@ -338,10 +537,10 @@ LANGUAGE:
 
 Reply primarily in ${language}.
 
-If the user explicitly asks for another language,
+If the user explicitly requests another language,
 follow their request.
 
-RULES:
+IMPORTANT RULES:
 
 1. Never invent facts.
 
@@ -350,8 +549,8 @@ RULES:
 
 3. Give practical and useful answers.
 
-4. Be concise unless the user requests
-   a detailed explanation.
+4. Be concise unless the user asks
+   for detailed information.
 
 5. Put programming code inside
    Markdown code blocks.
@@ -376,18 +575,18 @@ answer:
 
 12. Your identity is Kirong AI.
 
-13. If the user asks for an image, design,
-poster, logo, drawing or visual creation,
-understand the user's intent clearly.
+13. Understand Kenyan context when relevant.
+
+14. If a user requests a visual creation,
+understand the visual intent clearly.
 
 `;
-
 
 }
 
 
 // =====================================================
-// GROQ FUNCTION
+// ⚡ GROQ
 // =====================================================
 
 async function askGroq(messages) {
@@ -418,7 +617,7 @@ async function askGroq(messages) {
 
 
 // =====================================================
-// OPENAI FUNCTION
+// 🧠 OPENAI
 // =====================================================
 
 async function askOpenAI(messages) {
@@ -449,14 +648,14 @@ async function askOpenAI(messages) {
 
 
 // =====================================================
-// API HANDLER
+// 🚀 MAIN API HANDLER
 // =====================================================
 
 export default async function handler(req, res) {
 
 
   // ===================================================
-  // METHOD CHECK
+  // METHOD
   // ===================================================
 
   if (req.method !== "POST") {
@@ -469,7 +668,7 @@ export default async function handler(req, res) {
 
       route: "ERROR",
 
-      intent: "unknown"
+      intent: "UNKNOWN"
 
     });
 
@@ -487,13 +686,14 @@ export default async function handler(req, res) {
 
     return res.status(500).json({
 
-      text: "No AI provider is configured.",
+      text:
+        "No AI provider is configured.",
 
       provider: "NONE",
 
       route: "ERROR",
 
-      intent: "unknown"
+      intent: "UNKNOWN"
 
     });
 
@@ -504,7 +704,7 @@ export default async function handler(req, res) {
 
 
     // =================================================
-    // REQUEST DATA
+    // REQUEST
     // =================================================
 
     const {
@@ -529,13 +729,14 @@ export default async function handler(req, res) {
 
       return res.status(400).json({
 
-        text: "Please enter a message.",
+        text:
+          "Please enter a message.",
 
         provider: "NONE",
 
         route: "ERROR",
 
-        intent: "unknown"
+        intent: "UNKNOWN"
 
       });
 
@@ -547,7 +748,7 @@ export default async function handler(req, res) {
 
 
     // =================================================
-    // HISTORY SAFETY
+    // SAFE HISTORY
     // =================================================
 
     const safeHistory =
@@ -560,7 +761,7 @@ export default async function handler(req, res) {
 
 
     // =================================================
-    // INTENT
+    // 🧠 DETECT INTENT
     // =================================================
 
     const intent =
@@ -568,7 +769,15 @@ export default async function handler(req, res) {
 
 
     // =================================================
-    // 🎨 IMAGE INTENT
+    // 🧭 ROUTE
+    // =================================================
+
+    const route =
+      chooseRoute(cleanMessage);
+
+
+    // =================================================
+    // 🎨 IMAGE
     // =================================================
 
     if (intent === "image") {
@@ -578,11 +787,14 @@ export default async function handler(req, res) {
         text:
           "🎨 Nimeelewa kuwa unataka picha au design. Kirong AI iko tayari kuitengeneza.",
 
-        provider: "IMAGE ENGINE",
+        provider:
+          "IMAGE ENGINE",
 
-        route: "IMAGE",
+        route:
+          "IMAGE",
 
-        intent: "IMAGE"
+        intent:
+          "IMAGE"
 
       });
 
@@ -590,7 +802,7 @@ export default async function handler(req, res) {
 
 
     // =================================================
-    // 📎 FILE INTENT
+    // 📎 FILE
     // =================================================
 
     if (intent === "file") {
@@ -600,23 +812,18 @@ export default async function handler(req, res) {
         text:
           "📎 Nimeelewa kuwa unataka nichambue faili au document. File intelligence itaunganishwa kwenye hatua inayofuata.",
 
-        provider: "FILE ENGINE",
+        provider:
+          "FILE ENGINE",
 
-        route: "FILE",
+        route:
+          "FILE",
 
-        intent: "FILE"
+        intent:
+          "FILE"
 
       });
 
     }
-
-
-    // =================================================
-    // 💻 CODE INTENT
-    // =================================================
-
-    // Code requests bado zinatumia
-    // normal AI reasoning kwa sasa.
 
 
     // =================================================
@@ -640,7 +847,8 @@ export default async function handler(req, res) {
 
         role: "user",
 
-        content: cleanMessage
+        content:
+          cleanMessage
 
       }
 
@@ -648,123 +856,147 @@ export default async function handler(req, res) {
 
 
     // =================================================
-    // CHOOSE AI ROUTE
+    // 🤝 BOTH
     // =================================================
 
-    const route =
-      intent === "both"
-
-        ? "both"
-
-        : chooseRoute(cleanMessage);
+    if (
+      intent === "both" ||
+      route === "both"
+    ) {
 
 
-    // =================================================
-    // ⚡ FAST → GROQ
-    // =================================================
-
-    if (route === "fast") {
-
-      try {
+      const results = [];
 
 
-        if (!process.env.GROQ_API_KEY) {
+      // ------------------------------------------------
+      // GROQ
+      // ------------------------------------------------
 
-          throw new Error(
-            "Groq API key unavailable."
-          );
+      if (
+        process.env.GROQ_API_KEY
+      ) {
+
+        try {
+
+          const answer =
+            await askGroq(messages);
+
+          if (answer) {
+
+            results.push({
+
+              provider: "Groq",
+
+              answer
+
+            });
+
+          }
 
         }
 
+        catch (error) {
 
-        const reply =
-          await askGroq(messages);
-
-
-        if (!reply) {
-
-          throw new Error(
-            "Empty Groq response."
+          console.error(
+            "Groq BOTH error:",
+            error
           );
 
         }
-
-
-        return res.status(200).json({
-
-          text: reply,
-
-          provider: "Groq",
-
-          route: "FAST",
-
-          intent:
-            intent.toUpperCase()
-
-        });
-
 
       }
 
-      catch (groqError) {
+
+      // ------------------------------------------------
+      // OPENAI
+      // ------------------------------------------------
+
+      if (
+        process.env.OPENAI_API_KEY
+      ) {
+
+        try {
+
+          const answer =
+            await askOpenAI(messages);
+
+          if (answer) {
+
+            results.push({
+
+              provider: "OpenAI",
+
+              answer
+
+            });
+
+          }
+
+        }
+
+        catch (error) {
+
+          console.error(
+            "OpenAI BOTH error:",
+            error
+          );
+
+        }
+
+      }
 
 
-        console.error(
-          "Groq FAST error:",
-          groqError
+      // ------------------------------------------------
+      // FAILED
+      // ------------------------------------------------
+
+      if (
+        results.length === 0
+      ) {
+
+        throw new Error(
+          "Both AI providers failed."
         );
 
-
-        // =============================================
-        // OPENAI FALLBACK
-        // =============================================
-
-        if (
-          process.env.OPENAI_API_KEY
-        ) {
-
-          try {
-
-
-            const reply =
-              await askOpenAI(messages);
-
-
-            if (reply) {
-
-              return res.status(200).json({
-
-                text: reply,
-
-                provider: "OpenAI",
-
-                route:
-                  "FAST → OPENAI FALLBACK",
-
-                intent:
-                  intent.toUpperCase()
-
-              });
-
-            }
-
-          }
-
-          catch (fallbackError) {
-
-            console.error(
-              "OpenAI fallback error:",
-              fallbackError
-            );
-
-          }
-
-        }
-
-
-        throw groqError;
-
       }
+
+
+      // ------------------------------------------------
+      // COMBINE
+      // ------------------------------------------------
+
+      const combined =
+
+        results
+          .map(item =>
+
+            `### ${item.provider}
+
+${item.answer}`
+
+          )
+          .join(
+            "\n\n---\n\n"
+          );
+
+
+      return res.status(200).json({
+
+        text:
+          combined,
+
+        provider:
+          results
+            .map(item => item.provider)
+            .join(" + "),
+
+        route:
+          "BOTH",
+
+        intent:
+          intent.toUpperCase()
+
+      });
 
     }
 
@@ -789,11 +1021,11 @@ export default async function handler(req, res) {
         }
 
 
-        const reply =
+        const answer =
           await askOpenAI(messages);
 
 
-        if (!reply) {
+        if (!answer) {
 
           throw new Error(
             "Empty OpenAI response."
@@ -804,11 +1036,14 @@ export default async function handler(req, res) {
 
         return res.status(200).json({
 
-          text: reply,
+          text:
+            answer,
 
-          provider: "OpenAI",
+          provider:
+            "OpenAI",
 
-          route: "DEEP",
+          route:
+            "DEEP",
 
           intent:
             intent.toUpperCase()
@@ -820,16 +1055,15 @@ export default async function handler(req, res) {
 
       catch (openAIError) {
 
-
         console.error(
-          "OpenAI DEEP error:",
+          "OpenAI error:",
           openAIError
         );
 
 
-        // =============================================
+        // ---------------------------------------------
         // GROQ FALLBACK
-        // =============================================
+        // ---------------------------------------------
 
         if (
           process.env.GROQ_API_KEY
@@ -837,18 +1071,19 @@ export default async function handler(req, res) {
 
           try {
 
-
-            const reply =
+            const answer =
               await askGroq(messages);
 
 
-            if (reply) {
+            if (answer) {
 
               return res.status(200).json({
 
-                text: reply,
+                text:
+                  answer,
 
-                provider: "Groq",
+                provider:
+                  "Groq",
 
                 route:
                   "DEEP → GROQ FALLBACK",
@@ -882,60 +1117,66 @@ export default async function handler(req, res) {
 
 
     // =================================================
-    // 🤝 BOTH → GROQ + OPENAI
+    // ⚡ FAST → GROQ
     // =================================================
 
-    if (route === "both") {
+    try {
 
-
-      const results = [];
-
-
-      // ===============================================
-      // GROQ
-      // ===============================================
 
       if (
-        process.env.GROQ_API_KEY
+        !process.env.GROQ_API_KEY
       ) {
 
-        try {
-
-
-          const groqReply =
-            await askGroq(messages);
-
-
-          if (groqReply) {
-
-            results.push({
-
-              provider: "Groq",
-
-              answer: groqReply
-
-            });
-
-          }
-
-
-        }
-
-        catch (error) {
-
-          console.error(
-            "Groq BOTH error:",
-            error
-          );
-
-        }
+        throw new Error(
+          "Groq API key unavailable."
+        );
 
       }
 
 
-      // ===============================================
-      // OPENAI
-      // ===============================================
+      const answer =
+        await askGroq(messages);
+
+
+      if (!answer) {
+
+        throw new Error(
+          "Empty Groq response."
+        );
+
+      }
+
+
+      return res.status(200).json({
+
+        text:
+          answer,
+
+        provider:
+          "Groq",
+
+        route:
+          "FAST",
+
+        intent:
+          intent.toUpperCase()
+
+      });
+
+
+    }
+
+    catch (groqError) {
+
+      console.error(
+        "Groq FAST error:",
+        groqError
+      );
+
+
+      // -----------------------------------------------
+      // OPENAI FALLBACK
+      // -----------------------------------------------
 
       if (
         process.env.OPENAI_API_KEY
@@ -944,17 +1185,25 @@ export default async function handler(req, res) {
         try {
 
 
-          const openAIReply =
+          const answer =
             await askOpenAI(messages);
 
 
-          if (openAIReply) {
+          if (answer) {
 
-            results.push({
+            return res.status(200).json({
 
-              provider: "OpenAI",
+              text:
+                answer,
 
-              answer: openAIReply
+              provider:
+                "OpenAI",
+
+              route:
+                "FAST → OPENAI FALLBACK",
+
+              intent:
+                intent.toUpperCase()
 
             });
 
@@ -963,11 +1212,11 @@ export default async function handler(req, res) {
 
         }
 
-        catch (error) {
+        catch (fallbackError) {
 
           console.error(
-            "OpenAI BOTH error:",
-            error
+            "OpenAI fallback error:",
+            fallbackError
           );
 
         }
@@ -975,77 +1224,19 @@ export default async function handler(req, res) {
       }
 
 
-      // ===============================================
-      // NO RESPONSE
-      // ===============================================
-
-      if (
-        results.length === 0
-      ) {
-
-        throw new Error(
-          "Both AI providers failed."
-        );
-
-      }
-
-
-      // ===============================================
-      // COMBINE
-      // ===============================================
-
-      const combined =
-
-        results
-
-          .map(item =>
-
-            `### ${item.provider}
-
-${item.answer}`
-
-          )
-
-          .join(
-
-            "\n\n---\n\n"
-
-          );
-
-
-      return res.status(200).json({
-
-        text: combined,
-
-        provider:
-          results
-            .map(item => item.provider)
-            .join(" + "),
-
-        route: "BOTH",
-
-        intent:
-          intent.toUpperCase()
-
-      });
+      throw groqError;
 
     }
-
-
-    // =================================================
-    // UNKNOWN ROUTE
-    // =================================================
-
-    throw new Error(
-      "Unknown routing state."
-    );
 
 
   }
 
 
-  catch (error) {
+  // ===================================================
+  // GLOBAL ERROR
+  // ===================================================
 
+  catch (error) {
 
     console.error(
       "KIRONG AI ERROR:",
@@ -1058,11 +1249,14 @@ ${item.answer}`
       text:
         "⚠️ Kirong AI is temporarily unavailable. Please try again.",
 
-      provider: "NONE",
+      provider:
+        "NONE",
 
-      route: "ERROR",
+      route:
+        "ERROR",
 
-      intent: "UNKNOWN"
+      intent:
+        "UNKNOWN"
 
     });
 
