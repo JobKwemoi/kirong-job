@@ -3,25 +3,32 @@ import OpenAI from "openai";
 import Replicate from "replicate";
 
 // =====================================================
-// ⚡ KIRONG AI v4
+// ⚡ KIRONG AI v4.1
+// Intelligent Router
 // Groq + OpenAI + OpenAI Image + FLUX Fallback
 // =====================================================
 
 // =====================================================
-// AI CLIENTS
+// 🤖 AI CLIENTS
 // =====================================================
 
-const groq = new Groq({
-  apiKey: process.env.GROQ_API_KEY,
-});
+const groq = process.env.GROQ_API_KEY
+  ? new Groq({
+      apiKey: process.env.GROQ_API_KEY,
+    })
+  : null;
 
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
+const openai = process.env.OPENAI_API_KEY
+  ? new OpenAI({
+      apiKey: process.env.OPENAI_API_KEY,
+    })
+  : null;
 
-const replicate = new Replicate({
-  auth: process.env.REPLICATE_API_TOKEN,
-});
+const replicate = process.env.REPLICATE_API_TOKEN
+  ? new Replicate({
+      auth: process.env.REPLICATE_API_TOKEN,
+    })
+  : null;
 
 
 // =====================================================
@@ -36,7 +43,7 @@ function detectIntent(message) {
     .replace(/[!?.,;:()[\]{}]/g, " ");
 
   // ---------------------------------------------------
-  // 🎨 EXPLICIT IMAGE REQUESTS
+  // 🎨 IMAGE REQUESTS
   // ---------------------------------------------------
 
   const imageRequests = [
@@ -110,7 +117,7 @@ function detectIntent(message) {
     "nidesignie poster",
 
     "designie logo",
-    "nidesignie logo"
+    "nidesignie logo",
   ];
 
   if (
@@ -144,7 +151,7 @@ function detectIntent(message) {
     "nifanyie",
     "chora",
     "choree",
-    "nichoree"
+    "nichoree",
   ];
 
   const visualWords = [
@@ -166,7 +173,7 @@ function detectIntent(message) {
 
     "picha",
     "mchoro",
-    "nembo"
+    "nembo",
   ];
 
   const hasCreationWord =
@@ -188,7 +195,7 @@ function detectIntent(message) {
 
 
   // ---------------------------------------------------
-  // 🎨 STRONG VISUAL REQUEST
+  // 🎨 STRONG VISUAL WORDS
   // ---------------------------------------------------
 
   const strongVisualWords = [
@@ -201,7 +208,7 @@ function detectIntent(message) {
     "flyer",
     "banner",
     "wallpaper",
-    "thumbnail"
+    "thumbnail",
   ];
 
   if (
@@ -252,7 +259,7 @@ function detectIntent(message) {
     "create app",
 
     "fix code",
-    "debug code"
+    "debug code",
   ];
 
   if (
@@ -284,7 +291,7 @@ function detectIntent(message) {
     "tumia zote",
     "tumia ai zote",
     "linganisha zote",
-    "maoni zote"
+    "maoni zote",
   ];
 
   if (
@@ -318,7 +325,7 @@ function detectIntent(message) {
     "chambua hii file",
     "soma hii file",
     "chambua document",
-    "soma document"
+    "soma document",
   ];
 
   if (
@@ -335,7 +342,7 @@ function detectIntent(message) {
 
 
 // =====================================================
-// 🧭 ROUTER
+// 🧭 TEXT ROUTER
 // =====================================================
 
 function chooseRoute(message) {
@@ -344,6 +351,7 @@ function chooseRoute(message) {
     String(message || "")
       .toLowerCase()
       .trim();
+
 
   const bothKeywords = [
 
@@ -358,7 +366,7 @@ function chooseRoute(message) {
 
     "tumia zote",
     "tumia ai zote",
-    "linganisha zote"
+    "linganisha zote",
   ];
 
   if (
@@ -385,7 +393,7 @@ function chooseRoute(message) {
     "large project",
     "database architecture",
     "security architecture",
-    "full stack architecture"
+    "full stack architecture",
   ];
 
   if (
@@ -413,7 +421,6 @@ function chooseRoute(message) {
 function createSystemPrompt(language) {
 
   return `
-
 You are Kirong AI.
 
 You were created by Kirong Job Kwemoi,
@@ -471,19 +478,23 @@ say:
 
 12. Understand Kenyan context when relevant.
 
-13. When the system sends a visual-generation request,
-do not describe an image as already generated
-unless an image engine actually returned an image.
-
+13. Never claim that an image was generated
+unless an image engine actually returned one.
 `;
 }
 
 
 // =====================================================
-// ⚡ GROQ
+// ⚡ GROQ CHAT
 // =====================================================
 
 async function askGroq(messages) {
+
+  if (!groq) {
+    throw new Error(
+      "GROQ_API_KEY is missing."
+    );
+  }
 
   const completion =
     await groq.chat.completions.create({
@@ -497,8 +508,9 @@ async function askGroq(messages) {
         0.7,
 
       max_tokens:
-        2048
+        2048,
     });
+
 
   return (
     completion
@@ -516,6 +528,12 @@ async function askGroq(messages) {
 
 async function askOpenAI(messages) {
 
+  if (!openai) {
+    throw new Error(
+      "OPENAI_API_KEY is missing."
+    );
+  }
+
   const completion =
     await openai.chat.completions.create({
 
@@ -528,8 +546,9 @@ async function askOpenAI(messages) {
         0.7,
 
       max_tokens:
-        2048
+        2048,
     });
+
 
   return (
     completion
@@ -542,51 +561,49 @@ async function askOpenAI(messages) {
 
 
 // =====================================================
-// 🎨 BUILD IMAGE PROMPT
+// 🎨 IMAGE PROMPT
 // =====================================================
 
 function createImagePrompt(userPrompt) {
 
   return `
-
-Create a professional high-quality commercial visual.
+Create a professional, high-quality visual.
 
 USER REQUEST:
 ${userPrompt}
 
 INSTRUCTIONS:
 
-- Understand exactly what the user wants.
-- Make the requested subject visually prominent.
-- Create an attractive professional composition.
+- Understand exactly what the user requested.
+- Make the main subject visually prominent.
+- Use a professional composition.
 - If this is a poster, make it look like a real commercial poster.
-- If a price is provided, preserve the exact price.
-- If a business name is provided, preserve it.
-- If a location is provided, preserve it.
-- If a phone number is provided, preserve it.
+- Preserve exact prices supplied by the user.
+- Preserve exact business names supplied by the user.
+- Preserve exact locations supplied by the user.
+- Preserve exact phone numbers supplied by the user.
 - Never invent phone numbers.
 - Never invent business names.
 - Never invent prices.
 - Never invent addresses.
 - Use Kenyan commercial aesthetics when appropriate.
+- Follow requested colors.
+- Follow requested style.
 - Keep unnecessary text minimal.
-- Produce a polished realistic design.
-- Follow the user's requested colors and style.
-
+- Produce a polished, realistic result.
 `;
 }
 
 
 // =====================================================
-// 🎨 OPENAI IMAGE ENGINE
+// 🎨 OPENAI IMAGE
 // =====================================================
 
 async function generateOpenAIImage(
   userPrompt
 ) {
 
-  if (!process.env.OPENAI_API_KEY) {
-
+  if (!openai) {
     throw new Error(
       "OPENAI_API_KEY is missing."
     );
@@ -611,7 +628,7 @@ async function generateOpenAIImage(
         "medium",
 
       n:
-        1
+        1,
     });
 
 
@@ -631,29 +648,35 @@ async function generateOpenAIImage(
 
 
   return {
+
     image:
       `data:image/png;base64,${imageData}`,
 
     provider:
-      "OpenAI Image Engine"
+      "OpenAI Image Engine",
   };
 }
 
 
 // =====================================================
-// 🎨 FLUX IMAGE ENGINE
+// 🎨 FLUX / REPLICATE
 // =====================================================
 
 async function generateFluxImage(
   userPrompt
 ) {
 
-  if (!process.env.REPLICATE_API_TOKEN) {
+  if (!replicate) {
 
     throw new Error(
       "REPLICATE_API_TOKEN is missing."
     );
   }
+
+
+  console.log(
+    "🎨 FLUX: starting generation..."
+  );
 
 
   const output =
@@ -669,17 +692,11 @@ async function generateFluxImage(
               userPrompt
             ),
 
-          go_fast:
-            true,
-
-          megapixels:
-            "1",
+          aspect_ratio:
+            "1:1",
 
           num_outputs:
             1,
-
-          aspect_ratio:
-            "1:1",
 
           output_format:
             "webp",
@@ -688,36 +705,105 @@ async function generateFluxImage(
             90,
 
           num_inference_steps:
-            4
-        }
+            4,
+        },
       }
     );
 
 
-  if (
-    !output ||
-    !Array.isArray(output) ||
-    !output[0]
-  ) {
+  console.log(
+    "🎨 FLUX raw output:",
+    output
+  );
+
+
+  // ---------------------------------------------------
+  // FLUX normally returns an array of FileOutput
+  // ---------------------------------------------------
+
+  let firstOutput = null;
+
+
+  if (Array.isArray(output)) {
+
+    firstOutput =
+      output[0];
+
+  } else if (output) {
+
+    firstOutput =
+      output;
+  }
+
+
+  if (!firstOutput) {
 
     throw new Error(
-      "FLUX returned no image."
+      "FLUX returned empty output."
     );
   }
 
 
-  const imageUrl =
-    typeof output[0].url === "function"
-      ? output[0].url()
-      : String(output[0]);
+  // ---------------------------------------------------
+  // FileOutput.url()
+  // ---------------------------------------------------
+
+  let imageUrl = null;
+
+
+  if (
+    typeof firstOutput.url === "function"
+  ) {
+
+    imageUrl =
+      firstOutput.url();
+
+  } else if (
+    typeof firstOutput.url === "string"
+  ) {
+
+    imageUrl =
+      firstOutput.url;
+
+  } else if (
+    typeof firstOutput === "string"
+  ) {
+
+    imageUrl =
+      firstOutput;
+  }
+
+
+  // ---------------------------------------------------
+  // Some SDK versions may expose href
+  // ---------------------------------------------------
+
+  if (
+    !imageUrl &&
+    typeof firstOutput.href === "string"
+  ) {
+
+    imageUrl =
+      firstOutput.href;
+  }
 
 
   if (!imageUrl) {
 
+    console.error(
+      "FLUX output object:",
+      firstOutput
+    );
+
     throw new Error(
-      "FLUX returned an invalid image URL."
+      "FLUX returned an image object, but no URL could be extracted."
     );
   }
+
+
+  console.log(
+    "🎨 FLUX image URL obtained."
+  );
 
 
   return {
@@ -726,44 +812,44 @@ async function generateFluxImage(
       imageUrl,
 
     provider:
-      "Replicate / FLUX Schnell"
+      "Replicate / FLUX Schnell",
   };
 }
 
 
 // =====================================================
-// 🎨 SMART IMAGE ROUTER
+// 🧠 IMAGE ROUTER
 // =====================================================
 
 async function generateImage(
   userPrompt
 ) {
 
-  // ---------------------------------------------------
-  // PRIMARY: OPENAI
-  // ---------------------------------------------------
+  // ===================================================
+  // PRIMARY → OPENAI
+  // ===================================================
 
-  if (
-    process.env.OPENAI_API_KEY
-  ) {
+  if (openai) {
 
     try {
 
       console.log(
-        "🎨 Trying OpenAI Image Engine..."
+        "🎨 IMAGE ROUTER → OPENAI"
       );
+
 
       const result =
         await generateOpenAIImage(
           userPrompt
         );
 
+
       return {
 
         ...result,
 
         route:
-          "OPENAI IMAGE"
+          "OPENAI IMAGE",
       };
 
     }
@@ -771,39 +857,38 @@ async function generateImage(
     catch (error) {
 
       console.error(
-        "OpenAI Image failed:",
-        error?.message || error
+        "❌ OPENAI IMAGE FAILED:",
+        error?.message ||
+        error
       );
 
+      console.log(
+        "🔄 IMAGE ROUTER → FLUX FALLBACK"
+      );
     }
   }
 
 
-  // ---------------------------------------------------
-  // FALLBACK: FLUX
-  // ---------------------------------------------------
+  // ===================================================
+  // FALLBACK → FLUX
+  // ===================================================
 
-  if (
-    process.env.REPLICATE_API_TOKEN
-  ) {
+  if (replicate) {
 
     try {
-
-      console.log(
-        "🔄 Falling back to FLUX..."
-      );
 
       const result =
         await generateFluxImage(
           userPrompt
         );
 
+
       return {
 
         ...result,
 
         route:
-          "FLUX FALLBACK"
+          "FLUX FALLBACK",
       };
 
     }
@@ -811,16 +896,16 @@ async function generateImage(
     catch (error) {
 
       console.error(
-        "FLUX Image failed:",
-        error?.message || error
+        "❌ FLUX IMAGE FAILED:",
+        error?.message ||
+        error
       );
-
     }
   }
 
 
   throw new Error(
-    "All image engines failed."
+    "No working image engine is available."
   );
 }
 
@@ -834,6 +919,10 @@ export default async function handler(
   res
 ) {
 
+  // ---------------------------------------------------
+  // METHOD
+  // ---------------------------------------------------
+
   if (
     req.method !== "POST"
   ) {
@@ -844,14 +933,18 @@ export default async function handler(
         "error",
 
       text:
-        "Method Not Allowed"
+        "Method Not Allowed",
     });
   }
 
 
+  // ---------------------------------------------------
+  // PROVIDERS
+  // ---------------------------------------------------
+
   if (
-    !process.env.GROQ_API_KEY &&
-    !process.env.OPENAI_API_KEY
+    !groq &&
+    !openai
   ) {
 
     return res.status(500).json({
@@ -860,7 +953,7 @@ export default async function handler(
         "error",
 
       text:
-        "No AI provider is configured."
+        "No AI provider is configured.",
     });
   }
 
@@ -873,7 +966,8 @@ export default async function handler(
 
       history = [],
 
-      language = "English"
+      language =
+        "English",
 
     } = req.body || {};
 
@@ -893,7 +987,7 @@ export default async function handler(
           "error",
 
         text:
-          "Please enter a message."
+          "Please enter a message.",
       });
     }
 
@@ -952,8 +1046,7 @@ export default async function handler(
             result.route,
 
           intent:
-            "IMAGE"
-
+            "IMAGE",
         });
 
       }
@@ -961,7 +1054,7 @@ export default async function handler(
       catch (imageError) {
 
         console.error(
-          "IMAGE ROUTER ERROR:",
+          "🔥 IMAGE ROUTER FINAL ERROR:",
           imageError
         );
 
@@ -972,16 +1065,16 @@ export default async function handler(
             "error",
 
           text:
-            "🎨 Image engines zote hazikupatikana kwa sasa. Tafadhali jaribu tena.",
+            "🎨 Samahani, image engines hazijaweza kutengeneza picha kwa sasa. Tafadhali jaribu tena.",
 
           provider:
             "Image Router",
 
           route:
-            "ALL IMAGE ENGINES FAILED",
+            "IMAGE FAILED",
 
           intent:
-            "IMAGE"
+            "IMAGE",
         });
       }
     }
@@ -1007,13 +1100,13 @@ export default async function handler(
           "File Engine",
 
         intent:
-          "FILE"
+          "FILE",
       });
     }
 
 
     // =================================================
-    // 🧠 MESSAGES
+    // 🧠 TEXT MESSAGES
     // =================================================
 
     const messages = [
@@ -1026,7 +1119,7 @@ export default async function handler(
         content:
           createSystemPrompt(
             language
-          )
+          ),
       },
 
       ...safeHistory,
@@ -1037,8 +1130,8 @@ export default async function handler(
           "user",
 
         content:
-          cleanMessage
-      }
+          cleanMessage,
+      },
     ];
 
 
@@ -1060,11 +1153,11 @@ export default async function handler(
       const results = [];
 
 
+      // ------------------------------------------------
       // GROQ
+      // ------------------------------------------------
 
-      if (
-        process.env.GROQ_API_KEY
-      ) {
+      if (groq) {
 
         try {
 
@@ -1073,6 +1166,7 @@ export default async function handler(
               messages
             );
 
+
           if (answer) {
 
             results.push({
@@ -1080,8 +1174,7 @@ export default async function handler(
               provider:
                 "Groq",
 
-              answer
-
+              answer,
             });
           }
 
@@ -1097,11 +1190,11 @@ export default async function handler(
       }
 
 
+      // ------------------------------------------------
       // OPENAI
+      // ------------------------------------------------
 
-      if (
-        process.env.OPENAI_API_KEY
-      ) {
+      if (openai) {
 
         try {
 
@@ -1110,6 +1203,7 @@ export default async function handler(
               messages
             );
 
+
           if (answer) {
 
             results.push({
@@ -1117,8 +1211,7 @@ export default async function handler(
               provider:
                 "OpenAI",
 
-              answer
-
+              answer,
             });
           }
 
@@ -1148,10 +1241,7 @@ export default async function handler(
         results
           .map(
             (item) =>
-
-              `### ${item.provider}
-
-${item.answer}`
+              `### ${item.provider}\n\n${item.answer}`
           )
           .join(
             "\n\n---\n\n"
@@ -1178,7 +1268,7 @@ ${item.answer}`
           "BOTH",
 
         intent:
-          intent.toUpperCase()
+          intent.toUpperCase(),
       });
     }
 
@@ -1193,12 +1283,10 @@ ${item.answer}`
 
       try {
 
-        if (
-          !process.env.OPENAI_API_KEY
-        ) {
+        if (!openai) {
 
           throw new Error(
-            "OpenAI API key unavailable."
+            "OpenAI unavailable."
           );
         }
 
@@ -1232,7 +1320,7 @@ ${item.answer}`
             "DEEP",
 
           intent:
-            intent.toUpperCase()
+            intent.toUpperCase(),
         });
 
       }
@@ -1240,14 +1328,12 @@ ${item.answer}`
       catch (openAIError) {
 
         console.error(
-          "OpenAI deep error:",
+          "OpenAI DEEP error:",
           openAIError
         );
 
 
-        if (
-          process.env.GROQ_API_KEY
-        ) {
+        if (groq) {
 
           try {
 
@@ -1274,7 +1360,7 @@ ${item.answer}`
                   "DEEP → GROQ FALLBACK",
 
                 intent:
-                  intent.toUpperCase()
+                  intent.toUpperCase(),
               });
             }
 
@@ -1301,12 +1387,10 @@ ${item.answer}`
 
     try {
 
-      if (
-        !process.env.GROQ_API_KEY
-      ) {
+      if (!groq) {
 
         throw new Error(
-          "Groq API key unavailable."
+          "Groq unavailable."
         );
       }
 
@@ -1340,7 +1424,7 @@ ${item.answer}`
           "FAST",
 
         intent:
-          intent.toUpperCase()
+          intent.toUpperCase(),
       });
 
     }
@@ -1353,13 +1437,7 @@ ${item.answer}`
       );
 
 
-      // ------------------------------------------------
-      // OPENAI FALLBACK
-      // ------------------------------------------------
-
-      if (
-        process.env.OPENAI_API_KEY
-      ) {
+      if (openai) {
 
         try {
 
@@ -1386,7 +1464,7 @@ ${item.answer}`
                 "FAST → OPENAI FALLBACK",
 
               intent:
-                intent.toUpperCase()
+                intent.toUpperCase(),
             });
           }
 
@@ -1410,7 +1488,7 @@ ${item.answer}`
   catch (error) {
 
     console.error(
-      "KIRONG AI ERROR:",
+      "🔥 KIRONG AI GLOBAL ERROR:",
       error
     );
 
@@ -1421,7 +1499,7 @@ ${item.answer}`
         "error",
 
       text:
-        "⚠️ Kirong AI is temporarily unavailable. Please try again."
+        "⚠️ Kirong AI is temporarily unavailable. Please try again.",
     });
   }
 }
