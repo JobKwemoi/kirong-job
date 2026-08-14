@@ -6,9 +6,8 @@ import OpenAI from "openai";
 // Intelligent Router + Groq + OpenAI + Image Engine
 // =====================================================
 
-
 // =====================================================
-// 🔐 AI CLIENTS
+// 🤖 AI CLIENTS
 // =====================================================
 
 const groq = process.env.GROQ_API_KEY
@@ -16,7 +15,6 @@ const groq = process.env.GROQ_API_KEY
       apiKey: process.env.GROQ_API_KEY,
     })
   : null;
-
 
 const openai = process.env.OPENAI_API_KEY
   ? new OpenAI({
@@ -36,9 +34,8 @@ function detectIntent(message) {
     .trim()
     .replace(/[!?.,;:()[\]{}]/g, " ");
 
-
   // ===================================================
-  // 🎨 IMAGE REQUESTS
+  // 🎨 DIRECT IMAGE REQUESTS
   // ===================================================
 
   const imageRequests = [
@@ -113,18 +110,14 @@ function detectIntent(message) {
 
     "designie logo",
     "nidesignie logo"
-
   ];
-
 
   if (
     imageRequests.some(
       (phrase) => text.includes(phrase)
     )
   ) {
-
     return "image";
-
   }
 
 
@@ -151,9 +144,7 @@ function detectIntent(message) {
     "chora",
     "choree",
     "nichoree"
-
   ];
-
 
   const visualWords = [
 
@@ -171,32 +162,27 @@ function detectIntent(message) {
     "flyer",
     "banner",
     "thumbnail",
+
     "picha",
     "mchoro",
     "nembo"
-
   ];
-
 
   const hasCreationWord =
     creationWords.some(
       (word) => text.includes(word)
     );
 
-
   const hasVisualWord =
     visualWords.some(
       (word) => text.includes(word)
     );
 
-
   if (
     hasCreationWord &&
     hasVisualWord
   ) {
-
     return "image";
-
   }
 
 
@@ -215,18 +201,14 @@ function detectIntent(message) {
     "banner",
     "wallpaper",
     "thumbnail"
-
   ];
-
 
   if (
     strongVisualWords.some(
       (word) => text.includes(word)
     )
   ) {
-
     return "image";
-
   }
 
 
@@ -270,18 +252,14 @@ function detectIntent(message) {
 
     "fix code",
     "debug code"
-
   ];
-
 
   if (
     codeWords.some(
       (word) => text.includes(word)
     )
   ) {
-
     return "code";
-
   }
 
 
@@ -306,18 +284,14 @@ function detectIntent(message) {
     "tumia ai zote",
     "linganisha zote",
     "maoni zote"
-
   ];
-
 
   if (
     bothWords.some(
       (word) => text.includes(word)
     )
   ) {
-
     return "both";
-
   }
 
 
@@ -344,23 +318,18 @@ function detectIntent(message) {
     "soma hii file",
     "chambua document",
     "soma document"
-
   ];
-
 
   if (
     fileWords.some(
       (word) => text.includes(word)
     )
   ) {
-
     return "file";
-
   }
 
 
   return "chat";
-
 }
 
 
@@ -370,10 +339,9 @@ function detectIntent(message) {
 
 function chooseRoute(message) {
 
-  const text =
-    String(message || "")
-      .toLowerCase()
-      .trim();
+  const text = String(message || "")
+    .toLowerCase()
+    .trim();
 
 
   const bothKeywords = [
@@ -390,18 +358,14 @@ function chooseRoute(message) {
     "tumia zote",
     "tumia ai zote",
     "linganisha zote"
-
   ];
-
 
   if (
     bothKeywords.some(
       (word) => text.includes(word)
     )
   ) {
-
     return "both";
-
   }
 
 
@@ -421,30 +385,25 @@ function chooseRoute(message) {
     "database architecture",
     "security architecture",
     "full stack architecture"
-
   ];
-
 
   if (
     deepKeywords.some(
       (word) => text.includes(word)
     )
   ) {
-
     return "deep";
-
   }
 
 
-  if (text.length > 1200) {
-
+  if (
+    text.length > 1200
+  ) {
     return "deep";
-
   }
 
 
   return "fast";
-
 }
 
 
@@ -513,12 +472,11 @@ say:
 
 12. Understand Kenyan context when relevant.
 
-13. When the system sends a visual-generation request,
-do not pretend that an image exists unless the
-Image Engine successfully generated it.
+13. When a request requires image generation,
+do not pretend an image was generated unless
+the image engine actually returned one.
 
 `;
-
 }
 
 
@@ -529,13 +487,10 @@ Image Engine successfully generated it.
 async function askGroq(messages) {
 
   if (!groq) {
-
     throw new Error(
       "Groq client is not configured."
     );
-
   }
-
 
   const completion =
     await groq.chat.completions.create({
@@ -545,23 +500,18 @@ async function askGroq(messages) {
 
       messages,
 
-      temperature:
-        0.7,
+      temperature: 0.7,
 
-      max_tokens:
-        2048
-
+      max_tokens: 2048
     });
-
 
   return (
     completion
-      ?.choices?.[0]
+      ?.choices
+      ?. [0]
       ?.message
       ?.content
-      ?.trim()
   );
-
 }
 
 
@@ -572,13 +522,10 @@ async function askGroq(messages) {
 async function askOpenAI(messages) {
 
   if (!openai) {
-
     throw new Error(
       "OpenAI client is not configured."
     );
-
   }
-
 
   const completion =
     await openai.chat.completions.create({
@@ -588,23 +535,18 @@ async function askOpenAI(messages) {
 
       messages,
 
-      temperature:
-        0.7,
+      temperature: 0.7,
 
-      max_tokens:
-        2048
-
+      max_tokens: 2048
     });
-
 
   return (
     completion
-      ?.choices?.[0]
+      ?.choices
+      ?. [0]
       ?.message
       ?.content
-      ?.trim()
   );
-
 }
 
 
@@ -619,57 +561,39 @@ async function generateOpenAIImage(
   if (!openai) {
 
     throw new Error(
-      "OpenAI client is not configured."
+      "OPENAI_API_KEY is missing."
     );
-
   }
 
 
-  // ===================================================
-  // 🧠 IMAGE PROMPT
-  // ===================================================
-
   const imagePrompt = `
 
-Create a professional commercial advertising poster.
+Create a professional commercial advertising
+poster based on this user request:
 
-USER REQUEST:
 ${userPrompt}
 
-DESIGN REQUIREMENTS:
+IMPORTANT:
 
-- Understand exactly what the user wants.
-- Make the requested product or subject the main focus.
-- Create a visually attractive professional composition.
-- Use realistic commercial photography or polished
-  graphic-design aesthetics where appropriate.
-- Use Kenyan commercial aesthetics when relevant.
-- Make the design suitable for social media advertising.
-- Use strong visual hierarchy.
-- Make important user-provided details visible.
-- Preserve exact prices, names, locations and offers
-  supplied by the user.
-- NEVER invent phone numbers.
-- NEVER invent addresses.
-- NEVER invent business names.
-- NEVER invent prices.
-- NEVER invent promotions.
-- If the user provides no advertising text,
-  keep text minimal.
-- Do not create an explanatory paragraph.
-- The result must be an actual visual poster,
-  not a description of a poster.
-
+- Understand the requested product.
+- Make the product visually prominent.
+- Create a polished commercial composition.
+- Use realistic and attractive lighting.
+- Use Kenyan commercial aesthetics when appropriate.
+- Preserve exact prices provided by the user.
+- Preserve exact business names provided by the user.
+- Preserve exact phone numbers provided by the user.
+- Do not invent phone numbers.
+- Do not invent prices.
+- Do not invent addresses.
+- Do not invent business names.
+- If no text is requested, keep poster text minimal.
+- Make the final result look like a real professional advertisement.
 `;
 
 
   console.log(
-    "🎨 Starting OpenAI Image Engine..."
-  );
-
-
-  console.log(
-    "🎨 Image request:",
+    "🎨 IMAGE REQUEST:",
     userPrompt
   );
 
@@ -689,44 +613,35 @@ DESIGN REQUIREMENTS:
           "1024x1024",
 
         quality:
-          "medium"
+          "medium",
 
+        n: 1
       });
 
 
     console.log(
-      "🎨 OpenAI Image response received."
+      "🎨 IMAGE RESPONSE RECEIVED"
     );
 
 
     const imageData =
       result
-        ?.data?.[0]
+        ?.data
+        ?. [0]
         ?.b64_json;
 
 
     if (!imageData) {
 
       console.error(
-        "🎨 OpenAI returned:",
-        JSON.stringify(
-          result,
-          null,
-          2
-        ).slice(0, 2000)
+        "OpenAI image response:",
+        result
       );
-
 
       throw new Error(
-        "OpenAI returned no base64 image data."
+        "OpenAI returned no b64_json image data."
       );
-
     }
-
-
-    console.log(
-      "✅ Image successfully generated."
-    );
 
 
     return imageData;
@@ -736,38 +651,12 @@ DESIGN REQUIREMENTS:
   catch (error) {
 
     console.error(
-      "❌ OPENAI IMAGE ENGINE ERROR"
+      "🔥 OPENAI IMAGE API ERROR:",
+      error
     );
-
-
-    console.error(
-      "Message:",
-      error?.message
-    );
-
-
-    console.error(
-      "Status:",
-      error?.status
-    );
-
-
-    console.error(
-      "Code:",
-      error?.code
-    );
-
-
-    console.error(
-      "Type:",
-      error?.type
-    );
-
 
     throw error;
-
   }
-
 }
 
 
@@ -784,7 +673,9 @@ export default async function handler(
   // METHOD
   // ===================================================
 
-  if (req.method !== "POST") {
+  if (
+    req.method !== "POST"
+  ) {
 
     return res.status(405).json({
 
@@ -793,14 +684,12 @@ export default async function handler(
 
       text:
         "Method Not Allowed"
-
     });
-
   }
 
 
   // ===================================================
-  // PROVIDER CHECK
+  // API KEYS
   // ===================================================
 
   if (
@@ -815,9 +704,7 @@ export default async function handler(
 
       text:
         "No AI provider is configured."
-
     });
-
   }
 
 
@@ -827,11 +714,12 @@ export default async function handler(
       message,
       history = [],
       language = "English"
-    } = req.body || {};
+    } =
+      req.body || {};
 
 
     // =================================================
-    // VALIDATION
+    // VALIDATE
     // =================================================
 
     if (
@@ -846,9 +734,7 @@ export default async function handler(
 
         text:
           "Please enter a message."
-
       });
-
     }
 
 
@@ -863,7 +749,7 @@ export default async function handler(
 
 
     // =================================================
-    // 🧠 DETECT INTENT
+    // 🧠 INTENT
     // =================================================
 
     const intent =
@@ -873,7 +759,7 @@ export default async function handler(
 
 
     console.log(
-      "🧠 Intent:",
+      "🧠 INTENT:",
       intent
     );
 
@@ -918,53 +804,22 @@ export default async function handler(
       catch (imageError) {
 
         console.error(
-          "❌ IMAGE REQUEST FAILED:",
+          "IMAGE ENGINE ERROR:",
           imageError
         );
 
 
-        // IMPORTANT:
-        // Never send the API key or complete
-        // internal error object to the browser.
+        /*
+         * IMPORTANT:
+         *
+         * We expose a SAFE diagnostic
+         * instead of exposing the API key
+         * or internal secrets.
+         */
 
-        let safeMessage =
-          "🎨 Image Engine imepata hitilafu. Tafadhali jaribu tena.";
-
-        if (
-          imageError?.status === 401
-        ) {
-
-          safeMessage =
-            "🔐 OpenAI Image Engine haija-authorize request hii. Angalia OPENAI_API_KEY yako kwenye Vercel.";
-
-        }
-
-        else if (
-          imageError?.status === 403
-        ) {
-
-          safeMessage =
-            "🔒 OpenAI Image Engine imekataa request hii. Angalia access ya image generation kwenye OpenAI account yako.";
-
-        }
-
-        else if (
-          imageError?.status === 429
-        ) {
-
-          safeMessage =
-            "⏳ OpenAI Image Engine imefika kwenye usage/rate limit. Tafadhali jaribu tena baadaye.";
-
-        }
-
-        else if (
-          imageError?.status >= 500
-        ) {
-
-          safeMessage =
-            "☁️ OpenAI Image Engine imepata server-side problem. Tafadhali jaribu tena.";
-
-        }
+        const errorMessage =
+          imageError?.message ||
+          "Unknown image engine error.";
 
 
         return res.status(500).json({
@@ -973,7 +828,7 @@ export default async function handler(
             "error",
 
           text:
-            safeMessage,
+            `🎨 Image Engine imepata hitilafu.\n\n🔎 ${errorMessage}`,
 
           provider:
             "OpenAI Image Engine",
@@ -982,9 +837,7 @@ export default async function handler(
             "IMAGE"
 
         });
-
       }
-
     }
 
 
@@ -1009,14 +862,12 @@ export default async function handler(
 
         intent:
           "FILE"
-
       });
-
     }
 
 
     // =================================================
-    // 🧠 CHAT MESSAGES
+    // 🧠 MESSAGES
     // =================================================
 
     const messages = [
@@ -1029,7 +880,6 @@ export default async function handler(
           createSystemPrompt(
             language
           )
-
       },
 
       ...safeHistory,
@@ -1040,15 +890,10 @@ export default async function handler(
 
         content:
           cleanMessage
-
       }
 
     ];
 
-
-    // =================================================
-    // 🧭 ROUTE
-    // =================================================
 
     const route =
       chooseRoute(
@@ -1056,14 +901,8 @@ export default async function handler(
       );
 
 
-    console.log(
-      "🧭 Route:",
-      route
-    );
-
-
     // =================================================
-    // 🤝 BOTH AI
+    // 🤝 BOTH
     // =================================================
 
     if (
@@ -1074,9 +913,7 @@ export default async function handler(
       const results = [];
 
 
-      // -------------------------------------------------
       // GROQ
-      // -------------------------------------------------
 
       if (groq) {
 
@@ -1087,7 +924,6 @@ export default async function handler(
               messages
             );
 
-
           if (answer) {
 
             results.push({
@@ -1096,9 +932,7 @@ export default async function handler(
                 "Groq",
 
               answer
-
             });
-
           }
 
         }
@@ -1109,15 +943,11 @@ export default async function handler(
             "Groq BOTH error:",
             error
           );
-
         }
-
       }
 
 
-      // -------------------------------------------------
       // OPENAI
-      // -------------------------------------------------
 
       if (openai) {
 
@@ -1128,7 +958,6 @@ export default async function handler(
               messages
             );
 
-
           if (answer) {
 
             results.push({
@@ -1137,9 +966,7 @@ export default async function handler(
                 "OpenAI",
 
               answer
-
             });
-
           }
 
         }
@@ -1150,9 +977,7 @@ export default async function handler(
             "OpenAI BOTH error:",
             error
           );
-
         }
-
       }
 
 
@@ -1163,7 +988,6 @@ export default async function handler(
         throw new Error(
           "Both AI providers failed."
         );
-
       }
 
 
@@ -1201,7 +1025,6 @@ export default async function handler(
           intent.toUpperCase()
 
       });
-
     }
 
 
@@ -1215,15 +1038,6 @@ export default async function handler(
 
       try {
 
-        if (!openai) {
-
-          throw new Error(
-            "OpenAI unavailable."
-          );
-
-        }
-
-
         const answer =
           await askOpenAI(
             messages
@@ -1235,7 +1049,6 @@ export default async function handler(
           throw new Error(
             "Empty OpenAI response."
           );
-
         }
 
 
@@ -1263,14 +1076,10 @@ export default async function handler(
       catch (openAIError) {
 
         console.error(
-          "OpenAI deep error:",
+          "OpenAI DEEP error:",
           openAIError
         );
 
-
-        // ---------------------------------------------
-        // GROQ FALLBACK
-        // ---------------------------------------------
 
         if (groq) {
 
@@ -1302,7 +1111,6 @@ export default async function handler(
                   intent.toUpperCase()
 
               });
-
             }
 
           }
@@ -1313,16 +1121,12 @@ export default async function handler(
               "Groq fallback error:",
               fallbackError
             );
-
           }
-
         }
 
 
         throw openAIError;
-
       }
-
     }
 
 
@@ -1331,15 +1135,6 @@ export default async function handler(
     // =================================================
 
     try {
-
-      if (!groq) {
-
-        throw new Error(
-          "Groq unavailable."
-        );
-
-      }
-
 
       const answer =
         await askGroq(
@@ -1352,7 +1147,6 @@ export default async function handler(
         throw new Error(
           "Empty Groq response."
         );
-
       }
 
 
@@ -1385,9 +1179,9 @@ export default async function handler(
       );
 
 
-      // -----------------------------------------------
+      // =================================================
       // OPENAI FALLBACK
-      // -----------------------------------------------
+      // =================================================
 
       if (openai) {
 
@@ -1419,7 +1213,6 @@ export default async function handler(
                 intent.toUpperCase()
 
             });
-
           }
 
         }
@@ -1430,27 +1223,23 @@ export default async function handler(
             "OpenAI fallback error:",
             fallbackError
           );
-
         }
-
       }
 
 
       throw groqError;
-
     }
 
   }
 
-
   // ===================================================
-  // 💥 GLOBAL ERROR
+  // GLOBAL ERROR
   // ===================================================
 
   catch (error) {
 
     console.error(
-      "🔥 KIRONG GLOBAL ERROR:",
+      "🔥 KIRONG AI GLOBAL ERROR:",
       error
     );
 
@@ -1464,7 +1253,5 @@ export default async function handler(
         "⚠️ Kirong AI is temporarily unavailable. Please try again."
 
     });
-
   }
-
 }
