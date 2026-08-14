@@ -1,164 +1,282 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-  <title>Kirong AI</title>
+<head>
+
+  <meta charset="UTF-8">
+
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0"
+  >
+
+  <meta
+    name="theme-color"
+    content="#070711"
+  >
+
+  <meta
+    name="description"
+    content="Kirong AI — an intelligent assistant built by Kirong Job Kwemoi."
+  >
+
+  <title>Kirong AI — Intelligent Assistant</title>
 
   <link rel="stylesheet" href="style.css">
 
-  <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
 </head>
+
 
 <body>
 
-<div class="container">
+  <main class="container">
 
-<header class="header">
 
-<div class="headerLeft">
+    <!-- =========================
+         HEADER
+    ========================== -->
 
-<h1>⚡ Kirong AI</h1>
+    <header class="header">
 
-<select id="languageSelect">
+      <div class="headerLeft">
 
-<option value="English">English</option>
+        <h1>
+          ⚡ Kirong AI
+        </h1>
 
-<option value="Swahili">Kiswahili</option>
+        <select id="languageSelect" aria-label="Language">
 
-<option value="French">French</option>
+          <option value="English">
+            English
+          </option>
 
-<option value="Spanish">Spanish</option>
+          <option value="Swahili">
+            Kiswahili
+          </option>
 
-</select>
+          <option value="French">
+            Français
+          </option>
 
-</div>
+          <option value="Spanish">
+            Español
+          </option>
 
-<button id="themeBtn">
-🌙
-</button>
+        </select>
 
-</header>
+      </div>
 
-<div id="chatBox">
 
-<div class="message ai">
+      <button
+        id="themeBtn"
+        type="button"
+        aria-label="Toggle theme"
+      >
+        🌙
+      </button>
 
-<p>
+    </header>
 
-Hello 👋
 
-I am <b>Kirong AI</b>.
 
-How can I help you today?
+    <!-- =========================
+         CHAT
+    ========================== -->
 
-</p>
+    <section
+      id="chatBox"
+      aria-live="polite"
+    >
 
-</div>
+      <div class="message ai">
 
-</div>
+        <p>
+          Hello 👋
+          <br><br>
 
-<div id="thinking" class="hidden">
+          I am <strong>Kirong AI</strong>.
 
-Kirong AI is thinking...
+          How can I help you today?
+        </p>
 
-</div>
+      </div>
 
-<div class="quickActions">
+    </section>
 
-<button class="quickBtn" data-action="Code">
-💻 Code
-</button>
 
-<button class="quickBtn" data-action="Explain">
-🧠 Explain
-</button>
 
-<button class="quickBtn" data-action="Write">
-✍️ Write
-</button>
+    <!-- =========================
+         THINKING
+    ========================== -->
 
-<button class="quickBtn" data-action="Image">
-🎨 Image
-</button>
+    <div
+      id="thinking"
+      class="hidden"
+      aria-live="polite"
+    >
+      Kirong AI is thinking...
+    </div>
 
-<button class="quickBtn" data-action="Email">
-📧 Email
-</button>
 
-<button id="locationBtn">
-📍
-</button>
 
-</div>
+    <!-- =========================
+         QUICK ACTIONS
+    ========================== -->
 
-<div class="inputArea">
+    <nav class="quickActions">
 
-<select id="voiceSelect">
+      <button
+        class="quickBtn"
+        data-action="Code"
+        type="button"
+      >
+        💻 Code
+      </button>
 
-<option value="en-US">
+      <button
+        class="quickBtn"
+        data-action="Explain"
+        type="button"
+      >
+        🧠 Explain
+      </button>
 
-ENGLISH
+      <button
+        class="quickBtn"
+        data-action="Write"
+        type="button"
+      >
+        ✍️ Write
+      </button>
 
-</option>
+      <button
+        class="quickBtn"
+        data-action="Image"
+        type="button"
+      >
+        🎨 Image
+      </button>
 
-<option value="sw-KE">
+      <button
+        class="quickBtn"
+        data-action="Email"
+        type="button"
+      >
+        📧 Email
+      </button>
 
-SWAHILI
+      <button
+        id="locationBtn"
+        type="button"
+        aria-label="Share location"
+      >
+        📍
+      </button>
 
-</option>
+    </nav>
 
-</select>
 
-<button id="uploadBtn">
-📎
-</button>
 
-<input
-type="file"
-id="fileInput"
-hidden
->
+    <!-- =========================
+         INPUT
+    ========================== -->
 
-<input
-type="text"
-id="userInput"
-placeholder="Type here..."
-autocomplete="off"
->
+    <form
+      class="inputArea"
+      id="chatForm"
+    >
 
-<button id="micBtn">
-🎤
-</button>
+      <select
+        id="voiceSelect"
+        aria-label="Voice language"
+      >
 
-<button id="sendBtn">
+        <option value="en-US">
+          EN
+        </option>
 
-➤
+        <option value="sw-KE">
+          SW
+        </option>
 
-</button>
+      </select>
 
-</div>
 
-<div class="footerButtons">
+      <button
+        id="uploadBtn"
+        type="button"
+        aria-label="Upload file"
+      >
+        📎
+      </button>
 
-<button id="exportBtn">
 
-Export 💾
+      <input
+        type="file"
+        id="fileInput"
+        hidden
+      >
 
-</button>
 
-<button id="clearBtn">
+      <input
+        type="text"
+        id="userInput"
+        placeholder="Message Kirong AI..."
+        autocomplete="off"
+        maxlength="4000"
+        aria-label="Message"
+      >
 
-Clear 🗑️
 
-</button>
+      <button
+        id="micBtn"
+        type="button"
+        aria-label="Voice input"
+      >
+        🎤
+      </button>
 
-</div>
 
-</div>
+      <button
+        id="sendBtn"
+        type="submit"
+        aria-label="Send message"
+      >
+        ➤
+      </button>
 
-<script src="app.js"></script>
+    </form>
+
+
+
+    <!-- =========================
+         FOOTER
+    ========================== -->
+
+    <footer class="footerButtons">
+
+      <button
+        id="exportBtn"
+        type="button"
+      >
+        Export 💾
+      </button>
+
+      <button
+        id="clearBtn"
+        type="button"
+      >
+        Clear 🗑️
+      </button>
+
+    </footer>
+
+
+  </main>
+
+
+  <script src="app.js"></script>
 
 </body>
+
 </html>
