@@ -1,26 +1,27 @@
 import Groq from "groq-sdk";
 import OpenAI from "openai";
+import Replicate from "replicate";
 
 // =====================================================
 // ⚡ KIRONG AI v4
-// Intelligent Router + Groq + OpenAI + Image Engine
+// Groq + OpenAI + OpenAI Image + FLUX Fallback
 // =====================================================
 
 // =====================================================
-// 🤖 AI CLIENTS
+// AI CLIENTS
 // =====================================================
 
-const groq = process.env.GROQ_API_KEY
-  ? new Groq({
-      apiKey: process.env.GROQ_API_KEY,
-    })
-  : null;
+const groq = new Groq({
+  apiKey: process.env.GROQ_API_KEY,
+});
 
-const openai = process.env.OPENAI_API_KEY
-  ? new OpenAI({
-      apiKey: process.env.OPENAI_API_KEY,
-    })
-  : null;
+const openai = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY,
+});
+
+const replicate = new Replicate({
+  auth: process.env.REPLICATE_API_TOKEN,
+});
 
 
 // =====================================================
@@ -34,9 +35,9 @@ function detectIntent(message) {
     .trim()
     .replace(/[!?.,;:()[\]{}]/g, " ");
 
-  // ===================================================
-  // 🎨 DIRECT IMAGE REQUESTS
-  // ===================================================
+  // ---------------------------------------------------
+  // 🎨 EXPLICIT IMAGE REQUESTS
+  // ---------------------------------------------------
 
   const imageRequests = [
 
@@ -113,17 +114,17 @@ function detectIntent(message) {
   ];
 
   if (
-    imageRequests.some(
-      (phrase) => text.includes(phrase)
+    imageRequests.some((phrase) =>
+      text.includes(phrase)
     )
   ) {
     return "image";
   }
 
 
-  // ===================================================
-  // 🎨 CREATION + VISUAL OBJECT
-  // ===================================================
+  // ---------------------------------------------------
+  // 🎨 CREATION + VISUAL
+  // ---------------------------------------------------
 
   const creationWords = [
 
@@ -169,13 +170,13 @@ function detectIntent(message) {
   ];
 
   const hasCreationWord =
-    creationWords.some(
-      (word) => text.includes(word)
+    creationWords.some((word) =>
+      text.includes(word)
     );
 
   const hasVisualWord =
-    visualWords.some(
-      (word) => text.includes(word)
+    visualWords.some((word) =>
+      text.includes(word)
     );
 
   if (
@@ -186,9 +187,9 @@ function detectIntent(message) {
   }
 
 
-  // ===================================================
+  // ---------------------------------------------------
   // 🎨 STRONG VISUAL REQUEST
-  // ===================================================
+  // ---------------------------------------------------
 
   const strongVisualWords = [
 
@@ -204,17 +205,17 @@ function detectIntent(message) {
   ];
 
   if (
-    strongVisualWords.some(
-      (word) => text.includes(word)
+    strongVisualWords.some((word) =>
+      text.includes(word)
     )
   ) {
     return "image";
   }
 
 
-  // ===================================================
+  // ---------------------------------------------------
   // 💻 CODE
-  // ===================================================
+  // ---------------------------------------------------
 
   const codeWords = [
 
@@ -255,17 +256,17 @@ function detectIntent(message) {
   ];
 
   if (
-    codeWords.some(
-      (word) => text.includes(word)
+    codeWords.some((word) =>
+      text.includes(word)
     )
   ) {
     return "code";
   }
 
 
-  // ===================================================
+  // ---------------------------------------------------
   // 🤝 BOTH
-  // ===================================================
+  // ---------------------------------------------------
 
   const bothWords = [
 
@@ -287,17 +288,17 @@ function detectIntent(message) {
   ];
 
   if (
-    bothWords.some(
-      (word) => text.includes(word)
+    bothWords.some((word) =>
+      text.includes(word)
     )
   ) {
     return "both";
   }
 
 
-  // ===================================================
+  // ---------------------------------------------------
   // 📎 FILE
-  // ===================================================
+  // ---------------------------------------------------
 
   const fileWords = [
 
@@ -321,8 +322,8 @@ function detectIntent(message) {
   ];
 
   if (
-    fileWords.some(
-      (word) => text.includes(word)
+    fileWords.some((word) =>
+      text.includes(word)
     )
   ) {
     return "file";
@@ -339,10 +340,10 @@ function detectIntent(message) {
 
 function chooseRoute(message) {
 
-  const text = String(message || "")
-    .toLowerCase()
-    .trim();
-
+  const text =
+    String(message || "")
+      .toLowerCase()
+      .trim();
 
   const bothKeywords = [
 
@@ -361,8 +362,8 @@ function chooseRoute(message) {
   ];
 
   if (
-    bothKeywords.some(
-      (word) => text.includes(word)
+    bothKeywords.some((word) =>
+      text.includes(word)
     )
   ) {
     return "both";
@@ -388,17 +389,15 @@ function chooseRoute(message) {
   ];
 
   if (
-    deepKeywords.some(
-      (word) => text.includes(word)
+    deepKeywords.some((word) =>
+      text.includes(word)
     )
   ) {
     return "deep";
   }
 
 
-  if (
-    text.length > 1200
-  ) {
+  if (text.length > 1200) {
     return "deep";
   }
 
@@ -472,9 +471,9 @@ say:
 
 12. Understand Kenyan context when relevant.
 
-13. When a request requires image generation,
-do not pretend an image was generated unless
-the image engine actually returned one.
+13. When the system sends a visual-generation request,
+do not describe an image as already generated
+unless an image engine actually returned an image.
 
 `;
 }
@@ -486,12 +485,6 @@ the image engine actually returned one.
 
 async function askGroq(messages) {
 
-  if (!groq) {
-    throw new Error(
-      "Groq client is not configured."
-    );
-  }
-
   const completion =
     await groq.chat.completions.create({
 
@@ -500,9 +493,11 @@ async function askGroq(messages) {
 
       messages,
 
-      temperature: 0.7,
+      temperature:
+        0.7,
 
-      max_tokens: 2048
+      max_tokens:
+        2048
     });
 
   return (
@@ -521,12 +516,6 @@ async function askGroq(messages) {
 
 async function askOpenAI(messages) {
 
-  if (!openai) {
-    throw new Error(
-      "OpenAI client is not configured."
-    );
-  }
-
   const completion =
     await openai.chat.completions.create({
 
@@ -535,9 +524,11 @@ async function askOpenAI(messages) {
 
       messages,
 
-      temperature: 0.7,
+      temperature:
+        0.7,
 
-      max_tokens: 2048
+      max_tokens:
+        2048
     });
 
   return (
@@ -551,6 +542,42 @@ async function askOpenAI(messages) {
 
 
 // =====================================================
+// 🎨 BUILD IMAGE PROMPT
+// =====================================================
+
+function createImagePrompt(userPrompt) {
+
+  return `
+
+Create a professional high-quality commercial visual.
+
+USER REQUEST:
+${userPrompt}
+
+INSTRUCTIONS:
+
+- Understand exactly what the user wants.
+- Make the requested subject visually prominent.
+- Create an attractive professional composition.
+- If this is a poster, make it look like a real commercial poster.
+- If a price is provided, preserve the exact price.
+- If a business name is provided, preserve it.
+- If a location is provided, preserve it.
+- If a phone number is provided, preserve it.
+- Never invent phone numbers.
+- Never invent business names.
+- Never invent prices.
+- Never invent addresses.
+- Use Kenyan commercial aesthetics when appropriate.
+- Keep unnecessary text minimal.
+- Produce a polished realistic design.
+- Follow the user's requested colors and style.
+
+`;
+}
+
+
+// =====================================================
 // 🎨 OPENAI IMAGE ENGINE
 // =====================================================
 
@@ -558,7 +585,7 @@ async function generateOpenAIImage(
   userPrompt
 ) {
 
-  if (!openai) {
+  if (!process.env.OPENAI_API_KEY) {
 
     throw new Error(
       "OPENAI_API_KEY is missing."
@@ -566,97 +593,235 @@ async function generateOpenAIImage(
   }
 
 
-  const imagePrompt = `
+  const result =
+    await openai.images.generate({
 
-Create a professional commercial advertising
-poster based on this user request:
+      model:
+        "gpt-image-1",
 
-${userPrompt}
+      prompt:
+        createImagePrompt(
+          userPrompt
+        ),
 
-IMPORTANT:
+      size:
+        "1024x1024",
 
-- Understand the requested product.
-- Make the product visually prominent.
-- Create a polished commercial composition.
-- Use realistic and attractive lighting.
-- Use Kenyan commercial aesthetics when appropriate.
-- Preserve exact prices provided by the user.
-- Preserve exact business names provided by the user.
-- Preserve exact phone numbers provided by the user.
-- Do not invent phone numbers.
-- Do not invent prices.
-- Do not invent addresses.
-- Do not invent business names.
-- If no text is requested, keep poster text minimal.
-- Make the final result look like a real professional advertisement.
-`;
+      quality:
+        "medium",
+
+      n:
+        1
+    });
 
 
-  console.log(
-    "🎨 IMAGE REQUEST:",
-    userPrompt
-  );
+  const imageData =
+    result
+      ?.data
+      ?. [0]
+      ?.b64_json;
 
 
-  try {
+  if (!imageData) {
 
-    const result =
-      await openai.images.generate({
-
-        model:
-          "gpt-image-1",
-
-        prompt:
-          imagePrompt,
-
-        size:
-          "1024x1024",
-
-        quality:
-          "medium",
-
-        n: 1
-      });
+    throw new Error(
+      "OpenAI returned no image data."
+    );
+  }
 
 
-    console.log(
-      "🎨 IMAGE RESPONSE RECEIVED"
+  return {
+    image:
+      `data:image/png;base64,${imageData}`,
+
+    provider:
+      "OpenAI Image Engine"
+  };
+}
+
+
+// =====================================================
+// 🎨 FLUX IMAGE ENGINE
+// =====================================================
+
+async function generateFluxImage(
+  userPrompt
+) {
+
+  if (!process.env.REPLICATE_API_TOKEN) {
+
+    throw new Error(
+      "REPLICATE_API_TOKEN is missing."
+    );
+  }
+
+
+  const output =
+    await replicate.run(
+
+      "black-forest-labs/flux-schnell",
+
+      {
+        input: {
+
+          prompt:
+            createImagePrompt(
+              userPrompt
+            ),
+
+          go_fast:
+            true,
+
+          megapixels:
+            "1",
+
+          num_outputs:
+            1,
+
+          aspect_ratio:
+            "1:1",
+
+          output_format:
+            "webp",
+
+          output_quality:
+            90,
+
+          num_inference_steps:
+            4
+        }
+      }
     );
 
 
-    const imageData =
-      result
-        ?.data
-        ?. [0]
-        ?.b64_json;
+  if (
+    !output ||
+    !Array.isArray(output) ||
+    !output[0]
+  ) {
+
+    throw new Error(
+      "FLUX returned no image."
+    );
+  }
 
 
-    if (!imageData) {
+  const imageUrl =
+    typeof output[0].url === "function"
+      ? output[0].url()
+      : String(output[0]);
 
-      console.error(
-        "OpenAI image response:",
-        result
+
+  if (!imageUrl) {
+
+    throw new Error(
+      "FLUX returned an invalid image URL."
+    );
+  }
+
+
+  return {
+
+    image:
+      imageUrl,
+
+    provider:
+      "Replicate / FLUX Schnell"
+  };
+}
+
+
+// =====================================================
+// 🎨 SMART IMAGE ROUTER
+// =====================================================
+
+async function generateImage(
+  userPrompt
+) {
+
+  // ---------------------------------------------------
+  // PRIMARY: OPENAI
+  // ---------------------------------------------------
+
+  if (
+    process.env.OPENAI_API_KEY
+  ) {
+
+    try {
+
+      console.log(
+        "🎨 Trying OpenAI Image Engine..."
       );
 
-      throw new Error(
-        "OpenAI returned no b64_json image data."
-      );
+      const result =
+        await generateOpenAIImage(
+          userPrompt
+        );
+
+      return {
+
+        ...result,
+
+        route:
+          "OPENAI IMAGE"
+      };
+
     }
 
+    catch (error) {
 
-    return imageData;
+      console.error(
+        "OpenAI Image failed:",
+        error?.message || error
+      );
 
+    }
   }
 
-  catch (error) {
 
-    console.error(
-      "🔥 OPENAI IMAGE API ERROR:",
-      error
-    );
+  // ---------------------------------------------------
+  // FALLBACK: FLUX
+  // ---------------------------------------------------
 
-    throw error;
+  if (
+    process.env.REPLICATE_API_TOKEN
+  ) {
+
+    try {
+
+      console.log(
+        "🔄 Falling back to FLUX..."
+      );
+
+      const result =
+        await generateFluxImage(
+          userPrompt
+        );
+
+      return {
+
+        ...result,
+
+        route:
+          "FLUX FALLBACK"
+      };
+
+    }
+
+    catch (error) {
+
+      console.error(
+        "FLUX Image failed:",
+        error?.message || error
+      );
+
+    }
   }
+
+
+  throw new Error(
+    "All image engines failed."
+  );
 }
 
 
@@ -668,10 +833,6 @@ export default async function handler(
   req,
   res
 ) {
-
-  // ===================================================
-  // METHOD
-  // ===================================================
 
   if (
     req.method !== "POST"
@@ -687,10 +848,6 @@ export default async function handler(
     });
   }
 
-
-  // ===================================================
-  // API KEYS
-  // ===================================================
 
   if (
     !process.env.GROQ_API_KEY &&
@@ -711,16 +868,19 @@ export default async function handler(
   try {
 
     const {
+
       message,
+
       history = [],
+
       language = "English"
-    } =
-      req.body || {};
+
+    } = req.body || {};
 
 
-    // =================================================
-    // VALIDATE
-    // =================================================
+    // -------------------------------------------------
+    // VALIDATION
+    // -------------------------------------------------
 
     if (
       !message ||
@@ -748,9 +908,9 @@ export default async function handler(
         : [];
 
 
-    // =================================================
-    // 🧠 INTENT
-    // =================================================
+    // -------------------------------------------------
+    // INTENT
+    // -------------------------------------------------
 
     const intent =
       detectIntent(
@@ -758,14 +918,8 @@ export default async function handler(
       );
 
 
-    console.log(
-      "🧠 INTENT:",
-      intent
-    );
-
-
     // =================================================
-    // 🎨 IMAGE ENGINE
+    // 🎨 IMAGE
     // =================================================
 
     if (
@@ -774,8 +928,8 @@ export default async function handler(
 
       try {
 
-        const image =
-          await generateOpenAIImage(
+        const result =
+          await generateImage(
             cleanMessage
           );
 
@@ -786,13 +940,16 @@ export default async function handler(
             "image",
 
           text:
-            "🎨 Nimeitengeneza picha yako. 🫂🔥",
+            "🎨 Nimekutengenezea picha yako. 🫂🔥",
 
           image:
-            `data:image/png;base64,${image}`,
+            result.image,
 
           provider:
-            "OpenAI Image Engine",
+            result.provider,
+
+          route:
+            result.route,
 
           intent:
             "IMAGE"
@@ -804,22 +961,9 @@ export default async function handler(
       catch (imageError) {
 
         console.error(
-          "IMAGE ENGINE ERROR:",
+          "IMAGE ROUTER ERROR:",
           imageError
         );
-
-
-        /*
-         * IMPORTANT:
-         *
-         * We expose a SAFE diagnostic
-         * instead of exposing the API key
-         * or internal secrets.
-         */
-
-        const errorMessage =
-          imageError?.message ||
-          "Unknown image engine error.";
 
 
         return res.status(500).json({
@@ -828,14 +972,16 @@ export default async function handler(
             "error",
 
           text:
-            `🎨 Image Engine imepata hitilafu.\n\n🔎 ${errorMessage}`,
+            "🎨 Image engines zote hazikupatikana kwa sasa. Tafadhali jaribu tena.",
 
           provider:
-            "OpenAI Image Engine",
+            "Image Router",
+
+          route:
+            "ALL IMAGE ENGINES FAILED",
 
           intent:
             "IMAGE"
-
         });
       }
     }
@@ -873,6 +1019,7 @@ export default async function handler(
     const messages = [
 
       {
+
         role:
           "system",
 
@@ -885,13 +1032,13 @@ export default async function handler(
       ...safeHistory,
 
       {
+
         role:
           "user",
 
         content:
           cleanMessage
       }
-
     ];
 
 
@@ -915,7 +1062,9 @@ export default async function handler(
 
       // GROQ
 
-      if (groq) {
+      if (
+        process.env.GROQ_API_KEY
+      ) {
 
         try {
 
@@ -932,6 +1081,7 @@ export default async function handler(
                 "Groq",
 
               answer
+
             });
           }
 
@@ -949,7 +1099,9 @@ export default async function handler(
 
       // OPENAI
 
-      if (openai) {
+      if (
+        process.env.OPENAI_API_KEY
+      ) {
 
         try {
 
@@ -966,6 +1118,7 @@ export default async function handler(
                 "OpenAI",
 
               answer
+
             });
           }
 
@@ -995,7 +1148,10 @@ export default async function handler(
         results
           .map(
             (item) =>
-              `### ${item.provider}\n\n${item.answer}`
+
+              `### ${item.provider}
+
+${item.answer}`
           )
           .join(
             "\n\n---\n\n"
@@ -1023,7 +1179,6 @@ export default async function handler(
 
         intent:
           intent.toUpperCase()
-
       });
     }
 
@@ -1037,6 +1192,16 @@ export default async function handler(
     ) {
 
       try {
+
+        if (
+          !process.env.OPENAI_API_KEY
+        ) {
+
+          throw new Error(
+            "OpenAI API key unavailable."
+          );
+        }
+
 
         const answer =
           await askOpenAI(
@@ -1068,7 +1233,6 @@ export default async function handler(
 
           intent:
             intent.toUpperCase()
-
         });
 
       }
@@ -1076,12 +1240,14 @@ export default async function handler(
       catch (openAIError) {
 
         console.error(
-          "OpenAI DEEP error:",
+          "OpenAI deep error:",
           openAIError
         );
 
 
-        if (groq) {
+        if (
+          process.env.GROQ_API_KEY
+        ) {
 
           try {
 
@@ -1109,7 +1275,6 @@ export default async function handler(
 
                 intent:
                   intent.toUpperCase()
-
               });
             }
 
@@ -1135,6 +1300,16 @@ export default async function handler(
     // =================================================
 
     try {
+
+      if (
+        !process.env.GROQ_API_KEY
+      ) {
+
+        throw new Error(
+          "Groq API key unavailable."
+        );
+      }
+
 
       const answer =
         await askGroq(
@@ -1166,7 +1341,6 @@ export default async function handler(
 
         intent:
           intent.toUpperCase()
-
       });
 
     }
@@ -1179,11 +1353,13 @@ export default async function handler(
       );
 
 
-      // =================================================
+      // ------------------------------------------------
       // OPENAI FALLBACK
-      // =================================================
+      // ------------------------------------------------
 
-      if (openai) {
+      if (
+        process.env.OPENAI_API_KEY
+      ) {
 
         try {
 
@@ -1211,7 +1387,6 @@ export default async function handler(
 
               intent:
                 intent.toUpperCase()
-
             });
           }
 
@@ -1232,14 +1407,10 @@ export default async function handler(
 
   }
 
-  // ===================================================
-  // GLOBAL ERROR
-  // ===================================================
-
   catch (error) {
 
     console.error(
-      "🔥 KIRONG AI GLOBAL ERROR:",
+      "KIRONG AI ERROR:",
       error
     );
 
@@ -1251,7 +1422,6 @@ export default async function handler(
 
       text:
         "⚠️ Kirong AI is temporarily unavailable. Please try again."
-
     });
   }
 }
