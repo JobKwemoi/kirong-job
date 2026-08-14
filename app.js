@@ -1,353 +1,488 @@
-// ==========================
-// KIRONG AI v2
-// ==========================
+// =========================================================
+// KIRONG AI — APP ENGINE
+// Groq Testing Version
+// =========================================================
 
 const chatBox = document.getElementById("chatBox");
 const userInput = document.getElementById("userInput");
 const sendBtn = document.getElementById("sendBtn");
 const themeBtn = document.getElementById("themeBtn");
 const thinking = document.getElementById("thinking");
+const chatForm = document.getElementById("chatForm");
+const languageSelect = document.getElementById("languageSelect");
 
 let chatHistory = [];
 
-// ==========================
+
+// =========================================================
 // ADD MESSAGE
-// ==========================
+// =========================================================
 
-function addMessage(text, sender){
+function addMessage(text, sender) {
 
-const message = document.createElement("div");
+    const message = document.createElement("div");
 
-message.className = `message ${sender}`;
+    message.className = `message ${sender}`;
 
-message.innerHTML = `<p>${text}</p>`;
+    const paragraph = document.createElement("p");
 
-chatBox.appendChild(message);
+    paragraph.textContent = text;
 
-chatBox.scrollTop = chatBox.scrollHeight;
+    message.appendChild(paragraph);
 
+    chatBox.appendChild(message);
+
+    chatBox.scrollTop = chatBox.scrollHeight;
 }
 
-// ==========================
+
+// =========================================================
 // THINKING
-// ==========================
+// =========================================================
 
-function showThinking(){
+function showThinking() {
 
-thinking.classList.remove("hidden");
+    thinking.classList.remove("hidden");
 
+    chatBox.scrollTop = chatBox.scrollHeight;
 }
 
-function hideThinking(){
 
-thinking.classList.add("hidden");
+function hideThinking() {
 
+    thinking.classList.add("hidden");
 }
 
-// ==========================
+
+// =========================================================
 // SEND MESSAGE
-// ==========================
+// =========================================================
 
-async function sendMessage(){
+async function sendMessage() {
 
-const text = userInput.value.trim();
+    const text = userInput.value.trim();
 
-if(!text) return;
+    if (!text) return;
 
-  if(isImagePrompt(text)){
+    // Add user message
+    addMessage(text, "user");
 
-hideThinking();
+    userInput.value = "";
 
-generateImage(text);
+    userInput.focus();
 
-return;
+    showThinking();
+
+    sendBtn.disabled = true;
+
+    try {
+
+        const response = await fetch("/api/chat", {
+
+            method: "POST",
+
+            headers: {
+                "Content-Type": "application/json"
+            },
+
+            body: JSON.stringify({
+
+                message: text,
+
+                history: chatHistory,
+
+                language:
+                    languageSelect?.value || "English"
+
+            })
+
+        });
+
+
+        const data = await response.json();
+
+
+        if (!response.ok) {
+
+            throw new Error(
+                data?.text ||
+                "Kirong AI request failed."
+            );
+
+        }
+
+
+        if (!data?.text) {
+
+            throw new Error(
+                "Empty response from Kirong AI."
+            );
+
+        }
+
+
+        // Show AI response
+        addMessage(data.text, "ai");
+
+
+        // Save conversation
+        chatHistory.push({
+
+            role: "user",
+
+            content: text
+
+        });
+
+
+        chatHistory.push({
+
+            role: "assistant",
+
+            content: data.text
+
+        });
+
+
+        // Keep memory manageable
+        if (chatHistory.length > 20) {
+
+            chatHistory =
+                chatHistory.slice(-20);
+
+        }
+
+    }
+
+    catch (error) {
+
+        console.error(
+            "Kirong AI:",
+            error
+        );
+
+        addMessage(
+            "⚠️ " +
+            (error.message ||
+            "Something went wrong."),
+            "ai"
+        );
+
+    }
+
+    finally {
+
+        hideThinking();
+
+        sendBtn.disabled = false;
+
+        userInput.focus();
+
+    }
+}
+
+
+// =========================================================
+// FORM SUBMIT
+// =========================================================
+
+if (chatForm) {
+
+    chatForm.addEventListener(
+        "submit",
+        function(event) {
+
+            event.preventDefault();
+
+            sendMessage();
+
+        }
+    );
+
+} else {
+
+    sendBtn?.addEventListener(
+        "click",
+        sendMessage
+    );
 
 }
 
-addMessage(text,"user");
 
-userInput.value="";
+// =========================================================
+// ENTER KEY
+// =========================================================
 
-showThinking();
+userInput?.addEventListener(
+    "keydown",
+    function(event) {
 
-try{
+        if (
+            event.key === "Enter" &&
+            !event.shiftKey
+        ) {
 
-const response = await fetch("/api/chat",{
+            event.preventDefault();
 
-method:"POST",
+            sendMessage();
 
-headers:{
-"Content-Type":"application/json"
-},
+        }
 
-body:JSON.stringify({
-
-message:text,
-
-history:chatHistory
-
-})
-
-});
-
-const data = await response.json();
-
-hideThinking();
-
-addMessage(data.text,"ai");
-
-chatHistory.push({
-
-role:"user",
-
-content:text
-
-});
-
-chatHistory.push({
-
-role:"assistant",
-
-content:data.text
-
-});
-
-}catch(error){
-
-hideThinking();
-
-addMessage("⚠️ Something went wrong.","ai");
-
-console.error(error);
-
-}
-
-}
-
-// ==========================
-// IMAGE GENERATOR
-// ==========================
-
-function generateImage(prompt){
-
-const imageUrl =
-`https://image.pollinations.ai/prompt/${encodeURIComponent(prompt + ", ultra detailed, 4k, realistic")}`;
-
-addMessage(
-
-`
-<p><strong>🎨 Image Generated</strong></p>
-
-<img
-src="${imageUrl}"
-alt="Generated Image"
-style="
-margin-top:12px;
-max-width:100%;
-border-radius:15px;
-">
-
-<br><br>
-
-<a
-href="${imageUrl}"
-target="_blank">
-
-<button>
-
-📥 Download Image
-
-</button>
-
-</a>
-
-`
-
-,"ai");
-
-}
-
-// ==========================
-// DETECT IMAGE REQUEST
-// ==========================
-
-function isImagePrompt(text){
-
-const prompt=text.toLowerCase();
-
-return(
-
-prompt.startsWith("image")||
-
-prompt.startsWith("draw")||
-
-prompt.startsWith("create image")||
-
-prompt.startsWith("generate image")||
-
-prompt.startsWith("paint")||
-
-prompt.startsWith("illustrate")
-
+    }
 );
 
-}
 
-// ==========================
-// EVENTS
-// ==========================
-
-// Send button
-sendBtn.addEventListener("click", sendMessage);
-
-// Enter key
-userInput.addEventListener("keydown",(e)=>{
-
-if(e.key==="Enter"){
-
-sendMessage();
-
-}
-
-});
-
-// ==========================
+// =========================================================
 // THEME
-// ==========================
+// =========================================================
 
-if(localStorage.getItem("theme")==="dark"){
+const savedTheme =
+    localStorage.getItem("theme");
 
-document.body.classList.add("dark");
+if (savedTheme === "dark") {
 
-themeBtn.textContent="☀️";
+    document.body.classList.add("dark");
+
+    themeBtn.textContent = "☀️";
 
 }
 
-themeBtn.addEventListener("click",()=>{
 
-document.body.classList.toggle("dark");
+themeBtn?.addEventListener(
+    "click",
+    function() {
 
-const dark=document.body.classList.contains("dark");
+        document.body.classList.toggle(
+            "dark"
+        );
 
-themeBtn.textContent=dark?"☀️":"🌙";
+        const dark =
+            document.body.classList.contains(
+                "dark"
+            );
 
-localStorage.setItem("theme",dark?"dark":"light");
+        themeBtn.textContent =
+            dark ? "☀️" : "🌙";
 
-});
+        localStorage.setItem(
+            "theme",
+            dark ? "dark" : "light"
+        );
 
-// ==========================
-// QUICK BUTTONS
-// ==========================
+    }
+);
 
-document.querySelectorAll(".quickBtn").forEach(btn=>{
 
-btn.onclick=()=>{
+// =========================================================
+// QUICK ACTIONS
+// =========================================================
 
-userInput.value=btn.dataset.action+" ";
+document
+    .querySelectorAll(".quickBtn")
+    .forEach(function(button) {
 
-userInput.focus();
+        button.addEventListener(
+            "click",
+            function() {
 
-};
+                const action =
+                    button.dataset.action;
 
-});
+                userInput.value =
+                    action + " ";
 
-// ==========================
+                userInput.focus();
+
+            }
+        );
+
+    });
+
+
+// =========================================================
 // CLEAR CHAT
-// ==========================
+// =========================================================
 
-document.getElementById("clearBtn").onclick=()=>{
+const clearBtn =
+    document.getElementById("clearBtn");
 
-chatBox.innerHTML=`
-<div class="message ai">
-<p>Hello 👋<br>I am Kirong AI.</p>
-</div>
-`;
+clearBtn?.addEventListener(
+    "click",
+    function() {
 
-chatHistory=[];
+        chatBox.innerHTML = `
+            <div class="message ai">
+                <p>
+                    Hello 👋
+                    <br><br>
+                    I am <strong>Kirong AI</strong>.
+                    How can I help you today?
+                </p>
+            </div>
+        `;
 
-};
+        chatHistory = [];
 
-// ==========================
+        userInput.focus();
+
+    }
+);
+
+
+// =========================================================
 // EXPORT CHAT
-// ==========================
+// =========================================================
 
-document.getElementById("exportBtn").onclick=()=>{
+const exportBtn =
+    document.getElementById("exportBtn");
 
-const text=[...document.querySelectorAll(".message")]
+exportBtn?.addEventListener(
+    "click",
+    function() {
 
-.map(x=>x.innerText)
+        const messages =
+            [...document.querySelectorAll(".message")];
 
-.join("\n\n");
+        const text =
+            messages
+                .map(message =>
+                    message.innerText
+                )
+                .join("\n\n");
 
-const blob=new Blob([text],{
+        const blob =
+            new Blob(
+                [text],
+                {
+                    type: "text/plain"
+                }
+            );
 
-type:"text/plain"
+        const url =
+            URL.createObjectURL(blob);
 
-});
+        const link =
+            document.createElement("a");
 
-const a=document.createElement("a");
+        link.href = url;
 
-a.href=URL.createObjectURL(blob);
+        link.download =
+            "KirongAI_Conversation.txt";
 
-a.download="KirongAI_Chat.txt";
+        link.click();
 
-a.click();
+        URL.revokeObjectURL(url);
 
-};
+    }
+);
 
-// ==========================
+
+// =========================================================
 // LOCATION
-// ==========================
+// =========================================================
 
-document.getElementById("locationBtn").onclick=()=>{
+const locationBtn =
+    document.getElementById("locationBtn");
 
-if(!navigator.geolocation){
+locationBtn?.addEventListener(
+    "click",
+    function() {
 
-addMessage("Location not supported.","ai");
+        if (!navigator.geolocation) {
 
-return;
+            addMessage(
+                "Location is not supported by this browser.",
+                "ai"
+            );
 
-}
+            return;
+        }
 
-navigator.geolocation.getCurrentPosition(pos=>{
 
-addMessage(
+        addMessage(
+            "📍 Requesting your location...",
+            "ai"
+        );
 
-`📍 Latitude: ${pos.coords.latitude.toFixed(4)}<br>
-Longitude: ${pos.coords.longitude.toFixed(4)}`,
 
-"ai"
+        navigator.geolocation.getCurrentPosition(
 
+            function(position) {
+
+                const latitude =
+                    position.coords.latitude
+                        .toFixed(4);
+
+                const longitude =
+                    position.coords.longitude
+                        .toFixed(4);
+
+                addMessage(
+                    `📍 Latitude: ${latitude}
+Longitude: ${longitude}`,
+                    "ai"
+                );
+
+            },
+
+            function() {
+
+                addMessage(
+                    "⚠️ Location permission was not granted.",
+                    "ai"
+                );
+
+            }
+
+        );
+
+    }
 );
 
-});
 
-};
-
-// ==========================
+// =========================================================
 // FILE UPLOAD
-// ==========================
+// =========================================================
 
-const fileInput=document.getElementById("fileInput");
+const uploadBtn =
+    document.getElementById("uploadBtn");
 
-document.getElementById("uploadBtn").onclick=()=>{
+const fileInput =
+    document.getElementById("fileInput");
 
-fileInput.click();
 
-};
+uploadBtn?.addEventListener(
+    "click",
+    function() {
 
-fileInput.onchange=()=>{
+        fileInput?.click();
 
-if(fileInput.files.length){
-
-addMessage(
-
-`📎 ${fileInput.files[0].name}`,
-
-"user"
-
+    }
 );
 
-}
 
-};
+fileInput?.addEventListener(
+    "change",
+    function() {
+
+        const file =
+            fileInput.files?.[0];
+
+        if (!file) return;
+
+        addMessage(
+            `📎 File selected: ${file.name}`,
+            "user"
+        );
+
+    }
+);
+
+
+// =========================================================
+// STARTUP
+// =========================================================
+
+console.log(
+    "⚡ Kirong AI frontend initialized."
+);
