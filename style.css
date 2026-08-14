@@ -1,525 +1,1307 @@
-/* ==========================
-   KIRONG AI v2
-========================== */
-
-*{
-margin:0;
-padding:0;
-box-sizing:border-box;
-font-family:'Segoe UI',sans-serif;
-}
-
-body{
-
-background:linear-gradient(135deg,#7c3aed,#4f46e5);
-
-min-height:100vh;
-
-display:flex;
-
-justify-content:center;
-
-align-items:center;
-
-padding:20px;
-
-transition:.4s;
-
-}
-
-body.dark{
-
-background:linear-gradient(135deg,#111827,#1f2937);
-
-}
-
-.container{
-
-width:100%;
-
-max-width:900px;
-
-height:92vh;
-
-display:flex;
-
-flex-direction:column;
-
-overflow:hidden;
-
-border-radius:24px;
-
-background:rgba(255,255,255,.08);
-
-backdrop-filter:blur(20px);
-
-border:1px solid rgba(255,255,255,.15);
-
-box-shadow:0 20px 60px rgba(0,0,0,.35);
-
-}
-
-.header{
-
-display:flex;
-
-justify-content:space-between;
-
-align-items:center;
-
-padding:18px;
-
-background:rgba(255,255,255,.06);
-
-border-bottom:1px solid rgba(255,255,255,.08);
-
-}
-
-.headerLeft{
-
-display:flex;
-
-align-items:center;
-
-gap:12px;
-
-}
-
-.header h1{
-
-color:white;
-
-font-size:24px;
-
-font-weight:700;
-
-}
-
-#languageSelect{
-
-padding:10px;
-
-border:none;
-
-border-radius:12px;
-
-background:rgba(255,255,255,.1);
-
-color:white;
-
-outline:none;
-
-}
-
-#languageSelect option{
-
-color:black;
-
-}
-
-#themeBtn{
-
-border:none;
-
-background:rgba(255,255,255,.1);
-
-padding:10px 15px;
-
-border-radius:50%;
-
-cursor:pointer;
-
-font-size:18px;
-
-color:white;
-
-transition:.3s;
-
-}
-
-#themeBtn:hover{
-
-transform:rotate(180deg);
-
-}
-
-#chatBox{
-
-flex:1;
-
-overflow-y:auto;
-
-padding:20px;
-
-display:flex;
-
-flex-direction:column;
-
-gap:14px;
-
-}
-
-.message{
-
-padding:14px 18px;
-
-border-radius:18px;
-
-max-width:80%;
-
-line-height:1.6;
-
-animation:fadeIn .25s;
-
-word-wrap:break-word;
-
-}
-
-.message img{
-
-display:block;
-
-margin:auto;
-
-margin-top:12px;
-
-width:100%;
-
-max-width:420px;
-
-border-radius:20px;
-
-box-shadow:0 15px 40px rgba(0,0,0,.3);
-
+/* =========================================================
+   KIRONG AI — PREMIUM V3
+   Modern AI Interface
+========================================================= */
+
+:root {
+    --bg: #06060d;
+    --bg-secondary: #0b0b16;
+
+    --surface: rgba(255, 255, 255, 0.045);
+    --surface-hover: rgba(255, 255, 255, 0.075);
+
+    --border: rgba(255, 255, 255, 0.09);
+    --border-hover: rgba(139, 92, 246, 0.45);
+
+    --primary: #8b5cf6;
+    --primary-dark: #6d28d9;
+    --primary-light: #a78bfa;
+
+    --text: #f8fafc;
+    --text-secondary: #cbd5e1;
+    --muted: #8892a5;
+
+    --user-message: linear-gradient(
+        135deg,
+        #7c3aed,
+        #5b21b6
+    );
+
+    --shadow: 0 25px 80px rgba(0, 0, 0, 0.45);
+
+    --radius-xl: 26px;
+    --radius-lg: 18px;
+    --radius-md: 14px;
 }
 
 
-.ai{
+/* =========================================================
+   RESET
+========================================================= */
 
-align-self:flex-start;
-
-background:rgba(255,255,255,.12);
-
-color:white;
-
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
 }
 
-.user{
-
-align-self:flex-end;
-
-background:#6366f1;
-
-color:white;
-
+html,
+body {
+    width: 100%;
+    height: 100%;
 }
 
-/* ==========================
+body {
+    min-height: 100dvh;
+
+    font-family:
+        Inter,
+        -apple-system,
+        BlinkMacSystemFont,
+        "Segoe UI",
+        Roboto,
+        sans-serif;
+
+    color: var(--text);
+
+    background:
+        radial-gradient(
+            circle at 15% 10%,
+            rgba(124, 58, 237, 0.18),
+            transparent 30%
+        ),
+        radial-gradient(
+            circle at 85% 85%,
+            rgba(79, 70, 229, 0.13),
+            transparent 32%
+        ),
+        var(--bg);
+
+    overflow: hidden;
+
+    -webkit-font-smoothing: antialiased;
+
+    transition:
+        background 0.35s ease,
+        color 0.35s ease;
+}
+
+
+/* =========================================================
+   MAIN APP
+========================================================= */
+
+.container {
+    position: relative;
+
+    width: min(1100px, 100%);
+    height: 100dvh;
+
+    margin: 0 auto;
+
+    display: flex;
+    flex-direction: column;
+
+    overflow: hidden;
+
+    background:
+        linear-gradient(
+            180deg,
+            rgba(255, 255, 255, 0.025),
+            rgba(255, 255, 255, 0.008)
+        );
+
+    border-left: 1px solid var(--border);
+    border-right: 1px solid var(--border);
+}
+
+
+/* =========================================================
+   DESKTOP APP FRAME
+========================================================= */
+
+@media (min-width: 769px) {
+
+    body {
+        padding: 20px;
+    }
+
+    .container {
+        height: min(94dvh, 900px);
+
+        border: 1px solid var(--border);
+
+        border-radius: var(--radius-xl);
+
+        box-shadow: var(--shadow);
+
+        backdrop-filter: blur(25px);
+        -webkit-backdrop-filter: blur(25px);
+    }
+}
+
+
+/* =========================================================
+   HEADER
+========================================================= */
+
+.header {
+    position: relative;
+
+    height: 72px;
+
+    flex-shrink: 0;
+
+    display: flex;
+
+    align-items: center;
+
+    justify-content: space-between;
+
+    padding: 0 22px;
+
+    background:
+        rgba(6, 6, 13, 0.82);
+
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
+
+    border-bottom: 1px solid var(--border);
+
+    z-index: 50;
+}
+
+
+.headerLeft {
+    display: flex;
+
+    align-items: center;
+
+    gap: 14px;
+
+    min-width: 0;
+}
+
+
+.header h1 {
+    font-size: 20px;
+
+    font-weight: 800;
+
+    letter-spacing: -0.6px;
+
+    white-space: nowrap;
+}
+
+
+/* glowing brand dot */
+
+.header h1::first-letter {
+    filter:
+        drop-shadow(
+            0 0 10px var(--primary)
+        );
+}
+
+
+/* =========================================================
+   LANGUAGE SELECT
+========================================================= */
+
+#languageSelect {
+
+    appearance: none;
+
+    height: 38px;
+
+    padding:
+        0 30px
+        0 12px;
+
+    border: 1px solid var(--border);
+
+    border-radius: 12px;
+
+    background:
+        rgba(255, 255, 255, 0.045);
+
+    color: var(--text);
+
+    font-size: 12px;
+
+    font-weight: 650;
+
+    outline: none;
+
+    cursor: pointer;
+
+    transition:
+        border-color 0.25s ease,
+        background 0.25s ease;
+}
+
+#languageSelect:hover,
+#languageSelect:focus {
+
+    border-color:
+        var(--border-hover);
+
+    background:
+        rgba(139, 92, 246, 0.09);
+}
+
+#languageSelect option {
+
+    background: #11111d;
+
+    color: white;
+}
+
+
+/* =========================================================
+   THEME BUTTON
+========================================================= */
+
+#themeBtn {
+
+    width: 42px;
+    height: 42px;
+
+    display: grid;
+
+    place-items: center;
+
+    border: 1px solid var(--border);
+
+    border-radius: 14px;
+
+    background:
+        rgba(255, 255, 255, 0.045);
+
+    color: white;
+
+    font-size: 17px;
+
+    cursor: pointer;
+
+    transition:
+        transform 0.3s ease,
+        background 0.3s ease,
+        border-color 0.3s ease;
+}
+
+#themeBtn:hover {
+
+    transform: rotate(18deg);
+
+    background:
+        rgba(139, 92, 246, 0.15);
+
+    border-color:
+        var(--border-hover);
+}
+
+
+/* =========================================================
+   CHAT AREA
+========================================================= */
+
+#chatBox {
+
+    flex: 1;
+
+    min-height: 0;
+
+    overflow-y: auto;
+
+    padding:
+        30px
+        clamp(16px, 5vw, 70px);
+
+    display: flex;
+
+    flex-direction: column;
+
+    gap: 18px;
+
+    scroll-behavior: smooth;
+
+    overscroll-behavior: contain;
+}
+
+
+/* scrollbar */
+
+#chatBox::-webkit-scrollbar {
+    width: 6px;
+}
+
+#chatBox::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+#chatBox::-webkit-scrollbar-thumb {
+
+    background:
+        rgba(255, 255, 255, 0.12);
+
+    border-radius: 100px;
+}
+
+#chatBox::-webkit-scrollbar-thumb:hover {
+
+    background:
+        rgba(139, 92, 246, 0.35);
+}
+
+
+/* =========================================================
+   MESSAGES
+========================================================= */
+
+.message {
+
+    position: relative;
+
+    max-width:
+        min(760px, 88%);
+
+    padding:
+        15px 18px;
+
+    border-radius:
+        var(--radius-lg);
+
+    font-size: 15px;
+
+    line-height: 1.65;
+
+    word-break: break-word;
+
+    overflow-wrap: anywhere;
+
+    animation:
+        messageAppear 0.25s ease;
+
+    transition:
+        transform 0.2s ease;
+}
+
+
+@keyframes messageAppear {
+
+    from {
+        opacity: 0;
+        transform: translateY(8px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+
+/* =========================================================
+   AI MESSAGE
+========================================================= */
+
+.message.ai {
+
+    align-self: flex-start;
+
+    color:
+        var(--text-secondary);
+
+    background:
+        linear-gradient(
+            145deg,
+            rgba(255, 255, 255, 0.065),
+            rgba(255, 255, 255, 0.025)
+        );
+
+    border:
+        1px solid var(--border);
+
+    border-bottom-left-radius:
+        6px;
+
+    box-shadow:
+        0 8px 30px rgba(0, 0, 0, 0.08);
+}
+
+
+/* subtle AI indicator */
+
+.message.ai::before {
+
+    content: "K";
+
+    position: absolute;
+
+    left: -9px;
+
+    top: 14px;
+
+    width: 20px;
+    height: 20px;
+
+    display: grid;
+
+    place-items: center;
+
+    border-radius: 7px;
+
+    background:
+        linear-gradient(
+            135deg,
+            var(--primary),
+            var(--primary-dark)
+        );
+
+    color: white;
+
+    font-size: 10px;
+
+    font-weight: 900;
+
+    box-shadow:
+        0 4px 15px rgba(109, 40, 217, 0.35);
+}
+
+
+/* =========================================================
+   USER MESSAGE
+========================================================= */
+
+.message.user {
+
+    align-self: flex-end;
+
+    color: white;
+
+    background:
+        var(--user-message);
+
+    border:
+        1px solid
+        rgba(167, 139, 250, 0.25);
+
+    border-bottom-right-radius:
+        6px;
+
+    box-shadow:
+        0 12px 35px
+        rgba(76, 29, 149, 0.22);
+}
+
+
+/* =========================================================
+   TEXT
+========================================================= */
+
+.message p {
+
+    margin: 0;
+
+    white-space: pre-wrap;
+}
+
+.message strong {
+    color: white;
+}
+
+
+/* =========================================================
+   CODE BLOCKS
+========================================================= */
+
+.message pre {
+
+    margin-top: 12px;
+
+    padding: 15px;
+
+    overflow-x: auto;
+
+    border-radius: 12px;
+
+    background:
+        rgba(0, 0, 0, 0.45);
+
+    border:
+        1px solid rgba(255, 255, 255, 0.08);
+
+    font-family:
+        "SFMono-Regular",
+        Consolas,
+        monospace;
+
+    font-size: 13px;
+
+    line-height: 1.6;
+}
+
+.message code {
+
+    font-family:
+        "SFMono-Regular",
+        Consolas,
+        monospace;
+
+    font-size: 0.92em;
+}
+
+
+/* =========================================================
+   GENERATED IMAGES
+========================================================= */
+
+.message img {
+
+    display: block;
+
+    width: 100%;
+
+    max-width: 460px;
+
+    margin-top: 14px;
+
+    border-radius: 18px;
+
+    border:
+        1px solid var(--border);
+
+    box-shadow:
+        0 20px 50px
+        rgba(0, 0, 0, 0.35);
+}
+
+
+/* =========================================================
+   THINKING INDICATOR
+========================================================= */
+
+#thinking {
+
+    flex-shrink: 0;
+
+    padding:
+        7px
+        clamp(16px, 5vw, 70px);
+
+    color: var(--muted);
+
+    font-size: 12px;
+
+    font-style: italic;
+}
+
+#thinking:not(.hidden)::after {
+
+    content: "...";
+
+    display: inline-block;
+
+    width: 18px;
+
+    overflow: hidden;
+
+    vertical-align: bottom;
+
+    animation:
+        dots 1.2s infinite;
+}
+
+@keyframes dots {
+
+    0% {
+        width: 0;
+    }
+
+    33% {
+        width: 6px;
+    }
+
+    66% {
+        width: 12px;
+    }
+
+    100% {
+        width: 18px;
+    }
+}
+
+.hidden {
+    display: none !important;
+}
+
+
+/* =========================================================
    QUICK ACTIONS
-========================== */
+========================================================= */
 
-.quickActions{
+.quickActions {
 
-display:flex;
+    display: flex;
 
-gap:10px;
+    gap: 9px;
 
-padding:14px;
+    padding:
+        10px
+        clamp(14px, 5vw, 70px);
 
-overflow-x:auto;
+    overflow-x: auto;
 
-background:rgba(255,255,255,.05);
+    background:
+        rgba(6, 6, 13, 0.76);
 
+    border-top:
+        1px solid var(--border);
+
+    scrollbar-width: none;
+
+    z-index: 20;
 }
+
+.quickActions::-webkit-scrollbar {
+    display: none;
+}
+
+
+/* buttons */
 
 .quickBtn,
-#locationBtn{
+#locationBtn {
 
-padding:10px 16px;
+    flex-shrink: 0;
 
-border:none;
+    min-height: 36px;
 
-border-radius:20px;
+    padding:
+        0 14px;
 
-cursor:pointer;
+    border:
+        1px solid var(--border);
 
-background:rgba(255,255,255,.10);
+    border-radius:
+        999px;
 
-color:white;
+    background:
+        rgba(255, 255, 255, 0.045);
 
-font-weight:600;
+    color:
+        var(--text-secondary);
 
-transition:.3s;
+    font-size: 12px;
 
-white-space:nowrap;
+    font-weight: 650;
 
+    cursor: pointer;
+
+    white-space: nowrap;
+
+    transition:
+        transform 0.2s ease,
+        background 0.2s ease,
+        border-color 0.2s ease,
+        color 0.2s ease;
 }
 
 .quickBtn:hover,
-#locationBtn:hover{
+#locationBtn:hover {
 
-transform:translateY(-3px);
+    transform:
+        translateY(-2px);
 
-background:rgba(255,255,255,.20);
+    background:
+        rgba(139, 92, 246, 0.13);
 
+    border-color:
+        var(--border-hover);
+
+    color: white;
 }
 
-/* ==========================
-   MODERN INPUT AREA
-========================== */
+.quickBtn:active,
+#locationBtn:active {
 
-.inputArea{
-
-display:flex;
-
-align-items:center;
-
-gap:10px;
-
-padding:14px;
-
-background:rgba(255,255,255,.08);
-
-backdrop-filter:blur(20px);
-
-border-top:1px solid rgba(255,255,255,.08);
-
+    transform:
+        scale(0.96);
 }
 
-#voiceSelect{
 
-width:75px;
+/* =========================================================
+   INPUT AREA
+========================================================= */
 
-padding:10px;
+.inputArea {
 
-border:none;
+    flex-shrink: 0;
 
-border-radius:14px;
+    display: flex;
 
-background:rgba(255,255,255,.12);
+    align-items: center;
 
-color:white;
+    gap: 8px;
 
-flex-shrink:0;
+    padding:
+        11px
+        clamp(14px, 5vw, 70px);
 
+    background:
+        rgba(6, 6, 13, 0.92);
+
+    backdrop-filter:
+        blur(25px);
+
+    -webkit-backdrop-filter:
+        blur(25px);
+
+    border-top:
+        1px solid var(--border);
+
+    z-index: 30;
 }
+
+
+/* =========================================================
+   VOICE SELECT
+========================================================= */
+
+#voiceSelect {
+
+    width: 58px;
+
+    height: 44px;
+
+    padding: 0 7px;
+
+    border:
+        1px solid var(--border);
+
+    border-radius: 13px;
+
+    background:
+        rgba(255, 255, 255, 0.045);
+
+    color: white;
+
+    font-size: 11px;
+
+    font-weight: 700;
+
+    outline: none;
+
+    cursor: pointer;
+}
+
+#voiceSelect option {
+
+    background: #11111d;
+
+    color: white;
+}
+
+
+/* =========================================================
+   ICON BUTTONS
+========================================================= */
 
 #uploadBtn,
-#micBtn{
+#micBtn {
 
-width:48px;
+    width: 44px;
+    height: 44px;
 
-height:48px;
+    flex-shrink: 0;
 
-border:none;
+    display: grid;
 
-border-radius:50%;
+    place-items: center;
 
-background:rgba(255,255,255,.12);
+    border:
+        1px solid var(--border);
 
-color:white;
+    border-radius: 13px;
 
-font-size:18px;
+    background:
+        rgba(255, 255, 255, 0.045);
 
-cursor:pointer;
+    color: white;
 
-flex-shrink:0;
+    font-size: 17px;
 
+    cursor: pointer;
+
+    transition:
+        background 0.2s ease,
+        border-color 0.2s ease,
+        transform 0.2s ease;
 }
 
-#userInput{
+#uploadBtn:hover,
+#micBtn:hover {
 
-flex:1;
+    background:
+        rgba(139, 92, 246, 0.14);
 
-height:50px;
+    border-color:
+        var(--border-hover);
 
-padding:0 18px;
-
-border:none;
-
-border-radius:25px;
-
-background:rgba(255,255,255,.12);
-
-color:white;
-
-font-size:15px;
-
-outline:none;
-
+    transform:
+        translateY(-1px);
 }
 
-#userInput::placeholder{
 
-color:rgba(255,255,255,.65);
+/* =========================================================
+   MESSAGE INPUT
+========================================================= */
 
+#userInput {
+
+    flex: 1;
+
+    min-width: 0;
+
+    height: 44px;
+
+    padding:
+        0 17px;
+
+    border:
+        1px solid var(--border);
+
+    border-radius:
+        14px;
+
+    outline: none;
+
+    background:
+        rgba(255, 255, 255, 0.045);
+
+    color: white;
+
+    font-size: 14px;
+
+    transition:
+        border-color 0.25s ease,
+        background 0.25s ease,
+        box-shadow 0.25s ease;
 }
 
-#sendBtn{
+#userInput::placeholder {
 
-padding:0 20px;
-
-height:50px;
-
-border:none;
-
-border-radius:25px;
-
-background:#6366f1;
-
-color:white;
-
-font-weight:bold;
-
-cursor:pointer;
-
-flex-shrink:0;
-
-transition:.3s;
-
+    color:
+        #6f7b90;
 }
 
-#sendBtn:hover{
+#userInput:hover {
 
-transform:scale(1.05);
-
+    border-color:
+        rgba(255, 255, 255, 0.14);
 }
-/* ==========================
+
+#userInput:focus {
+
+    border-color:
+        rgba(139, 92, 246, 0.65);
+
+    background:
+        rgba(255, 255, 255, 0.06);
+
+    box-shadow:
+        0 0 0 3px
+        rgba(139, 92, 246, 0.08);
+}
+
+
+/* =========================================================
+   SEND BUTTON
+========================================================= */
+
+#sendBtn {
+
+    width: 48px;
+
+    height: 44px;
+
+    flex-shrink: 0;
+
+    display: grid;
+
+    place-items: center;
+
+    padding: 0;
+
+    border: none;
+
+    border-radius: 14px;
+
+    background:
+        linear-gradient(
+            135deg,
+            var(--primary),
+            var(--primary-dark)
+        );
+
+    color: white;
+
+    font-size: 18px;
+
+    font-weight: 900;
+
+    cursor: pointer;
+
+    box-shadow:
+        0 8px 25px
+        rgba(109, 40, 217, 0.25);
+
+    transition:
+        transform 0.2s ease,
+        box-shadow 0.2s ease,
+        opacity 0.2s ease;
+}
+
+#sendBtn:hover {
+
+    transform:
+        translateY(-2px);
+
+    box-shadow:
+        0 12px 30px
+        rgba(109, 40, 217, 0.4);
+}
+
+#sendBtn:active {
+
+    transform:
+        scale(0.94);
+}
+
+#sendBtn:disabled {
+
+    opacity: 0.5;
+
+    cursor: not-allowed;
+}
+
+
+/* =========================================================
    FOOTER
-========================== */
+========================================================= */
 
-.footerButtons{
+.footerButtons {
 
-display:flex;
+    flex-shrink: 0;
 
-gap:10px;
+    display: flex;
 
-padding:16px;
+    gap: 9px;
 
-background:rgba(255,255,255,.05);
+    padding:
+        8px
+        clamp(14px, 5vw, 70px)
+        13px;
 
+    background:
+        rgba(6, 6, 13, 0.92);
 }
+
+
+/* footer buttons */
 
 #exportBtn,
-#clearBtn{
+#clearBtn {
 
-flex:1;
+    flex: 1;
 
-padding:12px;
+    height: 36px;
 
-border:none;
+    border:
+        1px solid var(--border);
 
-border-radius:16px;
+    border-radius: 11px;
 
-cursor:pointer;
+    background:
+        rgba(255, 255, 255, 0.035);
 
-background:rgba(255,255,255,.10);
+    color:
+        var(--muted);
 
-color:white;
+    font-size: 11px;
 
-font-weight:bold;
+    font-weight: 700;
 
-transition:.3s;
+    cursor: pointer;
 
+    transition:
+        background 0.2s ease,
+        color 0.2s ease,
+        border-color 0.2s ease;
 }
 
 #exportBtn:hover,
-#clearBtn:hover{
+#clearBtn:hover {
 
-background:rgba(255,255,255,.20);
+    color: white;
 
+    background:
+        rgba(255, 255, 255, 0.075);
+
+    border-color:
+        rgba(255, 255, 255, 0.16);
 }
 
-/* ==========================
-   THINKING
-========================== */
 
-#thinking{
+/* =========================================================
+   DARK MODE
+========================================================= */
 
-padding:10px;
+body.dark {
 
-text-align:center;
-
-font-style:italic;
-
-color:white;
-
+    background:
+        radial-gradient(
+            circle at 15% 10%,
+            rgba(124, 58, 237, 0.13),
+            transparent 30%
+        ),
+        #030308;
 }
 
-.hidden{
 
-display:none;
-
-}
-
-/* ==========================
-   ANIMATION
-========================== */
-
-@keyframes fadeIn{
-
-from{
-
-opacity:0;
-
-transform:translateY(10px);
-
-}
-
-to{
-
-opacity:1;
-
-transform:translateY(0);
-
-}
-
-}
-
-/* ==========================
+/* =========================================================
    MOBILE
-========================== */
+========================================================= */
 
-@media(max-width:768px){
+@media (max-width: 768px) {
 
-.container{
+    .container {
 
-height:100vh;
+        height: 100dvh;
 
-border-radius:0;
+        border: none;
 
+        border-radius: 0;
+    }
+
+
+    .header {
+
+        height: 64px;
+
+        padding:
+            0 14px;
+    }
+
+
+    .header h1 {
+
+        font-size: 17px;
+    }
+
+
+    #languageSelect {
+
+        height: 34px;
+
+        max-width: 95px;
+
+        font-size: 11px;
+    }
+
+
+    #themeBtn {
+
+        width: 38px;
+        height: 38px;
+
+        border-radius: 12px;
+    }
+
+
+    #chatBox {
+
+        padding:
+            20px 12px;
+
+        gap: 15px;
+    }
+
+
+    .message {
+
+        max-width: 92%;
+
+        padding:
+            13px 15px;
+
+        font-size: 14px;
+
+        line-height: 1.6;
+    }
+
+
+    .message.ai::before {
+
+        display: none;
+    }
+
+
+    .quickActions {
+
+        padding:
+            9px 10px;
+    }
+
+
+    .quickBtn,
+    #locationBtn {
+
+        min-height: 34px;
+
+        padding:
+            0 12px;
+
+        font-size: 11px;
+    }
+
+
+    .inputArea {
+
+        padding:
+            9px;
+
+        gap: 7px;
+    }
+
+
+    #voiceSelect {
+
+        display: none;
+    }
+
+
+    #uploadBtn,
+    #micBtn {
+
+        width: 42px;
+        height: 42px;
+
+        border-radius: 12px;
+    }
+
+
+    #userInput {
+
+        height: 42px;
+
+        border-radius: 13px;
+
+        padding:
+            0 13px;
+
+        font-size: 14px;
+    }
+
+
+    #sendBtn {
+
+        width: 44px;
+
+        height: 42px;
+
+        border-radius: 13px;
+    }
+
+
+    .footerButtons {
+
+        padding:
+            7px 9px 10px;
+    }
+
+
+    #exportBtn,
+    #clearBtn {
+
+        height: 34px;
+
+        font-size: 10px;
+    }
 }
 
-.header{
 
-flex-direction:column;
+/* =========================================================
+   SMALL PHONES
+========================================================= */
 
-gap:10px;
+@media (max-width: 390px) {
 
+    .headerLeft {
+
+        gap: 8px;
+    }
+
+
+    .header h1 {
+
+        font-size: 15px;
+    }
+
+
+    #languageSelect {
+
+        max-width: 82px;
+    }
+
+
+    #uploadBtn {
+
+        display: none;
+    }
+
+
+    .message {
+
+        max-width: 95%;
+    }
 }
 
-.inputArea{
 
-flex-wrap:wrap;
+/* =========================================================
+   ACCESSIBILITY
+========================================================= */
 
+button:focus-visible,
+select:focus-visible,
+input:focus-visible {
+
+    outline:
+        2px solid
+        rgba(167, 139, 250, 0.75);
+
+    outline-offset:
+        2px;
 }
 
-#voiceSelect{
 
-width:100%;
+/* =========================================================
+   REDUCED MOTION
+========================================================= */
 
-}
+@media (prefers-reduced-motion: reduce) {
 
-#userInput{
+    *,
+    *::before,
+    *::after {
 
-width:100%;
+        animation-duration: 0.01ms !important;
 
-}
+        animation-iteration-count: 1 !important;
 
-.message{
+        scroll-behavior: auto !important;
 
-max-width:95%;
-
-}
-
+        transition-duration: 0.01ms !important;
+    }
 }
