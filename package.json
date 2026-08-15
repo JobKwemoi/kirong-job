@@ -1,5 +1,19 @@
-"dependencies": {
-  "groq-sdk": "^0.8.0",
-  "openai": "^4.52.0",
-  "replicate": "^0.29.0"
+{
+  "name": "kirong-ai",
+  "version": "1.0.0",
+  "description": "Kirong AI - Intelligent Assistant by Kirong Job Kwemoi",
+  "main": "api/chat.js",
+  "scripts": {
+    "dev": "vercel dev",
+    "build": "vercel build",
+    "start": "vercel dev"
+  },
+  "dependencies": {
+    "groq-sdk": "^0.8.0",
+    "openai": "^4.52.0",
+    "replicate": "^0.29.0"
+  },
+  "keywords": ["ai", "chatbot", "kenya", "kirong"],
+  "author": "Kirong Job Kwemoi",
+  "license": "MIT"
 }
