@@ -5,6 +5,7 @@
   "description": "Kirong AI - Intelligent Kenyan AI Assistant",
   "dependencies": {
     "groq-sdk": "^0.12.0",
-    "openai": "^5.0.0"
+    "openai": "^5.0.0",
+    "replicate": "^0.29.0"
   }
 }
