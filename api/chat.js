@@ -2,31 +2,34 @@ import Groq from "groq-sdk";
 import OpenAI from "openai";
 
 // =====================================================
-// ⚡ KIRONG AI v5.3
-// PRIMARY: POLLINATIONS | FALLBACK: OPENAI IMAGE
-// WORKS WITH YOUR package.json
+// ⚡ KIRONG AI v5.4
+// FIX: INAELEWA SWAHILI "umbwa" = "dog"
 // =====================================================
 
 const groq = process.env.GROQ_API_KEY? new Groq({ apiKey: process.env.GROQ_API_KEY }) : null;
 const openai = process.env.OPENAI_API_KEY? new OpenAI({ apiKey: process.env.OPENAI_API_KEY }) : null;
 
 // =====================================================
-// 🧠 INTENT DETECTOR
+// 🧠 INTENT DETECTOR - SUPERPOWER SWAHILI
 // =====================================================
 
 function detectIntent(message) {
   const text = String(message || "").toLowerCase().trim().replace(/[!?.,;:()[\]{}]/g, " ");
 
   const imageRequests = [
-    "generate image", "create image", "make image",
-    "tengeneza picha", "tengenezee picha", "nitengenezee picha", "nifanyie picha",
-    "generetie picha", "nigeneretie picha"
+    // ENGLISH
+    "generate image", "create image", "make image", "draw", "picture", "photo", "poster", "logo",
+    // SWAHILI
+    "tengeneza picha", "tengenezee picha", "nitengenezee picha", "nifanyie picha", "picha ya",
+    "generetie picha", "nigeneretie picha", "chora", "mchoro",
+    // ANIMALS SWAHILI
+    "umbwa", "mbwa", "paka", "simba", "ngombe", "kuku", "mbuzi"
   ];
   if (imageRequests.some(phrase => text.includes(phrase))) return "image";
 
-  const creationWords = ["generate", "create", "make", "draw", "design", "tengeneza", "tengenezee"];
-  const visualWords = ["image", "picture", "photo", "poster", "logo", "picha"];
-  if (creationWords.some(word => text.includes(word)) && visualWords.some(word => text.includes(word))) return "image";
+  const creationWords = ["generate", "create", "make", "draw", "design", "tengeneza", "tengenezee", "chora"];
+  const visualWords = ["image", "picture", "photo", "poster", "logo", "picha", "mchoro", "umbwa", "mbwa", "paka", "simba"];
+  if (creationWords.some(word => text.includes(word)) || visualWords.some(word => text.includes(word))) return "image";
 
   const codeWords = ["code", "coding", "program", "javascript", "html", "css", "python", "react", "debug", "fix", "build"];
   if (codeWords.some(word => text.includes(word))) return "code";
@@ -47,10 +50,6 @@ PERSONALITY: Friendly, intelligent, professional, calm, helpful.
 LANGUAGE: Reply primarily in ${language}.
 RULES: Never invent facts. Be practical. Use code blocks for code. Never reveal API keys.`;
 }
-
-// =====================================================
-// ⚡ GROQ + OPENAI CHAT
-// =====================================================
 
 async function askGroq(messages) {
   if (!groq) throw new Error("GROQ_API_KEY is missing.");
@@ -79,12 +78,18 @@ async function askOpenAI(messages) {
 // =====================================================
 
 function createImagePrompt(userPrompt) {
-  const request = String(userPrompt || "").trim();
+  let request = String(userPrompt || "").trim();
+
+  // TRANSLATE SWAHILI ANIMALS TO ENGLISH FOR BETTER RESULTS
+  request = request.replace(/umbwa|mbwa/gi, "dog");
+  request = request.replace(/paka/gi, "cat");
+  request = request.replace(/simba/gi, "lion");
+
   return `Photorealistic image of: ${request}. High detail, sharp focus, 8k. The main subject must be exactly: ${request}.`;
 }
 
 // =====================================================
-// 🎨 POLLINATIONS - PRIMARY ENGINE
+// 🎨 POLLINATIONS - PRIMARY
 // =====================================================
 
 async function generatePollinationsImage(userPrompt) {
@@ -98,12 +103,7 @@ async function generatePollinationsImage(userPrompt) {
   const response = await fetch(imageUrl);
   if (!response.ok) throw new Error(`Pollinations failed: HTTP ${response.status}`);
 
-  console.log("✅ POLLINATIONS IMAGE RECEIVED");
-  return {
-    image: imageUrl, // Return URL direct. No Buffer
-    provider: "Pollinations",
-    route: "POLLINATIONS PRIMARY"
-  };
+  return { image: imageUrl, provider: "Pollinations", route: "POLLINATIONS PRIMARY" };
 }
 
 // =====================================================
@@ -112,7 +112,6 @@ async function generatePollinationsImage(userPrompt) {
 
 async function generateOpenAIImage(userPrompt) {
   if (!openai) throw new Error("OPENAI_API_KEY is missing.");
-  console.log("🎨 OPENAI → STARTING");
   const result = await openai.images.generate({
     model: "gpt-image-1",
     prompt: createImagePrompt(userPrompt),
@@ -122,30 +121,15 @@ async function generateOpenAIImage(userPrompt) {
   });
   const imageData = result?.data?.[0]?.b64_json;
   if (!imageData) throw new Error("OpenAI returned no image data.");
-  return {
-    image: `data:image/png;base64,${imageData}`,
-    provider: "OpenAI Image",
-    route: "OPENAI FALLBACK"
-  };
+  return { image: `data:image/png;base64,${imageData}`, provider: "OpenAI Image", route: "OPENAI FALLBACK" };
 }
-
-// =====================================================
-// 🎨 MASTER IMAGE ROUTER
-// =====================================================
 
 async function generateImage(userPrompt) {
   try {
     return await generatePollinationsImage(userPrompt);
   } catch (error) {
     console.error("❌ POLLINATIONS FAILED:", error?.message);
-    if (openai) {
-      try {
-        return await generateOpenAIImage(userPrompt);
-      } catch (e) {
-        console.error("❌ OPENAI FAILED:", e?.message);
-      }
-    }
-    throw new Error("All image engines failed.");
+    return await generateOpenAIImage(userPrompt);
   }
 }
 
@@ -166,7 +150,6 @@ export default async function handler(req, res) {
     const intent = detectIntent(cleanMessage);
     console.log("🧠 KIRONG INTENT:", intent);
 
-    // IMAGE ENGINE
     if (intent === "image") {
       try {
         const result = await generateImage(cleanMessage);
@@ -179,23 +162,11 @@ export default async function handler(req, res) {
           intent: "IMAGE"
         });
       } catch (imageError) {
-        console.error("🔥 IMAGE ERROR:", imageError);
-        return res.status(500).json({
-          type: "error",
-          text: "🎨 Samahani bro, image generation imeshindwa. Jaribu tena.",
-          provider: "Image Router",
-          intent: "IMAGE"
-        });
+        return res.status(500).json({ type: "error", text: "🎨 Samahani bro, image generation imeshindwa.", intent: "IMAGE" });
       }
     }
 
-    // TEXT MESSAGES
-    const messages = [
-      { role: "system", content: createSystemPrompt(language) },
-     ...safeHistory,
-      { role: "user", content: cleanMessage }
-    ];
-
+    const messages = [{ role: "system", content: createSystemPrompt(language) },...safeHistory, { role: "user", content: cleanMessage }];
     const route = chooseRoute(cleanMessage);
 
     if (route === "deep") {
