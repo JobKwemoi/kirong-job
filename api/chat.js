@@ -1,4 +1,4 @@
-```javascript
+
 // ============================================================
 // ⚡ KIRONG AI — API ENGINE V5.1
 // Groq = Chat
@@ -489,4 +489,4 @@ export default async function handler(
   }
 
 }
-```
+
