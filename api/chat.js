@@ -1,11 +1,11 @@
 // =====================================================
 // ⚡ KIRONG AI — FINAL CHAT ENGINE
-// Version 6.0
+// v6.1
 //
-// 🧠 Groq          → Conversation / Intelligence
-// 🎨 Hugging Face  → Image Generation
-// 🇬🇧 English      → Fully supported
-// 🇰🇪 Kiswahili    → Fully supported
+// 🧠 Groq              → Chat / Text
+// 🎨 Hugging Face      → Image Generation
+// 🇬🇧 English           → Supported
+// 🇰🇪 Kiswahili         → Supported
 // =====================================================
 
 import Groq from "groq-sdk";
@@ -19,8 +19,8 @@ import { InferenceClient } from "@huggingface/inference";
 const GROQ_API_KEY =
   process.env.GROQ_API_KEY;
 
-const HF_TOKEN =
-  process.env.HF_TOKEN;
+const HUGGINGFACE_API_KEY =
+  process.env.HUGGINGFACE_API_KEY;
 
 
 // =====================================================
@@ -34,13 +34,15 @@ const groq = GROQ_API_KEY
   : null;
 
 
-const hf = HF_TOKEN
-  ? new InferenceClient(HF_TOKEN)
+const hf = HUGGINGFACE_API_KEY
+  ? new InferenceClient(
+      HUGGINGFACE_API_KEY
+    )
   : null;
 
 
 // =====================================================
-// 🧠 LANGUAGE NORMALIZATION
+// 🌍 LANGUAGE
 // =====================================================
 
 function normalizeLanguage(language) {
@@ -63,7 +65,7 @@ function normalizeLanguage(language) {
 
 
 // =====================================================
-// 🎨 IMAGE INTENT DETECTION
+// 🎨 IMAGE INTENT
 // =====================================================
 
 function detectIntent(message) {
@@ -75,10 +77,10 @@ function detectIntent(message) {
 
 
   // ---------------------------------------------------
-  // 🇬🇧 ENGLISH IMAGE COMMANDS
+  // 🇬🇧 ENGLISH
   // ---------------------------------------------------
 
-  const englishImagePatterns = [
+  const englishPatterns = [
 
     "generate image",
     "generate an image",
@@ -108,10 +110,10 @@ function detectIntent(message) {
 
 
   // ---------------------------------------------------
-  // 🇰🇪 KISWAHILI IMAGE COMMANDS
+  // 🇰🇪 KISWAHILI
   // ---------------------------------------------------
 
-  const swahiliImagePatterns = [
+  const swahiliPatterns = [
 
     "picha",
     "tengeneza picha",
@@ -135,21 +137,21 @@ function detectIntent(message) {
   ];
 
 
-  const englishRequest =
-    englishImagePatterns.some(
+  const englishImage =
+    englishPatterns.some(
       pattern => text.includes(pattern)
     );
 
 
-  const swahiliRequest =
-    swahiliImagePatterns.some(
+  const swahiliImage =
+    swahiliPatterns.some(
       pattern => text.includes(pattern)
     );
 
 
   if (
-    englishRequest ||
-    swahiliRequest
+    englishImage ||
+    swahiliImage
   ) {
 
     return "image";
@@ -162,7 +164,7 @@ function detectIntent(message) {
 
 
 // =====================================================
-// 🎨 IMAGE PROMPT CREATION
+// 🎨 IMAGE PROMPT
 // =====================================================
 
 function createImagePrompt(userPrompt) {
@@ -172,9 +174,7 @@ function createImagePrompt(userPrompt) {
       .trim();
 
 
-  // ---------------------------------------------------
   // Remove common commands
-  // ---------------------------------------------------
 
   prompt =
     prompt.replace(
@@ -222,10 +222,10 @@ High visual quality.
 
 async function generateImage(userPrompt) {
 
-  if (!HF_TOKEN) {
+  if (!HUGGINGFACE_API_KEY) {
 
     throw new Error(
-      "HF_TOKEN is missing from Vercel Environment Variables."
+      "HUGGINGFACE_API_KEY is missing from Vercel Environment Variables."
     );
 
   }
@@ -245,17 +245,12 @@ async function generateImage(userPrompt) {
 
 
   console.log(
-    "🎨 KIRONG AI IMAGE REQUEST"
-  );
-
-  console.log(
-    "Prompt:",
-    prompt
+    "🎨 Kirong AI → Hugging Face image request"
   );
 
 
   // ---------------------------------------------------
-  // FLUX IMAGE GENERATION
+  // FLUX
   // ---------------------------------------------------
 
   const imageBlob =
@@ -283,7 +278,7 @@ async function generateImage(userPrompt) {
 
 
   // ---------------------------------------------------
-  // Convert image → Base64
+  // IMAGE → BASE64
   // ---------------------------------------------------
 
   const arrayBuffer =
@@ -297,17 +292,19 @@ async function generateImage(userPrompt) {
 
 
   return {
+
     image:
       `data:image/png;base64,${base64}`,
 
     provider:
       "Hugging Face FLUX"
+
   };
 }
 
 
 // =====================================================
-// 🧹 SAFE HISTORY
+// 🧹 HISTORY
 // =====================================================
 
 function cleanHistory(history) {
@@ -320,6 +317,7 @@ function cleanHistory(history) {
 
 
   return history
+
     .filter(item => {
 
       if (!item) {
@@ -338,9 +336,12 @@ function cleanHistory(history) {
       }
 
 
-      return typeof item.content === "string";
+      return (
+        typeof item.content === "string"
+      );
 
     })
+
     .slice(-20);
 }
 
@@ -357,11 +358,11 @@ function createSystemPrompt(language) {
 Wewe ni Kirong AI 🌍💜,
 msaidizi wa akili bandia aliyeundwa na Kirong Job Kwemoi.
 
-Jibu mtumiaji kwa Kiswahili sanifu, cha kawaida na kinachoeleweka.
+Jibu kwa Kiswahili sanifu, cha kawaida na kinachoeleweka.
 
-MAELEKEZO MUHIMU:
+MAELEKEZO:
 
-1. Jibu kwa Kiswahili kila wakati isipokuwa mtumiaji akiomba lugha nyingine.
+1. Jibu kwa Kiswahili isipokuwa mtumiaji akiomba lugha nyingine.
 
 2. Kuwa rafiki, mwenye heshima, mwenye akili na mwenye msaada.
 
@@ -369,21 +370,21 @@ MAELEKEZO MUHIMU:
 
 4. Kirong AI ina uwezo wa kusaidia kutengeneza picha kupitia image generation engine.
 
-5. Ikiwa backend imepokea image request, image engine ndiyo inahusika na kutengeneza picha.
+5. Image requests zinashughulikiwa na image engine.
 
-6. Usidanganye kwamba picha imetengenezwa ikiwa image engine haijafanikiwa.
+6. Usidai picha imetengenezwa ikiwa image engine imefeli.
 
-7. Kwa maswali ya coding, toa code safi, sahihi na inayoweza kutumika.
+7. Kwa coding, toa code safi na inayoweza kutumika.
 
-8. Kwa maswali ya kawaida, jibu moja kwa moja bila maelezo yasiyo ya lazima.
+8. Kwa maswali ya kawaida, jibu moja kwa moja.
 
-9. Usifichue API keys, environment variables, secrets au taarifa za server.
+9. Usifichue API keys, tokens, environment variables au secrets.
 
-10. Usidai kuwa umefanya action ambayo hujafanya.
+10. Usidai umefanya action ambayo hujafanya.
 
-11. Tumia Kiswahili cha asili na si tafsiri ya neno kwa neno kutoka Kiingereza.
+11. Tumia Kiswahili cha asili.
 
-12. Mtumiaji akichanganya Kiswahili na English, unaweza kutumia mchanganyiko huo kwa njia ya kawaida lakini msingi uwe Kiswahili.
+12. Mtumiaji akichanganya Kiswahili na English, unaweza kuelewa mchanganyiko huo.
 `;
 
   }
@@ -393,33 +394,33 @@ MAELEKEZO MUHIMU:
 You are Kirong AI 🌍💜,
 an intelligent AI assistant created by Kirong Job Kwemoi.
 
-Reply in clear, natural English.
+Reply in natural, clear English.
 
-IMPORTANT RULES:
+RULES:
 
-1. Always answer in English unless the user explicitly requests another language.
+1. Reply in English unless another language is requested.
 
-2. Be friendly, intelligent, respectful and helpful.
+2. Be friendly, respectful, intelligent and helpful.
 
 3. Never say that you are a "text-only AI".
 
-4. Kirong AI supports image generation through a separate image generation engine.
+4. Kirong AI supports image generation through a separate image engine.
 
-5. When an image request reaches the backend, the image engine handles generation.
+5. Image requests are handled by the image engine.
 
-6. Never claim that an image was generated if the image engine failed.
+6. Never claim an image was generated if the image engine failed.
 
-7. For coding questions, provide clean, practical and working code.
+7. For coding questions, provide clean practical code.
 
-8. For normal questions, answer directly and naturally.
+8. Answer normal questions directly.
 
-9. Never reveal API keys, environment variables, secrets or private server information.
+9. Never reveal API keys, tokens, environment variables or secrets.
 
-10. Never claim to have performed an action that you did not perform.
+10. Never claim an action was completed when it was not.
 
-11. Keep responses useful and avoid unnecessary repetition.
+11. Keep answers useful and natural.
 
-12. If the user mixes English and Kiswahili, you may naturally understand both, but respond primarily in English unless Kiswahili is requested.
+12. You understand both English and Kiswahili.
 `;
 
 }
@@ -465,7 +466,7 @@ export default async function handler(req, res) {
 
 
   // ===================================================
-  // METHOD CHECK
+  // METHOD
   // ===================================================
 
   if (req.method !== "POST") {
@@ -486,7 +487,7 @@ export default async function handler(req, res) {
   try {
 
     // =================================================
-    // 📦 REQUEST BODY
+    // 📦 BODY
     // =================================================
 
     const body =
@@ -512,7 +513,7 @@ export default async function handler(req, res) {
 
 
     // =================================================
-    // ❌ EMPTY MESSAGE
+    // EMPTY MESSAGE
     // =================================================
 
     if (!message) {
@@ -533,7 +534,7 @@ export default async function handler(req, res) {
 
 
     // =================================================
-    // 🧠 DETECT USER INTENT
+    // 🧠 INTENT
     // =================================================
 
     const intent =
@@ -546,7 +547,7 @@ export default async function handler(req, res) {
 
 
     // =================================================
-    // 🎨 IMAGE REQUEST
+    // 🎨 IMAGE
     // =================================================
 
     if (intent === "image") {
@@ -611,15 +612,10 @@ export default async function handler(req, res) {
 
 
     // =================================================
-    // 💬 CHAT REQUEST
+    // 🧠 CHAT
     // =================================================
 
     if (!GROQ_API_KEY) {
-
-      console.error(
-        "❌ GROQ_API_KEY missing."
-      );
-
 
       return res.status(500).json({
 
@@ -630,9 +626,9 @@ export default async function handler(req, res) {
 
           language === "Swahili"
 
-            ? "⚠️ GROQ_API_KEY haijawekwa kwenye Vercel Environment Variables."
+            ? "⚠️ GROQ_API_KEY haijawekwa kwenye Vercel."
 
-            : "⚠️ GROQ_API_KEY is missing from the Vercel Environment Variables."
+            : "⚠️ GROQ_API_KEY is missing from Vercel."
 
       });
 
@@ -647,10 +643,6 @@ export default async function handler(req, res) {
 
     }
 
-
-    // =================================================
-    // 🧠 SYSTEM MESSAGE
-    // =================================================
 
     const messages = [
 
@@ -680,7 +672,7 @@ export default async function handler(req, res) {
 
 
     // =================================================
-    // ⚡ GROQ REQUEST
+    // ⚡ GROQ
     // =================================================
 
     const completion =
@@ -690,7 +682,6 @@ export default async function handler(req, res) {
           "llama-3.1-8b-instant",
 
         messages:
-
           messages,
 
         temperature:
@@ -702,21 +693,12 @@ export default async function handler(req, res) {
       });
 
 
-    // =================================================
-    // 📥 RESPONSE
-    // =================================================
-
     const answer =
       completion
         ?.choices?.[0]
-        ?.message
-        ?.content
+        ?.message?.content
         ?.trim();
 
-
-    // =================================================
-    // ❌ EMPTY RESPONSE
-    // =================================================
 
     if (!answer) {
 
@@ -728,7 +710,7 @@ export default async function handler(req, res) {
 
 
     // =================================================
-    // ✅ SUCCESS
+    // ✅ RESPONSE
     // =================================================
 
     return res.status(200).json({
@@ -756,7 +738,7 @@ export default async function handler(req, res) {
     );
 
 
-    const message =
+    const errorMessage =
       String(
         error?.message ||
         "Unknown server error."
@@ -769,7 +751,7 @@ export default async function handler(req, res) {
         "error",
 
       text:
-        `⚠️ Kirong AI server error: ${message}`
+        `⚠️ Kirong AI server error: ${errorMessage}`
 
     });
 
