@@ -1,671 +1,492 @@
-// =========================================================
-// ⚡ KIRONG AI V5.1
-// FINAL AI ROUTER
-// Groq + OpenAI + Hugging Face Inference Providers
-// =========================================================
+```javascript
+// ============================================================
+// ⚡ KIRONG AI — API ENGINE V5.1
+// Groq = Chat
+// Hugging Face = Image Generation
+// ============================================================
 
 import Groq from "groq-sdk";
-import OpenAI from "openai";
 import { InferenceClient } from "@huggingface/inference";
 
 
-// =========================================================
+// ============================================================
 // 🔐 CLIENTS
-// =========================================================
+// ============================================================
 
 const groq = process.env.GROQ_API_KEY
-    ? new Groq({
-        apiKey: process.env.GROQ_API_KEY
+  ? new Groq({
+      apiKey: process.env.GROQ_API_KEY
     })
-    : null;
-
-
-const openai = process.env.OPENAI_API_KEY
-    ? new OpenAI({
-        apiKey: process.env.OPENAI_API_KEY
-    })
-    : null;
+  : null;
 
 
 const hf = process.env.HF_TOKEN
-    ? new InferenceClient(process.env.HF_TOKEN)
-    : null;
+  ? new InferenceClient(process.env.HF_TOKEN)
+  : null;
 
 
-// =========================================================
-// 🧹 SAFE STRING
-// =========================================================
+// ============================================================
+// 🧠 IMAGE INTENT DETECTION
+// ============================================================
 
-function safeString(value) {
+function detectIntent(message) {
 
-    return typeof value === "string"
-        ? value.trim()
-        : "";
+  const text = String(message || "")
+    .toLowerCase()
+    .trim();
 
+  const imagePatterns = [
+
+    "generate image",
+    "generate a picture",
+    "create image",
+    "create a picture",
+    "make image",
+    "make a picture",
+
+    "generate picha",
+    "tengeneza picha",
+    "nitengenezee picha",
+    "nigeneretie picha",
+    "chora picha",
+    "picha ya",
+    "picha"
+
+  ];
+
+  return imagePatterns.some(
+    pattern => text.includes(pattern)
+  )
+    ? "image"
+    : "chat";
 }
 
 
-// =========================================================
-// 🎨 IMAGE INTENT
-// =========================================================
-
-function detectImageIntent(message) {
-
-    const text =
-        safeString(message).toLowerCase();
-
-
-    const patterns = [
-
-        // Swahili
-        "tengeneza picha",
-        "nitengenezee picha",
-        "nitengezee picha",
-        "nigeneretie picha",
-        "generate picha",
-        "unda picha",
-        "chora picha",
-        "nichoree picha",
-        "nataka picha",
-        "nipe picha ya",
-
-        // English
-        "generate an image",
-        "generate image",
-        "create an image",
-        "create image",
-        "make an image",
-        "make image",
-        "generate a picture",
-        "create a picture",
-        "make a picture",
-        "draw an image",
-        "draw a picture"
-
-    ];
-
-
-    return patterns.some(
-        pattern => text.includes(pattern)
-    );
-
-}
-
-
-// =========================================================
+// ============================================================
 // 🎨 CLEAN IMAGE PROMPT
-// =========================================================
+// ============================================================
 
 function createImagePrompt(userPrompt) {
 
-    let request =
-        safeString(userPrompt);
+  let prompt = String(userPrompt || "")
+    .trim();
 
+  prompt = prompt.replace(
+    /^(please\s+)?(generate|create|make|draw)\s+(an?\s+)?(image|picture)\s+(of\s+)?/i,
+    ""
+  );
 
-    request = request
-        .replace(
-            /nigeneretie|nitengenezee|nitengezee|tengeneza|unda|chora|nichoree|nataka|generate|create|make|draw/gi,
-            " "
-        )
-        .replace(
-            /picha|image|picture/gi,
-            " "
-        )
-        .replace(/\s+/g, " ")
-        .trim();
+  prompt = prompt.replace(
+    /^(nigeneretie|nitengenezee|tengeneza|chora)\s+(picha\s+ya\s+)?/i,
+    ""
+  );
 
+  prompt = prompt.replace(
+    /^picha\s+ya\s+/i,
+    ""
+  );
 
-    if (!request) {
+  prompt = prompt.trim();
 
-        request =
-            "a beautiful cinematic scene";
+  if (!prompt) {
+    prompt = "a beautiful realistic landscape";
+  }
 
-    }
-
-
-    return `
-Photorealistic image of ${request},
-professional photography,
-cinematic lighting,
-high detail,
-sharp focus,
-natural colors,
-realistic textures,
-beautiful composition,
-high quality.
-`.trim();
-
+  return [
+    "Photorealistic image",
+    prompt,
+    "high detail",
+    "cinematic lighting",
+    "natural colors",
+    "professional photography",
+    "sharp focus"
+  ].join(", ");
 }
 
 
-// =========================================================
-// 🖼️ HUGGING FACE IMAGE ENGINE
-// =========================================================
+// ============================================================
+// 🎨 HUGGING FACE IMAGE GENERATOR
+// ============================================================
 
-async function generateHuggingFaceImage(
-    userPrompt
+async function generateImage(userPrompt) {
+
+  if (!hf) {
+    throw new Error(
+      "HF_TOKEN is missing from Vercel Environment Variables."
+    );
+  }
+
+  const prompt =
+    createImagePrompt(userPrompt);
+
+  console.log(
+    "🎨 Kirong AI image request:",
+    prompt
+  );
+
+
+  // ----------------------------------------------------------
+  // Hugging Face Inference Provider
+  // ----------------------------------------------------------
+
+  const image = await hf.textToImage({
+
+    model:
+      "black-forest-labs/FLUX.1-schnell",
+
+    provider:
+      "auto",
+
+    inputs:
+      prompt,
+
+    parameters: {
+
+      num_inference_steps: 4,
+
+      guidance_scale: 0
+
+    }
+
+  });
+
+
+  // ----------------------------------------------------------
+  // Convert returned Blob to data URL
+  // ----------------------------------------------------------
+
+  const arrayBuffer =
+    await image.arrayBuffer();
+
+  const base64 =
+    Buffer
+      .from(arrayBuffer)
+      .toString("base64");
+
+
+  return {
+    image:
+      `data:image/png;base64,${base64}`,
+
+    provider:
+      "Hugging Face"
+  };
+}
+
+
+// ============================================================
+// 💬 CHAT ENGINE
+// ============================================================
+
+async function generateChat(
+  message,
+  history,
+  language
 ) {
 
-    if (!hf) {
+  if (!groq) {
 
-        throw new Error(
-            "HF_TOKEN is missing."
-        );
+    throw new Error(
+      "GROQ_API_KEY is missing from Vercel Environment Variables."
+    );
+
+  }
+
+
+  const safeHistory =
+    Array.isArray(history)
+      ? history.slice(-20)
+      : [];
+
+
+  const messages = [
+
+    {
+      role: "system",
+
+      content: `
+You are Kirong AI, a helpful intelligent assistant created by Kirong Job Kwemoi.
+
+Language:
+${language}
+
+Rules:
+
+1. Be helpful and natural.
+2. If the user speaks Kiswahili, respond naturally in Kiswahili.
+3. If the user speaks English, respond naturally in English.
+4. Never claim to generate images if the image engine was not actually called.
+5. Keep responses clear and useful.
+      `.trim()
+    },
+
+    ...safeHistory,
+
+    {
+      role: "user",
+      content: message
+    }
+
+  ];
+
+
+  const completion =
+    await groq.chat.completions.create({
+
+      model:
+        "llama-3.1-8b-instant",
+
+      messages,
+
+      temperature:
+        0.7,
+
+      max_tokens:
+        2048
+
+    });
+
+
+  return (
+    completion
+      ?.choices?.[0]
+      ?.message
+      ?.content
+      ?.trim()
+    ||
+    "Samahani, sijapata jibu kwa sasa."
+  );
+}
+
+
+// ============================================================
+// 🚀 VERCEL HANDLER
+// ============================================================
+
+export default async function handler(
+  req,
+  res
+) {
+
+  // ----------------------------------------------------------
+  // CORS
+  // ----------------------------------------------------------
+
+  res.setHeader(
+    "Access-Control-Allow-Origin",
+    "*"
+  );
+
+  res.setHeader(
+    "Access-Control-Allow-Methods",
+    "POST, OPTIONS"
+  );
+
+  res.setHeader(
+    "Access-Control-Allow-Headers",
+    "Content-Type"
+  );
+
+
+  // ----------------------------------------------------------
+  // OPTIONS
+  // ----------------------------------------------------------
+
+  if (req.method === "OPTIONS") {
+
+    return res
+      .status(200)
+      .end();
+
+  }
+
+
+  // ----------------------------------------------------------
+  // METHOD
+  // ----------------------------------------------------------
+
+  if (req.method !== "POST") {
+
+    return res
+      .status(405)
+      .json({
+
+        type: "error",
+
+        text:
+          "Method Not Allowed"
+
+      });
+
+  }
+
+
+  try {
+
+    const body =
+      req.body || {};
+
+
+    const message =
+      typeof body.message === "string"
+        ? body.message.trim()
+        : "";
+
+
+    const history =
+      Array.isArray(body.history)
+        ? body.history
+        : [];
+
+
+    const language =
+      typeof body.language === "string"
+        ? body.language
+        : "English";
+
+
+    // --------------------------------------------------------
+    // VALIDATION
+    // --------------------------------------------------------
+
+    if (!message) {
+
+      return res
+        .status(400)
+        .json({
+
+          type: "error",
+
+          text:
+            "Please enter a message."
+
+        });
 
     }
 
 
-    const prompt =
-        createImagePrompt(userPrompt);
+    // --------------------------------------------------------
+    // DETECT INTENT
+    // --------------------------------------------------------
+
+    const intent =
+      detectIntent(message);
 
 
     console.log(
-        "🎨 HF IMAGE REQUEST:",
-        prompt
+      `⚡ Kirong AI → ${intent.toUpperCase()}`
     );
 
 
-    /*
-      IMPORTANT:
+    // ========================================================
+    // 🎨 IMAGE ENGINE
+    // ========================================================
 
-      provider: "auto"
+    if (intent === "image") {
 
-      lets Hugging Face choose an
-      available inference provider.
-    */
+      try {
 
-    const image =
-        await hf.textToImage({
+        const result =
+          await generateImage(message);
 
-            provider: "auto",
 
-            model:
-                "black-forest-labs/FLUX.1-schnell",
+        return res
+          .status(200)
+          .json({
 
-            inputs:
-                prompt
-
-        });
-
-
-    if (!image) {
-
-        throw new Error(
-            "Hugging Face returned no image."
-        );
-
-    }
-
-
-    const arrayBuffer =
-        await image.arrayBuffer();
-
-
-    const base64 =
-        Buffer
-            .from(arrayBuffer)
-            .toString("base64");
-
-
-    return {
-        image:
-            `data:image/png;base64,${base64}`,
-
-        provider:
-            "Hugging Face Inference"
-    };
-
-}
-
-
-// =========================================================
-// 💬 GROQ
-// =========================================================
-
-async function askGroq(
-    message,
-    history,
-    language
-) {
-
-    if (!groq) {
-
-        throw new Error(
-            "GROQ_API_KEY is missing."
-        );
-
-    }
-
-
-    const safeHistory =
-        Array.isArray(history)
-            ? history
-                .filter(item =>
-                    item &&
-                    (
-                        item.role === "user" ||
-                        item.role === "assistant"
-                    ) &&
-                    typeof item.content === "string"
-                )
-                .slice(-20)
-            : [];
-
-
-    const response =
-        await groq.chat.completions.create({
-
-            model:
-                "llama-3.1-8b-instant",
-
-            messages: [
-
-                {
-                    role: "system",
-
-                    content: `
-You are Kirong AI.
-
-You are an intelligent Kenyan AI assistant.
-
-Reply naturally in ${language}.
-
-Help with coding, technology,
-education, business, writing,
-and general questions.
-
-If the user asks for an image,
-the application has a separate
-image-generation engine.
-`
-                },
-
-                ...safeHistory,
-
-                {
-                    role: "user",
-
-                    content:
-                        message
-                }
-
-            ],
-
-            temperature: 0.7,
-
-            max_tokens: 1500
-
-        });
-
-
-    return (
-        response
-            ?.choices?.[0]
-            ?.message?.content
-            ?.trim()
-        || ""
-    );
-
-}
-
-
-// =========================================================
-// 🧠 OPENAI FALLBACK
-// =========================================================
-
-async function askOpenAI(
-    message,
-    history,
-    language
-) {
-
-    if (!openai) {
-
-        throw new Error(
-            "OPENAI_API_KEY is missing."
-        );
-
-    }
-
-
-    const safeHistory =
-        Array.isArray(history)
-            ? history
-                .filter(item =>
-                    item &&
-                    (
-                        item.role === "user" ||
-                        item.role === "assistant"
-                    ) &&
-                    typeof item.content === "string"
-                )
-                .slice(-20)
-            : [];
-
-
-    const response =
-        await openai.chat.completions.create({
-
-            model:
-                "gpt-4o-mini",
-
-            messages: [
-
-                {
-                    role: "system",
-
-                    content:
-                        `You are Kirong AI.
-Reply in ${language}.
-Be helpful, intelligent and practical.`
-                },
-
-                ...safeHistory,
-
-                {
-                    role: "user",
-
-                    content:
-                        message
-                }
-
-            ],
-
-            temperature: 0.7,
-
-            max_tokens: 1500
-
-        });
-
-
-    return (
-        response
-            ?.choices?.[0]
-            ?.message?.content
-            ?.trim()
-        || ""
-    );
-
-}
-
-
-// =========================================================
-// 🚀 VERCEL HANDLER
-// =========================================================
-
-export default async function handler(
-    req,
-    res
-) {
-
-    res.setHeader(
-        "Access-Control-Allow-Origin",
-        "*"
-    );
-
-    res.setHeader(
-        "Access-Control-Allow-Methods",
-        "POST, OPTIONS"
-    );
-
-    res.setHeader(
-        "Access-Control-Allow-Headers",
-        "Content-Type"
-    );
-
-
-    if (req.method === "OPTIONS") {
-
-        return res.status(200).end();
-
-    }
-
-
-    if (req.method !== "POST") {
-
-        return res.status(405).json({
-
-            type: "error",
+            type: "image",
 
             text:
-                "Method Not Allowed"
+              `🎨 Hii hapa picha yako, bro 🔥🫂`,
 
-        });
+            image:
+              result.image,
 
-    }
+            provider:
+              result.provider
 
+          });
 
-    try {
+      }
 
-        const body =
-            req.body || {};
-
-
-        const message =
-            safeString(body.message);
-
-
-        const history =
-            Array.isArray(body.history)
-                ? body.history
-                : [];
-
-
-        const language =
-            safeString(body.language)
-            || "English";
-
-
-        // =================================================
-        // 🛡️ VALIDATION
-        // =================================================
-
-        if (!message) {
-
-            return res.status(400).json({
-
-                type: "error",
-
-                text:
-                    "Please enter a message."
-
-            });
-
-        }
-
-
-        // =================================================
-        // 🎨 IMAGE REQUEST
-        // =================================================
-
-        if (detectImageIntent(message)) {
-
-            console.log(
-                "🎨 IMAGE INTENT DETECTED"
-            );
-
-
-            try {
-
-                const result =
-                    await generateHuggingFaceImage(
-                        message
-                    );
-
-
-                return res.status(200).json({
-
-                    type:
-                        "image",
-
-                    text:
-                        "🎨 Hii hapa picha yako, bro 🔥🫂",
-
-                    image:
-                        result.image,
-
-                    provider:
-                        result.provider
-
-                });
-
-            }
-
-            catch (imageError) {
-
-                console.error(
-                    "🔥 IMAGE ENGINE ERROR:",
-                    imageError
-                );
-
-
-                return res.status(502).json({
-
-                    type:
-                        "error",
-
-                    text:
-                        `🎨 Image engine haikupatikana kwa sasa.
-
-${imageError.message}
-
-Check HF_TOKEN permissions na Hugging Face Inference Providers.`
-
-                });
-
-            }
-
-        }
-
-
-        // =================================================
-        // 💬 TEXT → GROQ
-        // =================================================
-
-        if (groq) {
-
-            try {
-
-                const answer =
-                    await askGroq(
-                        message,
-                        history,
-                        language
-                    );
-
-
-                if (answer) {
-
-                    return res.status(200).json({
-
-                        type:
-                            "text",
-
-                        text:
-                            answer,
-
-                        provider:
-                            "Groq"
-
-                    });
-
-                }
-
-            }
-
-            catch (error) {
-
-                console.error(
-                    "GROQ ERROR:",
-                    error
-                );
-
-            }
-
-        }
-
-
-        // =================================================
-        // 🧠 TEXT → OPENAI FALLBACK
-        // =================================================
-
-        if (openai) {
-
-            try {
-
-                const answer =
-                    await askOpenAI(
-                        message,
-                        history,
-                        language
-                    );
-
-
-                if (answer) {
-
-                    return res.status(200).json({
-
-                        type:
-                            "text",
-
-                        text:
-                            answer,
-
-                        provider:
-                            "OpenAI"
-
-                    });
-
-                }
-
-            }
-
-            catch (error) {
-
-                console.error(
-                    "OPENAI ERROR:",
-                    error
-                );
-
-            }
-
-        }
-
-
-        // =================================================
-        // ❌ NO TEXT ENGINE
-        // =================================================
-
-        return res.status(503).json({
-
-            type:
-                "error",
-
-            text:
-                "⚠️ Kirong AI haina text engine inayopatikana."
-
-        });
-
-    }
-
-    catch (error) {
+      catch (imageError) {
 
         console.error(
-            "🔥 KIRONG AI ERROR:",
-            error
+          "🎨 IMAGE ENGINE ERROR:",
+          imageError
         );
 
 
-        return res.status(500).json({
+        return res
+          .status(200)
+          .json({
 
-            type:
-                "error",
+            type: "image_error",
 
             text:
-                "⚠️ Kirong AI imepata technical error."
+              "🎨 Kirong AI imejaribu kutengeneza picha lakini image engine haikupatikana kwa sasa.",
 
-        });
+            error:
+              imageError?.message ||
+              "Unknown image error"
+
+          });
+
+      }
 
     }
 
+
+    // ========================================================
+    // 💬 NORMAL CHAT
+    // ========================================================
+
+    const answer =
+      await generateChat(
+        message,
+        history,
+        language
+      );
+
+
+    return res
+      .status(200)
+      .json({
+
+        type: "text",
+
+        text:
+          answer
+
+      });
+
+
+  }
+
+  catch (error) {
+
+    console.error(
+      "🔥 KIRONG AI API ERROR:",
+      error
+    );
+
+
+    return res
+      .status(500)
+      .json({
+
+        type: "error",
+
+        text:
+          "⚠️ Kirong AI imepata tatizo kwenye server.",
+
+        error:
+          error?.message ||
+          "Unknown server error"
+
+      });
+
+  }
+
 }
+```
