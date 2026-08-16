@@ -1,11 +1,671 @@
-{
-  "name": "kirong-job-ai",
-  "version": "4.2.0",
-  "type": "module",
-  "description": "Kirong AI - Intelligent Kenyan AI Assistant",
-  "dependencies": {
-    "groq-sdk": "^0.12.0",
-    "openai": "^5.0.0",
-    "@huggingface/inference": "^2.8.0"
-  }
+// =========================================================
+// ⚡ KIRONG AI V5.1
+// FINAL AI ROUTER
+// Groq + OpenAI + Hugging Face Inference Providers
+// =========================================================
+
+import Groq from "groq-sdk";
+import OpenAI from "openai";
+import { InferenceClient } from "@huggingface/inference";
+
+
+// =========================================================
+// 🔐 CLIENTS
+// =========================================================
+
+const groq = process.env.GROQ_API_KEY
+    ? new Groq({
+        apiKey: process.env.GROQ_API_KEY
+    })
+    : null;
+
+
+const openai = process.env.OPENAI_API_KEY
+    ? new OpenAI({
+        apiKey: process.env.OPENAI_API_KEY
+    })
+    : null;
+
+
+const hf = process.env.HF_TOKEN
+    ? new InferenceClient(process.env.HF_TOKEN)
+    : null;
+
+
+// =========================================================
+// 🧹 SAFE STRING
+// =========================================================
+
+function safeString(value) {
+
+    return typeof value === "string"
+        ? value.trim()
+        : "";
+
+}
+
+
+// =========================================================
+// 🎨 IMAGE INTENT
+// =========================================================
+
+function detectImageIntent(message) {
+
+    const text =
+        safeString(message).toLowerCase();
+
+
+    const patterns = [
+
+        // Swahili
+        "tengeneza picha",
+        "nitengenezee picha",
+        "nitengezee picha",
+        "nigeneretie picha",
+        "generate picha",
+        "unda picha",
+        "chora picha",
+        "nichoree picha",
+        "nataka picha",
+        "nipe picha ya",
+
+        // English
+        "generate an image",
+        "generate image",
+        "create an image",
+        "create image",
+        "make an image",
+        "make image",
+        "generate a picture",
+        "create a picture",
+        "make a picture",
+        "draw an image",
+        "draw a picture"
+
+    ];
+
+
+    return patterns.some(
+        pattern => text.includes(pattern)
+    );
+
+}
+
+
+// =========================================================
+// 🎨 CLEAN IMAGE PROMPT
+// =========================================================
+
+function createImagePrompt(userPrompt) {
+
+    let request =
+        safeString(userPrompt);
+
+
+    request = request
+        .replace(
+            /nigeneretie|nitengenezee|nitengezee|tengeneza|unda|chora|nichoree|nataka|generate|create|make|draw/gi,
+            " "
+        )
+        .replace(
+            /picha|image|picture/gi,
+            " "
+        )
+        .replace(/\s+/g, " ")
+        .trim();
+
+
+    if (!request) {
+
+        request =
+            "a beautiful cinematic scene";
+
+    }
+
+
+    return `
+Photorealistic image of ${request},
+professional photography,
+cinematic lighting,
+high detail,
+sharp focus,
+natural colors,
+realistic textures,
+beautiful composition,
+high quality.
+`.trim();
+
+}
+
+
+// =========================================================
+// 🖼️ HUGGING FACE IMAGE ENGINE
+// =========================================================
+
+async function generateHuggingFaceImage(
+    userPrompt
+) {
+
+    if (!hf) {
+
+        throw new Error(
+            "HF_TOKEN is missing."
+        );
+
+    }
+
+
+    const prompt =
+        createImagePrompt(userPrompt);
+
+
+    console.log(
+        "🎨 HF IMAGE REQUEST:",
+        prompt
+    );
+
+
+    /*
+      IMPORTANT:
+
+      provider: "auto"
+
+      lets Hugging Face choose an
+      available inference provider.
+    */
+
+    const image =
+        await hf.textToImage({
+
+            provider: "auto",
+
+            model:
+                "black-forest-labs/FLUX.1-schnell",
+
+            inputs:
+                prompt
+
+        });
+
+
+    if (!image) {
+
+        throw new Error(
+            "Hugging Face returned no image."
+        );
+
+    }
+
+
+    const arrayBuffer =
+        await image.arrayBuffer();
+
+
+    const base64 =
+        Buffer
+            .from(arrayBuffer)
+            .toString("base64");
+
+
+    return {
+        image:
+            `data:image/png;base64,${base64}`,
+
+        provider:
+            "Hugging Face Inference"
+    };
+
+}
+
+
+// =========================================================
+// 💬 GROQ
+// =========================================================
+
+async function askGroq(
+    message,
+    history,
+    language
+) {
+
+    if (!groq) {
+
+        throw new Error(
+            "GROQ_API_KEY is missing."
+        );
+
+    }
+
+
+    const safeHistory =
+        Array.isArray(history)
+            ? history
+                .filter(item =>
+                    item &&
+                    (
+                        item.role === "user" ||
+                        item.role === "assistant"
+                    ) &&
+                    typeof item.content === "string"
+                )
+                .slice(-20)
+            : [];
+
+
+    const response =
+        await groq.chat.completions.create({
+
+            model:
+                "llama-3.1-8b-instant",
+
+            messages: [
+
+                {
+                    role: "system",
+
+                    content: `
+You are Kirong AI.
+
+You are an intelligent Kenyan AI assistant.
+
+Reply naturally in ${language}.
+
+Help with coding, technology,
+education, business, writing,
+and general questions.
+
+If the user asks for an image,
+the application has a separate
+image-generation engine.
+`
+                },
+
+                ...safeHistory,
+
+                {
+                    role: "user",
+
+                    content:
+                        message
+                }
+
+            ],
+
+            temperature: 0.7,
+
+            max_tokens: 1500
+
+        });
+
+
+    return (
+        response
+            ?.choices?.[0]
+            ?.message?.content
+            ?.trim()
+        || ""
+    );
+
+}
+
+
+// =========================================================
+// 🧠 OPENAI FALLBACK
+// =========================================================
+
+async function askOpenAI(
+    message,
+    history,
+    language
+) {
+
+    if (!openai) {
+
+        throw new Error(
+            "OPENAI_API_KEY is missing."
+        );
+
+    }
+
+
+    const safeHistory =
+        Array.isArray(history)
+            ? history
+                .filter(item =>
+                    item &&
+                    (
+                        item.role === "user" ||
+                        item.role === "assistant"
+                    ) &&
+                    typeof item.content === "string"
+                )
+                .slice(-20)
+            : [];
+
+
+    const response =
+        await openai.chat.completions.create({
+
+            model:
+                "gpt-4o-mini",
+
+            messages: [
+
+                {
+                    role: "system",
+
+                    content:
+                        `You are Kirong AI.
+Reply in ${language}.
+Be helpful, intelligent and practical.`
+                },
+
+                ...safeHistory,
+
+                {
+                    role: "user",
+
+                    content:
+                        message
+                }
+
+            ],
+
+            temperature: 0.7,
+
+            max_tokens: 1500
+
+        });
+
+
+    return (
+        response
+            ?.choices?.[0]
+            ?.message?.content
+            ?.trim()
+        || ""
+    );
+
+}
+
+
+// =========================================================
+// 🚀 VERCEL HANDLER
+// =========================================================
+
+export default async function handler(
+    req,
+    res
+) {
+
+    res.setHeader(
+        "Access-Control-Allow-Origin",
+        "*"
+    );
+
+    res.setHeader(
+        "Access-Control-Allow-Methods",
+        "POST, OPTIONS"
+    );
+
+    res.setHeader(
+        "Access-Control-Allow-Headers",
+        "Content-Type"
+    );
+
+
+    if (req.method === "OPTIONS") {
+
+        return res.status(200).end();
+
+    }
+
+
+    if (req.method !== "POST") {
+
+        return res.status(405).json({
+
+            type: "error",
+
+            text:
+                "Method Not Allowed"
+
+        });
+
+    }
+
+
+    try {
+
+        const body =
+            req.body || {};
+
+
+        const message =
+            safeString(body.message);
+
+
+        const history =
+            Array.isArray(body.history)
+                ? body.history
+                : [];
+
+
+        const language =
+            safeString(body.language)
+            || "English";
+
+
+        // =================================================
+        // 🛡️ VALIDATION
+        // =================================================
+
+        if (!message) {
+
+            return res.status(400).json({
+
+                type: "error",
+
+                text:
+                    "Please enter a message."
+
+            });
+
+        }
+
+
+        // =================================================
+        // 🎨 IMAGE REQUEST
+        // =================================================
+
+        if (detectImageIntent(message)) {
+
+            console.log(
+                "🎨 IMAGE INTENT DETECTED"
+            );
+
+
+            try {
+
+                const result =
+                    await generateHuggingFaceImage(
+                        message
+                    );
+
+
+                return res.status(200).json({
+
+                    type:
+                        "image",
+
+                    text:
+                        "🎨 Hii hapa picha yako, bro 🔥🫂",
+
+                    image:
+                        result.image,
+
+                    provider:
+                        result.provider
+
+                });
+
+            }
+
+            catch (imageError) {
+
+                console.error(
+                    "🔥 IMAGE ENGINE ERROR:",
+                    imageError
+                );
+
+
+                return res.status(502).json({
+
+                    type:
+                        "error",
+
+                    text:
+                        `🎨 Image engine haikupatikana kwa sasa.
+
+${imageError.message}
+
+Check HF_TOKEN permissions na Hugging Face Inference Providers.`
+
+                });
+
+            }
+
+        }
+
+
+        // =================================================
+        // 💬 TEXT → GROQ
+        // =================================================
+
+        if (groq) {
+
+            try {
+
+                const answer =
+                    await askGroq(
+                        message,
+                        history,
+                        language
+                    );
+
+
+                if (answer) {
+
+                    return res.status(200).json({
+
+                        type:
+                            "text",
+
+                        text:
+                            answer,
+
+                        provider:
+                            "Groq"
+
+                    });
+
+                }
+
+            }
+
+            catch (error) {
+
+                console.error(
+                    "GROQ ERROR:",
+                    error
+                );
+
+            }
+
+        }
+
+
+        // =================================================
+        // 🧠 TEXT → OPENAI FALLBACK
+        // =================================================
+
+        if (openai) {
+
+            try {
+
+                const answer =
+                    await askOpenAI(
+                        message,
+                        history,
+                        language
+                    );
+
+
+                if (answer) {
+
+                    return res.status(200).json({
+
+                        type:
+                            "text",
+
+                        text:
+                            answer,
+
+                        provider:
+                            "OpenAI"
+
+                    });
+
+                }
+
+            }
+
+            catch (error) {
+
+                console.error(
+                    "OPENAI ERROR:",
+                    error
+                );
+
+            }
+
+        }
+
+
+        // =================================================
+        // ❌ NO TEXT ENGINE
+        // =================================================
+
+        return res.status(503).json({
+
+            type:
+                "error",
+
+            text:
+                "⚠️ Kirong AI haina text engine inayopatikana."
+
+        });
+
+    }
+
+    catch (error) {
+
+        console.error(
+            "🔥 KIRONG AI ERROR:",
+            error
+        );
+
+
+        return res.status(500).json({
+
+            type:
+                "error",
+
+            text:
+                "⚠️ Kirong AI imepata technical error."
+
+        });
+
+    }
+
 }
