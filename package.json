@@ -1,9 +1,11 @@
 {
   "name": "kirong-job-ai",
-  "version": "1.0.0",
+  "version": "4.2.0",
   "type": "module",
-  "description": "Kirong Job AI - Your Universal Assistant",
+  "description": "Kirong AI - Intelligent Kenyan AI Assistant",
   "dependencies": {
-    "groq-sdk": "^0.12.0"
+    "groq-sdk": "^0.12.0",
+    "openai": "^5.0.0",
+    "@huggingface/inference": "^2.8.0"
   }
 }
