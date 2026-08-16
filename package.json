@@ -1,4 +1,4 @@
-```json
+
 {
   "name": "kirong-job-ai",
   "version": "5.0.0",
@@ -9,4 +9,3 @@
     "groq-sdk": "^0.12.0"
   }
 }
-```
