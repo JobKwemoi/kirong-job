@@ -1,3 +1,4 @@
+```json
 {
   "name": "kirong-job-ai",
   "version": "5.1.0",
@@ -9,3 +10,4 @@
     "openai": "^5.0.0"
   }
 }
+```
