@@ -7,7 +7,7 @@
 
   <meta
     name="viewport"
-    content="width=device-width, initial-scale=1.0"
+    content="width=device-width, initial-scale=1.0, user-scalable=no"
   >
 
   <meta
@@ -17,36 +17,57 @@
 
   <meta
     name="description"
-    content="Kirong AI — an intelligent assistant built by Kirong Job Kwemoi."
+    content="Kirong AI — an intelligent AI assistant built by Kirong Job Kwemoi."
+  >
+
+  <meta
+    name="author"
+    content="Kirong Job Kwemoi"
   >
 
   <title>Kirong AI — Intelligent Assistant</title>
 
-  <link rel="stylesheet" href="style.css">
+  <link
+    rel="stylesheet"
+    href="style.css"
+  >
 
 </head>
 
 
 <body>
 
+  <!-- =====================================================
+       MAIN APP
+  ====================================================== -->
+
   <main class="container">
 
 
-    <!-- =========================
+    <!-- ===================================================
          HEADER
-    ========================== -->
+    ==================================================== -->
 
     <header class="header">
 
       <div class="headerLeft">
 
-        <h1>
-          ⚡ Kirong AI🌏
-        </h1>
+        <div class="brandArea">
+
+          <h1>
+            ⚡ Kirong AI🌏
+          </h1>
+
+          <span class="brandStatus">
+            ● Online
+          </span>
+
+        </div>
+
 
         <select
           id="languageSelect"
-          aria-label="Language"
+          aria-label="Select language"
         >
 
           <option value="English">
@@ -70,44 +91,62 @@
       </div>
 
 
-      <button
-        id="themeBtn"
-        type="button"
-        aria-label="Toggle theme"
-      >
-        🌙
-      </button>
+      <div class="headerActions">
+
+        <!-- Shelves button is created by app.js -->
+
+        <button
+          id="themeBtn"
+          type="button"
+          aria-label="Toggle theme"
+          title="Toggle theme"
+        >
+          🌙
+        </button>
+
+      </div>
 
     </header>
 
 
 
-    <!-- =========================
-         CHAT
-    ========================== -->
+    <!-- ===================================================
+         CHAT AREA
+    ==================================================== -->
 
     <section
       id="chatBox"
       aria-live="polite"
+      aria-label="Kirong AI conversation"
     >
 
-      <div class="message ai">
+      <!-- Initial welcome message -->
+
+      <div class="welcomeMessage">
+
+        <div class="welcomeIcon">
+          ⚡
+        </div>
+
+        <h2>
+          Hello 👋
+        </h2>
+
+        <h3>
+          I’m Kirong AI.
+        </h3>
 
         <p>
-
-          Hello 👋
-          <br><br>
-
-          I am
+          Your intelligent assistant for
           <strong>
-            Kirong AI
-          </strong>.
-
-          <br><br>
-
-          How can I help you today?
-
+            coding, learning, creativity,
+            business and everyday tasks.
+          </strong>
         </p>
+
+        <span class="welcomeHint">
+          What can I help you with today?
+        </span>
 
       </div>
 
@@ -115,9 +154,9 @@
 
 
 
-    <!-- =========================
-         THINKING
-    ========================== -->
+    <!-- ===================================================
+         THINKING INDICATOR
+    ==================================================== -->
 
     <div
       id="thinking"
@@ -129,126 +168,160 @@
 
 
 
-    <!-- =========================
-         ⚡ QUICK ACTIONS
-    ========================== -->
+    <!-- ===================================================
+         QUICK ACTIONS
+    ==================================================== -->
 
     <nav
       class="quickActions"
       aria-label="Quick actions"
     >
 
-      <!-- 💻 CODE -->
+      <!-- Coding -->
 
       <button
         class="quickBtn"
         data-action="Code"
         type="button"
+        title="Coding assistant"
       >
         💻 Code
       </button>
 
 
-      <!-- 🧠 EXPLAIN -->
+      <!-- Explain -->
 
       <button
         class="quickBtn"
         data-action="Explain"
         type="button"
+        title="Explain something"
       >
         🧠 Explain
       </button>
 
 
-      <!-- ✍️ WRITE -->
+      <!-- Writing -->
 
       <button
         class="quickBtn"
         data-action="Write"
         type="button"
+        title="Writing assistant"
       >
         ✍️ Write
       </button>
 
 
-      <!-- 🎨 IMAGE -->
+      <!-- Image -->
 
       <button
         class="quickBtn"
         data-action="Image"
         type="button"
+        title="Generate an image"
       >
         🎨 Image
       </button>
 
 
-      <!-- 📧 EMAIL -->
+      <!-- Email -->
 
       <button
         class="quickBtn"
         data-action="Email"
         type="button"
+        title="Write an email"
       >
         📧 Email
       </button>
 
 
-      <!-- 💼 BUSINESS -->
+      <!-- Business -->
 
       <button
         class="quickBtn"
         data-action="Business"
         type="button"
+        title="Business assistant"
       >
         💼 Business
       </button>
 
 
-      <!-- 📚 STUDY -->
+      <!-- Study -->
 
       <button
         class="quickBtn"
         data-action="Study"
         type="button"
+        title="Study assistant"
       >
         📚 Study
       </button>
 
 
-      <!-- 🌍 TRANSLATE -->
+      <!-- Translation -->
 
       <button
         class="quickBtn"
         data-action="Translate"
         type="button"
+        title="Translate text"
       >
         🌍 Translate
       </button>
 
 
-      <!-- 📊 ANALYZE -->
+      <!-- Analysis -->
 
       <button
         class="quickBtn"
         data-action="Analyze"
         type="button"
+        title="Analyze information"
       >
         📊 Analyze
       </button>
 
 
-      <!-- 🧑🏽‍💻 DEVELOPER -->
+      <!-- Developer -->
 
       <button
         class="quickBtn"
         data-action="Developer"
         type="button"
+        title="Developer tools"
       >
         🧑🏽‍💻 Developer
       </button>
 
 
-      <!-- 📍 LOCATION -->
+      <!-- Ideas -->
+
+      <button
+        class="quickBtn"
+        data-action="Ideas"
+        type="button"
+        title="Generate ideas"
+      >
+        💡 Ideas
+      </button>
+
+
+      <!-- Summarize -->
+
+      <button
+        class="quickBtn"
+        data-action="Summarize"
+        type="button"
+        title="Summarize text"
+      >
+        📝 Summarize
+      </button>
+
+
+      <!-- Location -->
 
       <button
         id="locationBtn"
@@ -263,20 +336,22 @@
 
 
 
-    <!-- =========================
-         INPUT
-    ========================== -->
+    <!-- ===================================================
+         MESSAGE INPUT
+    ==================================================== -->
 
     <form
       class="inputArea"
       id="chatForm"
+      autocomplete="off"
     >
 
-      <!-- 🎤 VOICE LANGUAGE -->
+      <!-- Voice language -->
 
       <select
         id="voiceSelect"
         aria-label="Voice language"
+        title="Voice language"
       >
 
         <option value="en-US">
@@ -290,12 +365,14 @@
       </select>
 
 
-      <!-- 📎 FILE -->
+
+      <!-- File upload -->
 
       <button
         id="uploadBtn"
         type="button"
         aria-label="Upload file"
+        title="Upload file"
       >
         📎
       </button>
@@ -305,10 +382,12 @@
         type="file"
         id="fileInput"
         hidden
+        accept=".txt,.pdf,.doc,.docx,.csv,.json,.js,.html,.css,.py,.md,image/*"
       >
 
 
-      <!-- 💬 MESSAGE -->
+
+      <!-- Main message input -->
 
       <input
         type="text"
@@ -316,27 +395,31 @@
         placeholder="Message Kirong AI..."
         autocomplete="off"
         maxlength="4000"
-        aria-label="Message"
+        aria-label="Message Kirong AI"
       >
 
 
-      <!-- 🎤 MICROPHONE -->
+
+      <!-- Voice input -->
 
       <button
         id="micBtn"
         type="button"
         aria-label="Voice input"
+        title="Voice input"
       >
         🎤
       </button>
 
 
-      <!-- ➤ SEND -->
+
+      <!-- Send -->
 
       <button
         id="sendBtn"
         type="submit"
         aria-label="Send message"
+        title="Send message"
       >
         ➤
       </button>
@@ -345,15 +428,16 @@
 
 
 
-    <!-- =========================
+    <!-- ===================================================
          FOOTER
-    ========================== -->
+    ==================================================== -->
 
     <footer class="footerButtons">
 
       <button
         id="exportBtn"
         type="button"
+        title="Export current chat"
       >
         Export 💾
       </button>
@@ -362,6 +446,7 @@
       <button
         id="clearBtn"
         type="button"
+        title="Clear current chat"
       >
         Clear 🗑️
       </button>
@@ -372,7 +457,15 @@
   </main>
 
 
-  <script src="app.js"></script>
+
+  <!-- =====================================================
+       APP ENGINE
+  ====================================================== -->
+
+  <script
+    src="app.js"
+    defer
+  ></script>
 
 </body>
 
