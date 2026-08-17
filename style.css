@@ -1,41 +1,31 @@
-
 /* =========================================================
    ⚡ KIRONG AI — PREMIUM V4
-   🧠 AI CHAT + 🗂️ CHAT SHELVES + 📱 MOBILE FIRST
+   ChatGPT-style UI + Mobile Swipe Shelves
 ========================================================= */
 
 :root {
-    --bg: #05050b;
-    --bg-2: #090914;
-    --surface: rgba(255,255,255,.045);
-    --surface-2: rgba(255,255,255,.065);
-    --surface-hover: rgba(139,92,246,.12);
-
-    --border: rgba(255,255,255,.09);
-    --border-strong: rgba(139,92,246,.38);
+    --bg: #06060d;
+    --bg2: #0b0b16;
+    --surface: rgba(255,255,255,.055);
+    --surface2: rgba(255,255,255,.085);
+    --border: rgba(255,255,255,.10);
 
     --primary: #8b5cf6;
     --primary-dark: #6d28d9;
     --primary-light: #a78bfa;
 
     --text: #f8fafc;
-    --text-soft: #d4d8e2;
-    --muted: #8b95a7;
+    --muted: #94a3b8;
+    --muted2: #64748b;
 
-    --danger: #ef4444;
+    --user:
+        linear-gradient(135deg,#7c3aed,#5b21b6);
 
-    --user-gradient:
-        linear-gradient(135deg,#7c3aed,#4c1d95);
-
-    --glass:
-        rgba(7,7,16,.82);
-
+    --radius: 18px;
     --shadow:
-        0 25px 80px rgba(0,0,0,.45);
+        0 25px 80px rgba(0,0,0,.5);
 
-    --radius-xl: 26px;
-    --radius-lg: 18px;
-    --radius-md: 14px;
+    --shelf-width: 285px;
 }
 
 
@@ -64,20 +54,19 @@ body {
         BlinkMacSystemFont,
         "Segoe UI",
         Roboto,
-        Arial,
         sans-serif;
 
     color: var(--text);
 
     background:
         radial-gradient(
-            circle at 10% 10%,
+            circle at 15% 10%,
             rgba(124,58,237,.18),
             transparent 30%
         ),
         radial-gradient(
             circle at 90% 90%,
-            rgba(79,70,229,.13),
+            rgba(79,70,229,.14),
             transparent 32%
         ),
         var(--bg);
@@ -132,7 +121,7 @@ body {
 
         border: 1px solid var(--border);
 
-        border-radius: var(--radius-xl);
+        border-radius: 26px;
 
         box-shadow: var(--shadow);
 
@@ -147,6 +136,8 @@ body {
 ========================================================= */
 
 .header {
+    position: relative;
+
     height: 72px;
 
     flex-shrink: 0;
@@ -158,7 +149,7 @@ body {
     padding: 0 22px;
 
     background:
-        rgba(5,5,11,.84);
+        rgba(6,6,13,.88);
 
     backdrop-filter: blur(24px);
     -webkit-backdrop-filter: blur(24px);
@@ -169,26 +160,21 @@ body {
 }
 
 .headerLeft {
-    min-width: 0;
-
     display: flex;
     align-items: center;
 
     gap: 14px;
+
+    min-width: 0;
 }
 
 .header h1 {
     font-size: 20px;
-    font-weight: 850;
+    font-weight: 800;
 
-    letter-spacing: -.7px;
+    letter-spacing: -.6px;
 
     white-space: nowrap;
-}
-
-.header h1::first-letter {
-    filter:
-        drop-shadow(0 0 10px var(--primary));
 }
 
 
@@ -197,6 +183,7 @@ body {
 ========================================================= */
 
 #languageSelect {
+
     appearance: none;
 
     height: 38px;
@@ -204,6 +191,7 @@ body {
     padding: 0 30px 0 12px;
 
     border: 1px solid var(--border);
+
     border-radius: 12px;
 
     background:
@@ -212,26 +200,27 @@ body {
     color: var(--text);
 
     font-size: 12px;
-    font-weight: 700;
+    font-weight: 650;
 
     outline: none;
 
     cursor: pointer;
 
-    transition:
-        .2s ease;
+    transition: .25s ease;
 }
 
 #languageSelect:hover,
 #languageSelect:focus {
-    border-color: var(--border-strong);
+
+    border-color:
+        rgba(139,92,246,.55);
 
     background:
-        rgba(139,92,246,.1);
+        rgba(139,92,246,.10);
 }
 
-#languageSelect option,
-#voiceSelect option {
+#languageSelect option {
+
     background: #11111d;
     color: white;
 }
@@ -242,6 +231,7 @@ body {
 ========================================================= */
 
 #themeBtn {
+
     width: 42px;
     height: 42px;
 
@@ -249,6 +239,7 @@ body {
     place-items: center;
 
     border: 1px solid var(--border);
+
     border-radius: 14px;
 
     background:
@@ -261,27 +252,29 @@ body {
     cursor: pointer;
 
     transition:
-        transform .25s ease,
-        background .25s ease,
-        border-color .25s ease;
+        transform .3s ease,
+        background .3s ease,
+        border-color .3s ease;
 }
 
 #themeBtn:hover {
-    transform: rotate(15deg);
+
+    transform: rotate(18deg);
 
     background:
         rgba(139,92,246,.15);
 
     border-color:
-        var(--border-strong);
+        rgba(139,92,246,.5);
 }
 
 
 /* =========================================================
-   CHAT AREA
+   CHAT
 ========================================================= */
 
 #chatBox {
+
     flex: 1;
 
     min-height: 0;
@@ -306,18 +299,12 @@ body {
     width: 6px;
 }
 
-#chatBox::-webkit-scrollbar-track {
-    background: transparent;
-}
-
 #chatBox::-webkit-scrollbar-thumb {
-    background: rgba(255,255,255,.12);
-    border-radius: 100px;
-}
 
-#chatBox::-webkit-scrollbar-thumb:hover {
     background:
-        rgba(139,92,246,.4);
+        rgba(255,255,255,.12);
+
+    border-radius: 100px;
 }
 
 
@@ -326,6 +313,7 @@ body {
 ========================================================= */
 
 .message {
+
     position: relative;
 
     max-width:
@@ -334,8 +322,7 @@ body {
     padding:
         15px 18px;
 
-    border-radius:
-        var(--radius-lg);
+    border-radius: var(--radius);
 
     font-size: 15px;
 
@@ -364,14 +351,14 @@ body {
 
 
 /* =========================================================
-   AI
+   AI MESSAGE
 ========================================================= */
 
 .message.ai {
+
     align-self: flex-start;
 
-    color:
-        var(--text-soft);
+    color: #cbd5e1;
 
     background:
         linear-gradient(
@@ -380,8 +367,7 @@ body {
             rgba(255,255,255,.025)
         );
 
-    border:
-        1px solid var(--border);
+    border: 1px solid var(--border);
 
     border-bottom-left-radius: 6px;
 
@@ -390,6 +376,7 @@ body {
 }
 
 .message.ai::before {
+
     content: "K";
 
     position: absolute;
@@ -416,10 +403,6 @@ body {
 
     font-size: 10px;
     font-weight: 900;
-
-    box-shadow:
-        0 4px 15px
-        rgba(109,40,217,.35);
 }
 
 
@@ -428,12 +411,12 @@ body {
 ========================================================= */
 
 .message.user {
+
     align-self: flex-end;
 
     color: white;
 
-    background:
-        var(--user-gradient);
+    background: var(--user);
 
     border:
         1px solid
@@ -461,6 +444,7 @@ body {
 ========================================================= */
 
 .message pre {
+
     margin-top: 12px;
 
     padding: 15px;
@@ -470,10 +454,11 @@ body {
     border-radius: 12px;
 
     background:
-        rgba(0,0,0,.5);
+        rgba(0,0,0,.45);
 
     border:
-        1px solid rgba(255,255,255,.08);
+        1px solid
+        rgba(255,255,255,.08);
 
     font-family:
         "SFMono-Regular",
@@ -486,6 +471,7 @@ body {
 }
 
 .message code {
+
     font-family:
         "SFMono-Regular",
         Consolas,
@@ -500,6 +486,7 @@ body {
 ========================================================= */
 
 .message img {
+
     display: block;
 
     width: 100%;
@@ -522,6 +509,7 @@ body {
 ========================================================= */
 
 #thinking {
+
     flex-shrink: 0;
 
     padding:
@@ -535,42 +523,20 @@ body {
     font-style: italic;
 }
 
-#thinking:not(.hidden)::after {
-    content: "...";
-
-    display: inline-block;
-
-    width: 18px;
-
-    overflow: hidden;
-
-    vertical-align: bottom;
-
-    animation: dots 1.2s infinite;
-}
-
-@keyframes dots {
-
-    0% { width: 0; }
-    33% { width: 6px; }
-    66% { width: 12px; }
-    100% { width: 18px; }
-}
-
 .hidden {
     display: none !important;
 }
 
 
 /* =========================================================
-   ⚡ QUICK ACTIONS
+   QUICK ACTIONS
 ========================================================= */
 
 .quickActions {
+
     flex-shrink: 0;
 
     display: flex;
-    align-items: center;
 
     gap: 9px;
 
@@ -581,10 +547,7 @@ body {
     overflow-x: auto;
 
     background:
-        rgba(5,5,11,.78);
-
-    backdrop-filter: blur(18px);
-    -webkit-backdrop-filter: blur(18px);
+        rgba(6,6,13,.82);
 
     border-top:
         1px solid var(--border);
@@ -598,18 +561,12 @@ body {
     display: none;
 }
 
-
-/* =========================================================
-   QUICK BUTTONS
-========================================================= */
-
 .quickBtn,
 #locationBtn {
-    position: relative;
 
     flex-shrink: 0;
 
-    min-height: 37px;
+    min-height: 36px;
 
     padding:
         0 14px;
@@ -620,64 +577,51 @@ body {
     border-radius: 999px;
 
     background:
-        linear-gradient(
-            135deg,
-            rgba(255,255,255,.055),
-            rgba(255,255,255,.025)
-        );
+        rgba(255,255,255,.045);
 
     color:
-        var(--text-soft);
+        var(--muted);
 
     font-size: 12px;
-    font-weight: 700;
+
+    font-weight: 650;
 
     cursor: pointer;
 
     white-space: nowrap;
 
-    transition:
-        transform .2s ease,
-        background .2s ease,
-        border-color .2s ease,
-        box-shadow .2s ease,
-        color .2s ease;
+    transition: .2s ease;
 }
 
 .quickBtn:hover,
 #locationBtn:hover {
+
     transform:
         translateY(-2px);
 
-    color: white;
-
     background:
-        linear-gradient(
-            135deg,
-            rgba(139,92,246,.2),
-            rgba(109,40,217,.1)
-        );
+        rgba(139,92,246,.15);
 
     border-color:
-        var(--border-strong);
+        rgba(139,92,246,.5);
 
-    box-shadow:
-        0 8px 22px
-        rgba(109,40,217,.16);
+    color: white;
 }
 
 .quickBtn:active,
 #locationBtn:active {
+
     transform:
-        scale(.95);
+        scale(.96);
 }
 
 
 /* =========================================================
-   INPUT AREA
+   INPUT
 ========================================================= */
 
 .inputArea {
+
     flex-shrink: 0;
 
     display: flex;
@@ -690,7 +634,7 @@ body {
         clamp(14px,5vw,70px);
 
     background:
-        rgba(5,5,11,.94);
+        rgba(6,6,13,.94);
 
     backdrop-filter: blur(25px);
     -webkit-backdrop-filter: blur(25px);
@@ -703,10 +647,11 @@ body {
 
 
 /* =========================================================
-   VOICE SELECT
+   VOICE
 ========================================================= */
 
 #voiceSelect {
+
     width: 58px;
     height: 44px;
 
@@ -726,17 +671,22 @@ body {
     font-weight: 700;
 
     outline: none;
+}
 
-    cursor: pointer;
+#voiceSelect option {
+
+    background: #11111d;
+    color: white;
 }
 
 
 /* =========================================================
-   ICON BUTTONS
+   INPUT BUTTONS
 ========================================================= */
 
 #uploadBtn,
 #micBtn {
+
     width: 44px;
     height: 44px;
 
@@ -759,17 +709,17 @@ body {
 
     cursor: pointer;
 
-    transition:
-        .2s ease;
+    transition: .2s ease;
 }
 
 #uploadBtn:hover,
 #micBtn:hover {
+
     background:
-        rgba(139,92,246,.14);
+        rgba(139,92,246,.15);
 
     border-color:
-        var(--border-strong);
+        rgba(139,92,246,.5);
 
     transform:
         translateY(-1px);
@@ -777,10 +727,11 @@ body {
 
 
 /* =========================================================
-   INPUT
+   USER INPUT
 ========================================================= */
 
 #userInput {
+
     flex: 1;
 
     min-width: 0;
@@ -804,16 +755,15 @@ body {
 
     font-size: 14px;
 
-    transition:
-        .25s ease;
+    transition: .25s ease;
 }
 
 #userInput::placeholder {
-    color:
-        #6f7b90;
+    color: #6f7b90;
 }
 
 #userInput:focus {
+
     border-color:
         rgba(139,92,246,.65);
 
@@ -831,6 +781,7 @@ body {
 ========================================================= */
 
 #sendBtn {
+
     width: 48px;
     height: 44px;
 
@@ -840,6 +791,7 @@ body {
     place-items: center;
 
     border: none;
+
     border-radius: 14px;
 
     background:
@@ -860,11 +812,11 @@ body {
         0 8px 25px
         rgba(109,40,217,.25);
 
-    transition:
-        .2s ease;
+    transition: .2s ease;
 }
 
 #sendBtn:hover {
+
     transform:
         translateY(-2px);
 
@@ -874,13 +826,7 @@ body {
 }
 
 #sendBtn:active {
-    transform:
-        scale(.94);
-}
-
-#sendBtn:disabled {
-    opacity: .5;
-    cursor: not-allowed;
+    transform: scale(.94);
 }
 
 
@@ -889,6 +835,7 @@ body {
 ========================================================= */
 
 .footerButtons {
+
     flex-shrink: 0;
 
     display: flex;
@@ -901,11 +848,12 @@ body {
         13px;
 
     background:
-        rgba(5,5,11,.94);
+        rgba(6,6,13,.94);
 }
 
 #exportBtn,
 #clearBtn {
+
     flex: 1;
 
     height: 36px;
@@ -918,8 +866,7 @@ body {
     background:
         rgba(255,255,255,.035);
 
-    color:
-        var(--muted);
+    color: var(--muted);
 
     font-size: 11px;
     font-weight: 700;
@@ -931,56 +878,87 @@ body {
 
 #exportBtn:hover,
 #clearBtn:hover {
+
     color: white;
 
     background:
         rgba(255,255,255,.075);
-
-    border-color:
-        rgba(255,255,255,.16);
 }
 
 
 /* =========================================================
+   =========================================================
    🗂️ KIRONG CHAT SHELVES
+   =========================================================
+========================================================= */
+
+/*
+   IMPORTANT:
+
+   App.js creates:
+
+   #kirongShelves
+   #kirongShelvesOverlay
+   #kirongOpenShelvesBtn
+*/
+
+
+/* =========================================================
+   SHELF
 ========================================================= */
 
 #kirongShelves {
+
     position: fixed;
 
     top: 0;
     left: 0;
 
-    width: min(330px,86vw);
+    width: var(--shelf-width);
     height: 100dvh;
+
+    z-index: 1000;
 
     display: flex;
     flex-direction: column;
 
-    padding: 18px;
-
     background:
-        rgba(8,8,18,.96);
+        linear-gradient(
+            180deg,
+            rgba(13,13,25,.98),
+            rgba(7,7,14,.99)
+        );
 
     border-right:
-        1px solid rgba(255,255,255,.1);
+        1px solid
+        rgba(255,255,255,.10);
 
     box-shadow:
-        25px 0 70px rgba(0,0,0,.45);
+        20px 0 60px
+        rgba(0,0,0,.45);
 
-    backdrop-filter: blur(30px);
-    -webkit-backdrop-filter: blur(30px);
+    backdrop-filter:
+        blur(30px);
+
+    -webkit-backdrop-filter:
+        blur(30px);
 
     transform:
         translateX(-105%);
 
     transition:
-        transform .3s cubic-bezier(.22,1,.36,1);
+        transform .32s cubic-bezier(.22,.61,.36,1);
 
-    z-index: 1000;
+    will-change: transform;
+
+    overflow: hidden;
 }
 
+
+/* OPEN */
+
 #kirongShelves.open {
+
     transform:
         translateX(0);
 }
@@ -991,26 +969,38 @@ body {
 ========================================================= */
 
 .kirongShelvesHeader {
+
+    height: 70px;
+
+    flex-shrink: 0;
+
     display: flex;
 
     align-items: center;
+
     justify-content: space-between;
 
     padding:
-        4px 2px 16px;
+        0 17px;
 
     border-bottom:
         1px solid var(--border);
+
+    background:
+        rgba(255,255,255,.025);
 }
 
 .kirongShelvesHeader strong {
-    font-size: 18px;
-    font-weight: 850;
+
+    font-size: 17px;
+
+    font-weight: 800;
 
     letter-spacing: -.3px;
 }
 
 #closeShelvesBtn {
+
     width: 38px;
     height: 38px;
 
@@ -1020,12 +1010,14 @@ body {
     border:
         1px solid var(--border);
 
-    border-radius: 12px;
+    border-radius: 11px;
 
     background:
-        rgba(255,255,255,.045);
+        rgba(255,255,255,.05);
 
     color: white;
+
+    font-size: 16px;
 
     cursor: pointer;
 
@@ -1033,14 +1025,15 @@ body {
 }
 
 #closeShelvesBtn:hover {
+
     background:
-        rgba(239,68,68,.14);
+        rgba(239,68,68,.15);
 
     border-color:
-        rgba(239,68,68,.35);
+        rgba(239,68,68,.4);
 
     transform:
-        rotate(8deg);
+        rotate(5deg);
 }
 
 
@@ -1049,52 +1042,50 @@ body {
 ========================================================= */
 
 .kirongNewChatBtn {
-    width: 100%;
-
-    min-height: 46px;
 
     margin:
-        16px 0 12px;
+        14px 14px 10px;
 
-    border: none;
+    min-height: 45px;
 
-    border-radius: 14px;
+    border:
+        1px solid
+        rgba(139,92,246,.35);
+
+    border-radius: 13px;
 
     background:
         linear-gradient(
             135deg,
-            var(--primary),
-            var(--primary-dark)
+            rgba(139,92,246,.18),
+            rgba(109,40,217,.10)
         );
 
     color: white;
 
     font-size: 13px;
-    font-weight: 800;
+
+    font-weight: 750;
 
     cursor: pointer;
 
-    box-shadow:
-        0 10px 28px
-        rgba(109,40,217,.25);
-
-    transition:
-        transform .2s ease,
-        box-shadow .2s ease;
+    transition: .2s ease;
 }
 
 .kirongNewChatBtn:hover {
-    transform:
-        translateY(-2px);
 
-    box-shadow:
-        0 14px 32px
-        rgba(109,40,217,.38);
-}
+    background:
+        linear-gradient(
+            135deg,
+            rgba(139,92,246,.28),
+            rgba(109,40,217,.18)
+        );
 
-.kirongNewChatBtn:active {
+    border-color:
+        rgba(139,92,246,.6);
+
     transform:
-        scale(.98);
+        translateY(-1px);
 }
 
 
@@ -1103,18 +1094,15 @@ body {
 ========================================================= */
 
 .kirongChatList {
+
     flex: 1;
 
     min-height: 0;
 
     overflow-y: auto;
 
-    display: flex;
-    flex-direction: column;
-
-    gap: 7px;
-
-    padding-right: 3px;
+    padding:
+        5px 10px 18px;
 }
 
 .kirongChatList::-webkit-scrollbar {
@@ -1122,8 +1110,9 @@ body {
 }
 
 .kirongChatList::-webkit-scrollbar-thumb {
+
     background:
-        rgba(255,255,255,.1);
+        rgba(255,255,255,.12);
 
     border-radius: 100px;
 }
@@ -1134,851 +1123,96 @@ body {
 ========================================================= */
 
 .kirongChatItem {
-    min-height: 52px;
+
+    position: relative;
+
+    min-height: 50px;
 
     display: flex;
+
     align-items: center;
 
     gap: 8px;
 
+    margin:
+        3px 0;
+
     padding:
-        9px 10px;
+        0 10px;
 
     border:
         1px solid transparent;
 
-    border-radius: 13px;
+    border-radius: 12px;
 
-    background:
-        rgba(255,255,255,.025);
+    color:
+        var(--muted);
 
     cursor: pointer;
 
     transition:
         background .2s ease,
         border-color .2s ease,
+        color .2s ease,
         transform .2s ease;
 }
 
 .kirongChatItem:hover {
+
     background:
-        rgba(255,255,255,.065);
+        rgba(255,255,255,.055);
+
+    color: white;
 
     border-color:
-        rgba(255,255,255,.08);
-
-    transform:
-        translateX(2px);
+        rgba(255,255,255,.07);
 }
 
 
-/* active chat */
+/* ACTIVE CHAT */
 
 .kirongChatItem.active {
+
     background:
         linear-gradient(
-            135deg,
+            90deg,
             rgba(139,92,246,.18),
-            rgba(109,40,217,.08)
+            rgba(139,92,246,.055)
         );
 
     border-color:
-        rgba(139,92,246,.3);
-}
-
-
-/* chat title */
-
-.kirongChatTitle {
-    flex: 1;
-
-    min-width: 0;
-
-    overflow: hidden;
-
-    white-space: nowrap;
-
-    text-overflow: ellipsis;
-
-    color:
-        var(--text-soft);
-
-    font-size: 13px;
-    font-weight: 650;
-}
-
-.kirongChatItem.active
-.kirongChatTitle {
-    color: white;
-}
-
-
-/* delete */
-
-.kirongDeleteChat {
-    width: 32px;
-    height: 32px;
-
-    flex-shrink: 0;
-
-    display: grid;
-    place-items: center;
-
-    border:
-        1px solid transparent;
-
-    border-radius: 9px;
-
-    background: transparent;
-
-    color:
-        #7f899a;
-
-    cursor: pointer;
-
-    opacity: .55;
-
-    transition:
-        .2s ease;
-}
-
-.kirongChatItem:hover
-.kirongDeleteChat {
-    opacity: 1;
-}
-
-.kirongDeleteChat:hover {
-    color: #fff;
-
-    background:
-        rgba(239,68,68,.15);
-
-    border-color:
-        rgba(239,68,68,.25);
-}
-
-
-/* =========================================================
-   SHELVES OVERLAY
-========================================================= */
-
-#kirongShelvesOverlay {
-    position: fixed;
-
-    inset: 0;
-
-    background:
-        rgba(0,0,0,.55);
-
-    backdrop-filter:
-        blur(3px);
-
-    -webkit-backdrop-filter:
-        blur(3px);
-
-    opacity: 0;
-    visibility: hidden;
-
-    transition:
-        opacity .3s ease,
-        visibility .3s ease;
-
-    z-index: 999;
-}
-
-#kirongShelvesOverlay.open {
-    opacity: 1;
-    visibility: visible;
-}
-
-
-/* =========================================================
-   ☰ OPEN SHELVES BUTTON
-========================================================= */
-
-#kirongOpenShelvesBtn {
-    position: fixed;
-
-    left: 16px;
-    bottom: 18px;
-
-    width: 48px;
-    height: 48px;
-
-    display: grid;
-    place-items: center;
-
-    border:
-        1px solid rgba(139,92,246,.3);
-
-    border-radius: 15px;
-
-    background:
-        rgba(10,10,20,.9);
+        rgba(139,92,246,.22);
 
     color: white;
-
-    font-size: 20px;
-
-    cursor: pointer;
-
-    box-shadow:
-        0 12px 35px rgba(0,0,0,.35);
-
-    backdrop-filter:
-        blur(18px);
-
-    -webkit-backdrop-filter:
-        blur(18px);
-
-    z-index: 900;
-
-    transition:
-        transform .2s ease,
-        background .2s ease;
 }
 
-#kirongOpenShelvesBtn:hover {
-    transform:
-        translateY(-3px);
+.kirongChatItem.active::before {
 
-    background:
-        rgba(139,92,246,.18);
-}
+    content: "";
 
+    position: absolute;
 
-/* =========================================================
-   SHELVES OPEN STATE
-========================================================= */
-
-body.shelves-open
-#kirongOpenShelvesBtn {
-    opacity: 0;
-    pointer-events: none;
-}
-
-
-/* =========================================================
-   LIGHT THEME
-========================================================= */
-
-body:not(.dark) {
-    --bg: #f4f5fb;
-    --bg-2: #ffffff;
-
-    --surface:
-        rgba(0,0,0,.04);
-
-    --surface-2:
-        rgba(0,0,0,.06);
-
-    --border:
-        rgba(15,23,42,.1);
-
-    --text:
-        #111827;
-
-    --text-soft:
-        #374151;
-
-    --muted:
-        #6b7280;
-}
-
-body:not(.dark) .container {
-    background:
-        rgba(255,255,255,.72);
-}
-
-body:not(.dark) .header,
-body:not(.dark) .quickActions,
-body:not(.dark) .inputArea,
-body:not(.dark) .footerButtons {
-    background:
-        rgba(255,255,255,.86);
-}
-
-body:not(.dark) #userInput,
-body:not(.dark) #languageSelect,
-body:not(.dark) #voiceSelect,
-body:not(.dark) #uploadBtn,
-body:not(.dark) #micBtn,
-body:not(.dark) #themeBtn {
-    color: #111827;
-
-    background:
-        rgba(0,0,0,.035);
-}
-
-body:not(.dark) #kirongShelves {
-    background:
-        rgba(248,249,253,.97);
-}
-
-body:not(.dark) .kirongChatItem {
-    background:
-        rgba(0,0,0,.025);
-}
-
-body:not(.dark) .kirongChatTitle {
-    color: #374151;
-}
-
-body:not(.dark) .kirongChatItem.active
-.kirongChatTitle {
-    color: #111827;
-}
-
-
-/* =========================================================
-   MOBILE
-========================================================= */
-
-@media (max-width:768px) {
-
-    .container {
-        height: 100dvh;
-
-        border: none;
-        border-radius: 0;
-    }
-
-    .header {
-        height: 64px;
-        padding: 0 14px;
-    }
-
-    .header h1 {
-        font-size: 17px;
-    }
-
-    #languageSelect {
-        height: 34px;
-        max-width: 95px;
-        font-size: 11px;
-    }
-
-    #themeBtn {
-        width: 38px;
-        height: 38px;
-        border-radius: 12px;
-    }
-
-    #chatBox {
-        padding:
-            20px 12px;
-
-        gap: 15px;
-    }
-
-    .message {
-        max-width: 92%;
-
-        padding:
-            13px 15px;
-
-        font-size: 14px;
-
-        line-height: 1.6;
-    }
-
-    .message.ai::before {
-        display: none;
-    }
-
-    .quickActions {
-        padding:
-            9px 10px;
-    }
-
-    .quickBtn,
-    #locationBtn {
-        min-height: 35px;
-
-        padding:
-            0 12px;
-
-        font-size: 11px;
-    }
-
-    .inputArea {
-        padding:
-            9px;
-
-        gap: 7px;
-    }
-
-    #voiceSelect {
-        display: none;
-    }
-
-    #uploadBtn,
-    #micBtn {
-        width: 42px;
-        height: 42px;
-
-        border-radius: 12px;
-    }
-
-    #userInput {
-        height: 42px;
-
-        border-radius: 13px;
-
-        padding:
-            0 13px;
-
-        font-size: 14px;
-    }
-
-    #sendBtn {
-        width: 44px;
-        height: 42px;
-
-        border-radius: 13px;
-    }
-
-    .footerButtons {
-        padding:
-            7px 9px 10px;
-    }
-
-    #exportBtn,
-    #clearBtn {
-        height: 34px;
-        font-size: 10px;
-    }
-
-    #kirongShelves {
-        width: min(320px,88vw);
-        padding: 15px;
-    }
-
-    #kirongOpenShelvesBtn {
-        width: 44px;
-        height: 44px;
-
-        left: 10px;
-        bottom: 12px;
-
-        border-radius: 13px;
-    }
-}
-
-
-/* =========================================================
-   SMALL PHONES
-========================================================= */
-
-@media (max-width:390px) {
-
-    .headerLeft {
-        gap: 8px;
-    }
-
-    .header h1 {
-        font-size: 15px;
-    }
-
-    #languageSelect {
-        max-width: 82px;
-    }
-
-    #uploadBtn {
-        display: none;
-    }
-
-    .message {
-        max-width: 95%;
-    }
-
-    #kirongShelves {
-        width: 90vw;
-    }
-}
-
-
-/* =========================================================
-   ACCESSIBILITY
-========================================================= */
-
-button:focus-visible,
-select:focus-visible,
-input:focus-visible {
-    outline:
-        2px solid
-        rgba(167,139,250,.75);
-
-    outline-offset: 2px;
-}
-
-
-/* =========================================================
-   REDUCED MOTION
-========================================================= */
-
-@media (prefers-reduced-motion:reduce) {
-
-    *,
-    *::before,
-    *::after {
-        animation-duration:
-            .01ms !important;
-
-        animation-iteration-count:
-            1 !important;
-
-        scroll-behavior:
-            auto !important;
-
-        transition-duration:
-            .01ms !important;
-    }
-}
-
-/* =========================================================
-   🧠 KIRONG CHAT SHELVES — MOBILE ACCESS BUTTON
-========================================================= */
-
-#kirongOpenShelvesBtn {
-    position: fixed;
-
-    left: 14px;
-    bottom: 92px;
-
-    width: 48px;
-    height: 48px;
-
-    display: grid;
-    place-items: center;
-
-    border: 1px solid rgba(167, 139, 250, 0.35);
-    border-radius: 15px;
-
-    background:
-        linear-gradient(
-            135deg,
-            rgba(139, 92, 246, 0.96),
-            rgba(91, 33, 182, 0.96)
-        );
-
-    color: #ffffff;
-
-    font-size: 22px;
-    font-weight: 900;
-
-    cursor: pointer;
-
-    z-index: 9999;
-
-    box-shadow:
-        0 10px 30px rgba(76, 29, 149, 0.45),
-        0 0 0 1px rgba(255, 255, 255, 0.05);
-
-    backdrop-filter: blur(15px);
-    -webkit-backdrop-filter: blur(15px);
-
-    transition:
-        transform 0.2s ease,
-        box-shadow 0.2s ease,
-        background 0.2s ease;
-}
-
-
-/* Hover */
-
-#kirongOpenShelvesBtn:hover {
-
-    transform:
-        translateY(-3px)
-        scale(1.04);
-
-    box-shadow:
-        0 15px 38px rgba(76, 29, 149, 0.6),
-        0 0 22px rgba(139, 92, 246, 0.25);
-}
-
-
-/* Tap */
-
-#kirongOpenShelvesBtn:active {
-
-    transform:
-        scale(0.92);
-}
-
-
-/* =========================================================
-   🗂️ SHELVES DRAWER
-========================================================= */
-
-#kirongShelves {
-
-    position: fixed;
-
-    top: 0;
     left: 0;
 
-    width: min(330px, 86vw);
-    height: 100dvh;
+    top: 10px;
+    bottom: 10px;
 
-    display: flex;
-    flex-direction: column;
+    width: 3px;
 
-    padding: 18px;
+    border-radius: 99px;
 
     background:
-        linear-gradient(
-            180deg,
-            rgba(12, 12, 25, 0.98),
-            rgba(5, 5, 13, 0.99)
-        );
-
-    border-right:
-        1px solid rgba(255, 255, 255, 0.1);
+        var(--primary);
 
     box-shadow:
-        25px 0 70px rgba(0, 0, 0, 0.5);
-
-    backdrop-filter: blur(25px);
-    -webkit-backdrop-filter: blur(25px);
-
-    transform:
-        translateX(-105%);
-
-    transition:
-        transform 0.3s cubic-bezier(.22,1,.36,1);
-
-    z-index: 10000;
-
-    overflow-y: auto;
-}
-
-
-/* Open */
-
-#kirongShelves.open {
-
-    transform:
-        translateX(0);
+        0 0 12px
+        rgba(139,92,246,.7);
 }
 
 
 /* =========================================================
-   🧠 SHELVES HEADER
+   CHAT TITLE
 ========================================================= */
-
-.kirongShelvesHeader {
-
-    min-height: 54px;
-
-    display: flex;
-
-    align-items: center;
-
-    justify-content: space-between;
-
-    margin-bottom: 12px;
-
-    padding:
-        0 4px;
-
-    color: #ffffff;
-
-    font-size: 17px;
-}
-
-
-/* Close button */
-
-#closeShelvesBtn {
-
-    width: 38px;
-    height: 38px;
-
-    display: grid;
-    place-items: center;
-
-    border:
-        1px solid rgba(255, 255, 255, 0.1);
-
-    border-radius: 12px;
-
-    background:
-        rgba(255, 255, 255, 0.05);
-
-    color: #ffffff;
-
-    cursor: pointer;
-
-    transition:
-        background 0.2s ease,
-        transform 0.2s ease;
-}
-
-#closeShelvesBtn:hover {
-
-    background:
-        rgba(239, 68, 68, 0.15);
-
-    transform:
-        rotate(90deg);
-}
-
-
-/* =========================================================
-   ➕ NEW CHAT
-========================================================= */
-
-.kirongNewChatBtn {
-
-    width: 100%;
-
-    min-height: 46px;
-
-    margin-bottom: 15px;
-
-    border: 1px solid
-        rgba(167, 139, 250, 0.25);
-
-    border-radius: 14px;
-
-    background:
-        linear-gradient(
-            135deg,
-            rgba(139, 92, 246, 0.18),
-            rgba(109, 40, 217, 0.08)
-        );
-
-    color: #ffffff;
-
-    font-size: 13px;
-
-    font-weight: 750;
-
-    cursor: pointer;
-
-    transition:
-        transform 0.2s ease,
-        background 0.2s ease,
-        border-color 0.2s ease;
-}
-
-.kirongNewChatBtn:hover {
-
-    transform:
-        translateY(-1px);
-
-    background:
-        rgba(139, 92, 246, 0.25);
-
-    border-color:
-        rgba(167, 139, 250, 0.5);
-}
-
-
-/* =========================================================
-   🗃️ CHAT LIST
-========================================================= */
-
-.kirongChatList {
-
-    display: flex;
-
-    flex-direction: column;
-
-    gap: 7px;
-
-    overflow-y: auto;
-
-    padding-right: 3px;
-}
-
-
-.kirongChatList::-webkit-scrollbar {
-
-    width: 4px;
-}
-
-.kirongChatList::-webkit-scrollbar-thumb {
-
-    background:
-        rgba(139, 92, 246, 0.35);
-
-    border-radius: 50px;
-}
-
-
-/* =========================================================
-   💬 CHAT ITEM
-========================================================= */
-
-.kirongChatItem {
-
-    min-height: 48px;
-
-    display: flex;
-
-    align-items: center;
-
-    gap: 8px;
-
-    padding:
-        8px 9px 8px 13px;
-
-    border:
-        1px solid transparent;
-
-    border-radius: 13px;
-
-    background:
-        rgba(255, 255, 255, 0.035);
-
-    color:
-        #cbd5e1;
-
-    cursor: pointer;
-
-    transition:
-        background 0.2s ease,
-        border-color 0.2s ease,
-        transform 0.2s ease;
-}
-
-
-.kirongChatItem:hover {
-
-    background:
-        rgba(255, 255, 255, 0.07);
-
-    border-color:
-        rgba(255, 255, 255, 0.08);
-
-    transform:
-        translateX(2px);
-}
-
-
-/* Active chat */
-
-.kirongChatItem.active {
-
-    background:
-        linear-gradient(
-            135deg,
-            rgba(139, 92, 246, 0.2),
-            rgba(109, 40, 217, 0.1)
-        );
-
-    border-color:
-        rgba(139, 92, 246, 0.35);
-
-    color:
-        #ffffff;
-}
-
-
-/* Chat title */
 
 .kirongChatTitle {
 
@@ -1998,12 +1232,14 @@ input:focus-visible {
 }
 
 
-/* Delete */
+/* =========================================================
+   DELETE CHAT
+========================================================= */
 
 .kirongDeleteChat {
 
-    width: 34px;
-    height: 34px;
+    width: 32px;
+    height: 32px;
 
     flex-shrink: 0;
 
@@ -2012,37 +1248,41 @@ input:focus-visible {
 
     border: none;
 
-    border-radius: 10px;
+    border-radius: 9px;
 
     background:
         transparent;
 
     color:
-        #8892a5;
+        #64748b;
+
+    font-size: 14px;
 
     cursor: pointer;
 
-    opacity: 0.65;
+    opacity: 0;
 
-    transition:
-        background 0.2s ease,
-        color 0.2s ease,
-        opacity 0.2s ease;
+    transition: .2s ease;
+}
+
+.kirongChatItem:hover
+.kirongDeleteChat {
+
+    opacity: 1;
 }
 
 .kirongDeleteChat:hover {
 
-    opacity: 1;
-
-    color: #ffffff;
-
     background:
-        rgba(239, 68, 68, 0.15);
+        rgba(239,68,68,.15);
+
+    color:
+        #f87171;
 }
 
 
 /* =========================================================
-   🌑 SHELVES OVERLAY
+   OVERLAY
 ========================================================= */
 
 #kirongShelvesOverlay {
@@ -2051,106 +1291,434 @@ input:focus-visible {
 
     inset: 0;
 
+    z-index: 999;
+
     background:
-        rgba(0, 0, 0, 0.58);
-
-    opacity: 0;
-
-    pointer-events: none;
-
-    transition:
-        opacity 0.3s ease;
-
-    z-index: 9998;
+        rgba(0,0,0,.52);
 
     backdrop-filter:
         blur(3px);
 
     -webkit-backdrop-filter:
         blur(3px);
-}
 
+    opacity: 0;
+
+    visibility: hidden;
+
+    pointer-events: none;
+
+    transition:
+        opacity .28s ease,
+        visibility .28s ease;
+}
 
 #kirongShelvesOverlay.open {
 
     opacity: 1;
+
+    visibility: visible;
 
     pointer-events: auto;
 }
 
 
 /* =========================================================
-   📱 MOBILE SHELVES BUTTON
+   SHELF MENU BUTTON
 ========================================================= */
 
-@media (max-width: 768px) {
+#kirongOpenShelvesBtn {
 
-    #kirongOpenShelvesBtn {
+    position: fixed;
 
-        left: 12px;
+    left: 14px;
+    top: 14px;
 
-        bottom: 142px;
+    z-index: 1100;
 
-        width: 46px;
-        height: 46px;
+    width: 44px;
+    height: 44px;
 
-        border-radius: 14px;
+    display: grid;
+    place-items: center;
 
-        font-size: 20px;
+    border:
+        1px solid
+        rgba(255,255,255,.14);
+
+    border-radius: 13px;
+
+    background:
+        rgba(12,12,22,.92);
+
+    color: white;
+
+    font-size: 20px;
+
+    cursor: pointer;
+
+    box-shadow:
+        0 8px 25px
+        rgba(0,0,0,.35);
+
+    backdrop-filter:
+        blur(16px);
+
+    -webkit-backdrop-filter:
+        blur(16px);
+
+    transition: .2s ease;
+}
+
+#kirongOpenShelvesBtn:hover {
+
+    background:
+        rgba(139,92,246,.20);
+
+    border-color:
+        rgba(139,92,246,.5);
+
+    transform:
+        translateY(-1px);
+}
+
+#kirongOpenShelvesBtn:active {
+
+    transform:
+        scale(.92);
+}
+
+
+/*
+   Give the header some room because the
+   menu button sits on the left.
+*/
+
+@media (min-width:769px) {
+
+    .header {
+
+        padding-left: 78px;
     }
-
 }
 
 
 /* =========================================================
-   📱 VERY SMALL PHONES
+   MOBILE
 ========================================================= */
 
-@media (max-width: 390px) {
+@media (max-width:768px) {
+
+    .container {
+
+        height: 100dvh;
+
+        border: none;
+
+        border-radius: 0;
+    }
+
+
+    .header {
+
+        height: 64px;
+
+        padding:
+            0 12px 0 68px;
+    }
+
+
+    .header h1 {
+
+        font-size: 17px;
+    }
+
+
+    #languageSelect {
+
+        height: 34px;
+
+        max-width: 95px;
+
+        font-size: 11px;
+    }
+
+
+    #themeBtn {
+
+        width: 38px;
+        height: 38px;
+
+        border-radius: 12px;
+    }
+
+
+    #chatBox {
+
+        padding:
+            20px 12px;
+
+        gap: 15px;
+    }
+
+
+    .message {
+
+        max-width: 92%;
+
+        padding:
+            13px 15px;
+
+        font-size: 14px;
+
+        line-height: 1.6;
+    }
+
+
+    .message.ai::before {
+
+        display: none;
+    }
+
+
+    .quickActions {
+
+        padding:
+            9px 10px;
+    }
+
+
+    .quickBtn,
+    #locationBtn {
+
+        min-height: 34px;
+
+        padding:
+            0 12px;
+
+        font-size: 11px;
+    }
+
+
+    .inputArea {
+
+        padding: 9px;
+
+        gap: 7px;
+    }
+
+
+    #voiceSelect {
+
+        display: none;
+    }
+
+
+    #uploadBtn,
+    #micBtn {
+
+        width: 42px;
+        height: 42px;
+
+        border-radius: 12px;
+    }
+
+
+    #userInput {
+
+        height: 42px;
+
+        border-radius: 13px;
+
+        padding:
+            0 13px;
+
+        font-size: 14px;
+    }
+
+
+    #sendBtn {
+
+        width: 44px;
+
+        height: 42px;
+
+        border-radius: 13px;
+    }
+
+
+    .footerButtons {
+
+        padding:
+            7px 9px 10px;
+    }
+
+
+    #exportBtn,
+    #clearBtn {
+
+        height: 34px;
+
+        font-size: 10px;
+    }
+
+
+    /* -----------------------------------------------------
+       MOBILE SHELF
+    ----------------------------------------------------- */
+
+    #kirongShelves {
+
+        width:
+            min(82vw,300px);
+
+        box-shadow:
+            25px 0 70px
+            rgba(0,0,0,.6);
+
+        transform:
+            translateX(-110%);
+    }
+
+
+    #kirongShelves.open {
+
+        transform:
+            translateX(0);
+    }
+
 
     #kirongOpenShelvesBtn {
 
         left: 10px;
+        top: 10px;
 
-        bottom: 138px;
+        width: 42px;
+        height: 42px;
 
-        width: 44px;
-        height: 44px;
+        border-radius: 12px;
 
         font-size: 19px;
     }
 
-}
 
+    .kirongShelvesHeader {
 
-/* =========================================================
-   🖥️ DESKTOP
-========================================================= */
+        height: 64px;
 
-@media (min-width: 769px) {
-
-    #kirongOpenShelvesBtn {
-
-        left: 28px;
-
-        bottom: 28px;
+        padding:
+            0 13px;
     }
 
-}
+
+    .kirongNewChatBtn {
+
+        min-height: 44px;
+
+        margin:
+            12px;
+    }
 
 
-/* =========================================================
-   ♿ REDUCED MOTION
-========================================================= */
-
-@media (prefers-reduced-motion: reduce) {
-
-    #kirongOpenShelvesBtn,
-    #kirongShelves,
-    #kirongShelvesOverlay,
     .kirongChatItem {
 
-        transition: none;
+        min-height: 48px;
+    }
+
+
+    /*
+       On phones the delete icon is always visible.
+       This makes it easier to use touch.
+    */
+
+    .kirongDeleteChat {
+
+        opacity: .75;
     }
 
 }
+
+
+/* =========================================================
+   SMALL PHONES
+========================================================= */
+
+@media (max-width:390px) {
+
+    .header {
+
+        padding-left: 62px;
+    }
+
+    .headerLeft {
+
+        gap: 7px;
+    }
+
+    .header h1 {
+
+        font-size: 15px;
+    }
+
+    #languageSelect {
+
+        max-width: 82px;
+    }
+
+    #uploadBtn {
+
+        display: none;
+    }
+
+    .message {
+
+        max-width: 95%;
+    }
+
+    #kirongShelves {
+
+        width: 86vw;
+    }
+}
+
+
+/* =========================================================
+   ACCESSIBILITY
+========================================================= */
+
+button:focus-visible,
+select:focus-visible,
+input:focus-visible {
+
+    outline:
+        2px solid
+        rgba(167,139,250,.75);
+
+    outline-offset: 2px;
+}
+
+
+/* =========================================================
+   REDUCED MOTION
+========================================================= */
+
+@media (prefers-reduced-motion:reduce) {
+
+    *,
+    *::before,
+    *::after {
+
+        animation-duration:
+            .01ms !important;
+
+        animation-iteration-count:
+            1 !important;
+
+        transition-duration:
+            .01ms !important;
+
+        scroll-behavior:
+            auto !important;
+    }
+}
+
