@@ -1,91 +1,178 @@
-// =====================================================
-// ⚡ KIRONG AI — MEMORY + CHAT SHELVES
-// Groq + OpenAI + Hugging Face backend
-// =====================================================
+// ============================================================
+// ⚡ KIRONG AI — FULL FRONTEND ENGINE
+// 🧠 Memory + 🗂️ Chat Shelves + 🎨 Images + 🎤 Voice
+// 💾 Local Storage + 🌍 Language + 🌙 Theme
+// ============================================================
 
-const chatBox = document.getElementById("chatBox");
-const userInput = document.getElementById("userInput");
-const sendBtn = document.getElementById("sendBtn");
-const themeBtn = document.getElementById("themeBtn");
-const thinking = document.getElementById("thinking");
-const chatForm = document.getElementById("chatForm");
+"use strict";
+
+
+// ============================================================
+// 🔌 DOM
+// ============================================================
+
+const chatBox =
+  document.getElementById("chatBox");
+
+const userInput =
+  document.getElementById("userInput");
+
+const sendBtn =
+  document.getElementById("sendBtn");
+
+const themeBtn =
+  document.getElementById("themeBtn");
+
+const thinking =
+  document.getElementById("thinking");
+
+const chatForm =
+  document.getElementById("chatForm");
 
 const languageSelect =
   document.getElementById("languageSelect");
 
-const STORAGE_KEY = "kirong_ai_chats_v1";
-const ACTIVE_CHAT_KEY = "kirong_ai_active_chat_v1";
+
+// ============================================================
+// 💾 STORAGE
+// ============================================================
+
+const STORAGE_KEY =
+  "kirong_ai_chats_v2";
+
+const ACTIVE_CHAT_KEY =
+  "kirong_ai_active_chat_v2";
+
+const THEME_KEY =
+  "kirong_ai_theme";
+
+
+// ============================================================
+// 🧠 STATE
+// ============================================================
 
 let chats = [];
+
 let activeChatId = null;
+
 let chatHistory = [];
+
 let isSending = false;
 
 
-// =====================================================
-// 🧠 MEMORY ENGINE
-// =====================================================
+// ============================================================
+// 🆔 ID GENERATOR
+// ============================================================
 
 function createId() {
+
   return (
     Date.now().toString(36) +
-    Math.random().toString(36).slice(2, 8)
+    Math.random()
+      .toString(36)
+      .slice(2, 9)
   );
+
 }
 
 
-function createChat(title = "New Chat") {
+// ============================================================
+// 🗂️ CREATE CHAT
+// ============================================================
+
+function createChat(
+  title = "New Chat"
+) {
+
   return {
+
     id: createId(),
+
     title,
-    createdAt: Date.now(),
-    updatedAt: Date.now(),
+
+    createdAt:
+      Date.now(),
+
+    updatedAt:
+      Date.now(),
+
     history: []
+
   };
+
 }
 
+
+// ============================================================
+// 💾 SAVE ALL CHATS
+// ============================================================
 
 function saveChats() {
+
   try {
+
     localStorage.setItem(
       STORAGE_KEY,
       JSON.stringify(chats)
     );
 
     if (activeChatId) {
+
       localStorage.setItem(
         ACTIVE_CHAT_KEY,
         activeChatId
       );
+
     }
+
   } catch (error) {
+
     console.error(
-      "❌ Memory save failed:",
+      "❌ Kirong memory save failed:",
       error
     );
+
   }
+
 }
 
 
+// ============================================================
+// 📥 LOAD CHATS
+// ============================================================
+
 function loadChats() {
+
   try {
+
     const saved =
-      localStorage.getItem(STORAGE_KEY);
+      localStorage.getItem(
+        STORAGE_KEY
+      );
 
-    chats = saved
-      ? JSON.parse(saved)
-      : [];
+    if (saved) {
 
-    if (!Array.isArray(chats)) {
-      chats = [];
+      chats =
+        JSON.parse(saved);
+
     }
+
   } catch (error) {
+
     console.error(
-      "❌ Memory load failed:",
+      "❌ Kirong memory load failed:",
       error
     );
 
     chats = [];
+
+  }
+
+
+  if (!Array.isArray(chats)) {
+
+    chats = [];
+
   }
 
 
@@ -98,48 +185,84 @@ function loadChats() {
   if (
     savedActive &&
     chats.some(
-      chat => chat.id === savedActive
+      chat =>
+        chat.id ===
+        savedActive
     )
   ) {
-    activeChatId = savedActive;
+
+    activeChatId =
+      savedActive;
+
   }
 
 
-  if (!activeChatId && chats.length) {
+  if (
+    !activeChatId &&
+    chats.length
+  ) {
+
+    chats.sort(
+      (a, b) =>
+        b.updatedAt -
+        a.updatedAt
+    );
+
     activeChatId =
       chats[0].id;
+
   }
 
 
   if (!activeChatId) {
+
     const firstChat =
       createChat();
 
-    chats.unshift(firstChat);
+    chats.unshift(
+      firstChat
+    );
 
     activeChatId =
       firstChat.id;
 
     saveChats();
+
   }
 
 
-  const activeChat =
+  const active =
     getActiveChat();
 
 
   chatHistory =
-    activeChat?.history || [];
+    Array.isArray(
+      active?.history
+    )
+      ? [...active.history]
+      : [];
+
 }
 
+
+// ============================================================
+// 🔎 GET ACTIVE CHAT
+// ============================================================
 
 function getActiveChat() {
+
   return chats.find(
     chat =>
-      chat.id === activeChatId
+      chat.id ===
+      activeChatId
   );
+
 }
 
+
+// ============================================================
+// 💾 SAVE ACTIVE CHAT
+// ============================================================
 
 function saveActiveChat() {
 
@@ -148,50 +271,74 @@ function saveActiveChat() {
 
   if (!chat) return;
 
+
   chat.history =
-    Array.isArray(chatHistory)
+    Array.isArray(
+      chatHistory
+    )
       ? chatHistory.slice(-20)
       : [];
+
 
   chat.updatedAt =
     Date.now();
 
+
   saveChats();
 
   renderShelves();
+
 }
 
 
-// =====================================================
-// 🏷️ AUTO CHAT TITLE
-// =====================================================
+// ============================================================
+// 🏷️ CREATE CHAT TITLE
+// ============================================================
 
-function makeChatTitle(text) {
+function makeChatTitle(
+  text
+) {
 
   const clean =
     String(text || "")
-      .replace(/\s+/g, " ")
+      .replace(
+        /\s+/g,
+        " "
+      )
       .trim();
 
 
   if (!clean) {
+
     return "New Chat";
+
   }
 
 
-  if (clean.length <= 34) {
+  if (
+    clean.length <= 36
+  ) {
+
     return clean;
+
   }
 
 
   return (
-    clean.slice(0, 31) +
+    clean.slice(0, 33) +
     "..."
   );
+
 }
 
 
-function maybeSetTitle(text) {
+// ============================================================
+// 🏷️ AUTO TITLE
+// ============================================================
+
+function maybeSetTitle(
+  text
+) {
 
   const chat =
     getActiveChat();
@@ -200,21 +347,26 @@ function maybeSetTitle(text) {
 
 
   if (
-    chat.title === "New Chat" &&
+    chat.title ===
+      "New Chat" &&
     chatHistory.length <= 2
   ) {
+
     chat.title =
       makeChatTitle(text);
 
     saveChats();
+
     renderShelves();
+
   }
+
 }
 
 
-// =====================================================
-// 🗂️ CHAT SHELVES
-// =====================================================
+// ============================================================
+// 🗂️ SHELVES UI
+// ============================================================
 
 function createShelvesUI() {
 
@@ -223,35 +375,72 @@ function createShelvesUI() {
       "kirongShelves"
     )
   ) {
+
     return;
+
   }
 
 
+  const overlay =
+    document.createElement(
+      "div"
+    );
+
+  overlay.id =
+    "kirongShelvesOverlay";
+
+
   const shelves =
-    document.createElement("aside");
+    document.createElement(
+      "aside"
+    );
 
   shelves.id =
     "kirongShelves";
 
+
   shelves.innerHTML = `
-    <div class="kirongShelvesHeader">
-      <strong>🧠 Chats</strong>
+
+    <div
+      class="kirongShelvesHeader"
+    >
+
+      <strong>
+        🧠 Chats
+      </strong>
 
       <button
-        id="newChatBtn"
+        id="closeShelvesBtn"
         type="button"
-        title="New Chat"
+        aria-label="Close chats"
+        title="Close"
       >
-        ＋
+        ✕
       </button>
+
     </div>
+
+
+    <button
+      id="newChatBtn"
+      class="kirongNewChatBtn"
+      type="button"
+    >
+      ＋ New Chat
+    </button>
+
 
     <div
       id="kirongChatList"
       class="kirongChatList"
     ></div>
+
   `;
 
+
+  document.body.prepend(
+    overlay
+  );
 
   document.body.prepend(
     shelves
@@ -264,185 +453,179 @@ function createShelvesUI() {
     );
 
 
+  const closeBtn =
+    document.getElementById(
+      "closeShelvesBtn"
+    );
+
+
   newChatBtn?.addEventListener(
     "click",
-    createNewChat
+    () => {
+
+      createNewChat();
+
+      closeShelves();
+
+    }
+  );
+
+
+  closeBtn?.addEventListener(
+    "click",
+    closeShelves
+  );
+
+
+  overlay.addEventListener(
+    "click",
+    closeShelves
   );
 
 
   injectShelvesStyles();
 
+  createChatMenuButton();
+
   renderShelves();
+
 }
 
 
-function injectShelvesStyles() {
+// ============================================================
+// ☰ MOBILE CHAT BUTTON
+// ============================================================
+
+function createChatMenuButton() {
 
   if (
     document.getElementById(
-      "kirongShelvesStyles"
+      "kirongOpenShelvesBtn"
     )
   ) {
+
     return;
+
   }
 
 
-  const style =
-    document.createElement("style");
-
-  style.id =
-    "kirongShelvesStyles";
-
-
-  style.textContent = `
-    #kirongShelves {
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 270px;
-      height: 100dvh;
-      z-index: 1000;
-
-      display: flex;
-      flex-direction: column;
-
-      background: rgba(8,8,16,.96);
-      border-right: 1px solid rgba(255,255,255,.08);
-
-      backdrop-filter: blur(20px);
-      -webkit-backdrop-filter: blur(20px);
-
-      color: white;
-      padding: 14px;
-
-      transform: translateX(0);
-      transition: transform .25s ease;
-    }
-
-    .kirongShelvesHeader {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 10px;
-
-      padding: 8px 4px 14px;
-      border-bottom: 1px solid rgba(255,255,255,.08);
-    }
-
-    .kirongShelvesHeader strong {
-      font-size: 15px;
-      letter-spacing: .2px;
-    }
-
-    #newChatBtn {
-      width: 38px;
-      height: 38px;
-
-      border: 1px solid rgba(255,255,255,.1);
-      border-radius: 11px;
-
-      background: rgba(255,255,255,.06);
-      color: white;
-
-      font-size: 22px;
-      cursor: pointer;
-    }
-
-    #newChatBtn:hover {
-      background: rgba(139,92,246,.2);
-    }
-
-    .kirongChatList {
-      flex: 1;
-      overflow-y: auto;
-      padding-top: 10px;
-    }
-
-    .kirongChatItem {
-      width: 100%;
-      display: flex;
-      align-items: center;
-      gap: 7px;
-
-      margin-bottom: 5px;
-      padding: 10px;
-
-      border: 1px solid transparent;
-      border-radius: 11px;
-
-      background: transparent;
-      color: rgba(255,255,255,.82);
-
-      cursor: pointer;
-      text-align: left;
-    }
-
-    .kirongChatItem:hover {
-      background: rgba(255,255,255,.06);
-    }
-
-    .kirongChatItem.active {
-      background: rgba(139,92,246,.14);
-      border-color: rgba(139,92,246,.25);
-    }
-
-    .kirongChatTitle {
-      flex: 1;
-      min-width: 0;
-
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-
-      font-size: 13px;
-    }
-
-    .kirongDeleteChat {
-      width: 28px;
-      height: 28px;
-
-      border: 0;
-      border-radius: 8px;
-
-      background: transparent;
-      color: rgba(255,255,255,.45);
-
-      cursor: pointer;
-    }
-
-    .kirongDeleteChat:hover {
-      background: rgba(239,68,68,.15);
-      color: white;
-    }
-
-    body.dark #kirongShelves {
-      background: rgba(3,3,8,.97);
-    }
-
-    @media (min-width: 769px) {
-      body {
-        padding-left: 270px;
-      }
-    }
-
-    @media (max-width: 768px) {
-      #kirongShelves {
-        width: min(290px, 84vw);
-        box-shadow: 10px 0 35px rgba(0,0,0,.35);
-      }
-
-      body {
-        padding-left: 0;
-      }
-    }
-  `;
+  const button =
+    document.createElement(
+      "button"
+    );
 
 
-  document.head.appendChild(
-    style
+  button.id =
+    "kirongOpenShelvesBtn";
+
+
+  button.type =
+    "button";
+
+
+  button.innerHTML =
+    "☰";
+
+
+  button.title =
+    "Open chats";
+
+
+  button.setAttribute(
+    "aria-label",
+    "Open chats"
   );
+
+
+  document.body.appendChild(
+    button
+  );
+
+
+  button.addEventListener(
+    "click",
+    openShelves
+  );
+
 }
 
+
+// ============================================================
+// 📂 OPEN SHELVES
+// ============================================================
+
+function openShelves() {
+
+  const shelves =
+    document.getElementById(
+      "kirongShelves"
+    );
+
+
+  const overlay =
+    document.getElementById(
+      "kirongShelvesOverlay"
+    );
+
+
+  if (!shelves) return;
+
+
+  shelves.classList.add(
+    "open"
+  );
+
+
+  overlay?.classList.add(
+    "open"
+  );
+
+
+  document.body.classList.add(
+    "shelves-open"
+  );
+
+}
+
+
+// ============================================================
+// ✕ CLOSE SHELVES
+// ============================================================
+
+function closeShelves() {
+
+  const shelves =
+    document.getElementById(
+      "kirongShelves"
+    );
+
+
+  const overlay =
+    document.getElementById(
+      "kirongShelvesOverlay"
+    );
+
+
+  shelves?.classList.remove(
+    "open"
+  );
+
+
+  overlay?.classList.remove(
+    "open"
+  );
+
+
+  document.body.classList.remove(
+    "shelves-open"
+  );
+
+}
+
+
+// ============================================================
+// 📋 RENDER CHAT SHELVES
+// ============================================================
 
 function renderShelves() {
 
@@ -458,26 +641,37 @@ function renderShelves() {
   list.innerHTML = "";
 
 
-  chats
-    .slice()
-    .sort(
+  const sortedChats =
+    [...chats].sort(
       (a, b) =>
-        b.updatedAt - a.updatedAt
-    )
-    .forEach(chat => {
+        b.updatedAt -
+        a.updatedAt
+    );
+
+
+  sortedChats.forEach(
+    chat => {
 
       const item =
         document.createElement(
           "div"
         );
 
+
       item.className =
-        "kirongChatItem" +
-        (
-          chat.id === activeChatId
-            ? " active"
-            : ""
+        "kirongChatItem";
+
+
+      if (
+        chat.id ===
+        activeChatId
+      ) {
+
+        item.classList.add(
+          "active"
         );
+
+      }
 
 
       const title =
@@ -485,8 +679,10 @@ function renderShelves() {
           "span"
         );
 
+
       title.className =
         "kirongChatTitle";
+
 
       title.textContent =
         chat.title ||
@@ -498,17 +694,21 @@ function renderShelves() {
           "button"
         );
 
+
       deleteBtn.className =
         "kirongDeleteChat";
+
 
       deleteBtn.type =
         "button";
 
-      deleteBtn.textContent =
-        "🗑️";
 
       deleteBtn.title =
         "Delete chat";
+
+
+      deleteBtn.textContent =
+        "🗑️";
 
 
       deleteBtn.addEventListener(
@@ -529,6 +729,7 @@ function renderShelves() {
         title
       );
 
+
       item.appendChild(
         deleteBtn
       );
@@ -537,9 +738,11 @@ function renderShelves() {
       item.addEventListener(
         "click",
         () => {
+
           switchChat(
             chat.id
           );
+
         }
       );
 
@@ -548,60 +751,75 @@ function renderShelves() {
         item
       );
 
-    });
+    }
+  );
+
 }
 
 
-// =====================================================
+// ============================================================
 // ➕ NEW CHAT
-// =====================================================
+// ============================================================
 
 function createNewChat() {
 
   const newChat =
     createChat();
 
+
   chats.unshift(
     newChat
   );
 
+
   activeChatId =
     newChat.id;
 
+
   chatHistory = [];
 
+
   saveChats();
+
 
   renderChat();
 
   renderShelves();
 
+
   userInput?.focus();
+
 }
 
 
-// =====================================================
+// ============================================================
 // 🔄 SWITCH CHAT
-// =====================================================
+// ============================================================
 
-function switchChat(id) {
+function switchChat(
+  id
+) {
 
-  const chat =
+  const selected =
     chats.find(
-      item =>
-        item.id === id
+      chat =>
+        chat.id ===
+        id
     );
 
 
-  if (!chat) return;
+  if (!selected) return;
 
 
   activeChatId =
-    id;
+    selected.id;
+
 
   chatHistory =
-    Array.isArray(chat.history)
-      ? [...chat.history]
+    Array.isArray(
+      selected.history
+    )
+      ? [...selected.history]
       : [];
 
 
@@ -612,31 +830,38 @@ function switchChat(id) {
 
 
   renderChat();
+
   renderShelves();
 
+  closeShelves();
+
   userInput?.focus();
+
 }
 
 
-// =====================================================
+// ============================================================
 // 🗑️ DELETE CHAT
-// =====================================================
+// ============================================================
 
-function deleteChat(id) {
+function deleteChat(
+  id
+) {
 
-  const chat =
+  const selected =
     chats.find(
-      item =>
-        item.id === id
+      chat =>
+        chat.id ===
+        id
     );
 
 
-  if (!chat) return;
+  if (!selected) return;
 
 
   const confirmed =
     window.confirm(
-      `Delete "${chat.title}"?`
+      `Delete "${selected.title}"?`
     );
 
 
@@ -645,18 +870,18 @@ function deleteChat(id) {
 
   chats =
     chats.filter(
-      item =>
-        item.id !== id
+      chat =>
+        chat.id !== id
     );
 
 
   if (!chats.length) {
 
-    const replacement =
+    const fresh =
       createChat();
 
     chats.push(
-      replacement
+      fresh
     );
 
   }
@@ -664,8 +889,9 @@ function deleteChat(id) {
 
   if (
     !chats.some(
-      item =>
-        item.id === activeChatId
+      chat =>
+        chat.id ===
+        activeChatId
     )
   ) {
 
@@ -674,6 +900,7 @@ function deleteChat(id) {
         b.updatedAt -
         a.updatedAt
     );
+
 
     activeChatId =
       chats[0].id;
@@ -694,12 +921,13 @@ function deleteChat(id) {
   renderChat();
 
   renderShelves();
+
 }
 
 
-// =====================================================
-// 🖥️ RENDER ACTIVE CHAT
-// =====================================================
+// ============================================================
+// 🖥️ RENDER CURRENT CHAT
+// ============================================================
 
 function renderChat() {
 
@@ -707,79 +935,91 @@ function renderChat() {
 
 
   chatBox.innerHTML = `
+
     <div class="message ai">
+
       <p>
         Hello 👋<br><br>
-        I am <strong>Kirong AI</strong>.<br><br>
+        I am
+        <strong>
+          Kirong AI
+        </strong>.<br><br>
         How can I help you today?
       </p>
+
     </div>
+
   `;
 
 
-  for (
-    const item of chatHistory
-  ) {
-
-    if (
-      !item ||
-      !item.content
-    ) {
-      continue;
-    }
-
-
-    if (
-      item.role === "user"
-    ) {
-
-      addMessage(
-        item.content,
-        "user"
-      );
-
-      continue;
-
-    }
-
-
-    if (
-      item.role === "assistant"
-    ) {
+  chatHistory.forEach(
+    item => {
 
       if (
-        item.content ===
-        "[Image generated by Kirong AI]"
+        !item ||
+        !item.content
+      ) {
+
+        return;
+
+      }
+
+
+      if (
+        item.role ===
+        "user"
       ) {
 
         addMessage(
-          "🎨 Image generated by Kirong AI.",
-          "ai"
-        );
-
-      } else {
-
-        addMessage(
           item.content,
-          "ai"
+          "user"
         );
 
       }
 
-    }
 
-  }
+      if (
+        item.role ===
+        "assistant"
+      ) {
+
+        if (
+          item.content ===
+          "[Image generated by Kirong AI]"
+        ) {
+
+          addMessage(
+            "🎨 Image generated by Kirong AI.",
+            "ai"
+          );
+
+        } else {
+
+          addMessage(
+            item.content,
+            "ai"
+          );
+
+        }
+
+      }
+
+    }
+  );
 
 
   scrollToBottom();
+
 }
 
 
-// =====================================================
-// 🧹 HTML ESCAPE
-// =====================================================
+// ============================================================
+// 🧹 ESCAPE HTML
+// ============================================================
 
-function escapeHTML(value) {
+function escapeHTML(
+  value
+) {
 
   return String(
     value ?? ""
@@ -808,11 +1048,13 @@ function escapeHTML(value) {
 }
 
 
-// =====================================================
+// ============================================================
 // 📝 MARKDOWN
-// =====================================================
+// ============================================================
 
-function renderMarkdown(text) {
+function renderMarkdown(
+  text
+) {
 
   let content =
     escapeHTML(
@@ -839,13 +1081,6 @@ function renderMarkdown(text) {
     content.replace(
       /\*\*(.*?)\*\*/g,
       "<strong>$1</strong>"
-    );
-
-
-  content =
-    content.replace(
-      /(^|[^*])\*([^*]+)\*(?!\*)/g,
-      "$1<em>$2</em>"
     );
 
 
@@ -885,12 +1120,13 @@ function renderMarkdown(text) {
 
 
   return content;
+
 }
 
 
-// =====================================================
+// ============================================================
 // 💬 ADD MESSAGE
-// =====================================================
+// ============================================================
 
 function addMessage(
   text,
@@ -936,12 +1172,13 @@ function addMessage(
 
 
   return message;
+
 }
 
 
-// =====================================================
+// ============================================================
 // 🎨 ADD IMAGE
-// =====================================================
+// ============================================================
 
 function addImage(
   image,
@@ -953,7 +1190,9 @@ function addImage(
     !chatBox ||
     !image
   ) {
-    return null;
+
+    return;
+
   }
 
 
@@ -997,8 +1236,10 @@ function addImage(
   img.src =
     image;
 
+
   img.alt =
     "Kirong AI generated image";
+
 
   img.loading =
     "lazy";
@@ -1006,6 +1247,7 @@ function addImage(
 
   img.style.maxWidth =
     "100%";
+
 
   img.style.borderRadius =
     "16px";
@@ -1018,25 +1260,30 @@ function addImage(
 
   if (provider) {
 
-    const providerText =
+    const small =
       document.createElement(
         "small"
       );
 
-    providerText.textContent =
+
+    small.textContent =
       `🎨 ${provider}`;
 
-    providerText.style.display =
+
+    small.style.display =
       "block";
 
-    providerText.style.marginTop =
+
+    small.style.marginTop =
       "8px";
 
-    providerText.style.opacity =
+
+    small.style.opacity =
       ".65";
 
+
     message.appendChild(
-      providerText
+      small
     );
 
   }
@@ -1051,11 +1298,14 @@ function addImage(
   controls.style.display =
     "flex";
 
+
   controls.style.gap =
     "10px";
 
+
   controls.style.marginTop =
     "12px";
+
 
   controls.style.flexWrap =
     "wrap";
@@ -1070,11 +1320,14 @@ function addImage(
   download.href =
     image;
 
+
   download.download =
     "KirongAI_Generated.png";
 
+
   download.textContent =
     "📥 Save Image";
+
 
   download.style.textDecoration =
     "none";
@@ -1088,6 +1341,7 @@ function addImage(
 
   open.type =
     "button";
+
 
   open.textContent =
     "🔍 Open";
@@ -1111,6 +1365,7 @@ function addImage(
     download
   );
 
+
   controls.appendChild(
     open
   );
@@ -1128,13 +1383,12 @@ function addImage(
 
   scrollToBottom();
 
-  return message;
 }
 
 
-// =====================================================
+// ============================================================
 // 📜 SCROLL
-// =====================================================
+// ============================================================
 
 function scrollToBottom() {
 
@@ -1149,12 +1403,13 @@ function scrollToBottom() {
 
     }
   );
+
 }
 
 
-// =====================================================
+// ============================================================
 // 🧠 THINKING
-// =====================================================
+// ============================================================
 
 function showThinking() {
 
@@ -1164,6 +1419,7 @@ function showThinking() {
   thinking.classList.remove(
     "hidden"
   );
+
 
   thinking.textContent =
     "Kirong AI is thinking...";
@@ -1180,9 +1436,9 @@ function hideThinking() {
 }
 
 
-// =====================================================
+// ============================================================
 // 🔒 SEND STATE
-// =====================================================
+// ============================================================
 
 function setSendingState(
   state
@@ -1198,21 +1454,18 @@ function setSendingState(
   sendBtn.disabled =
     state;
 
+
   sendBtn.style.opacity =
     state
       ? ".6"
       : "1";
 
-  sendBtn.style.cursor =
-    state
-      ? "not-allowed"
-      : "pointer";
 }
 
 
-// =====================================================
+// ============================================================
 // 🌍 LANGUAGE
-// =====================================================
+// ============================================================
 
 function getSelectedLanguage() {
 
@@ -1224,22 +1477,22 @@ function getSelectedLanguage() {
 }
 
 
-// =====================================================
+// ============================================================
 // 📡 SAFE RESPONSE
-// =====================================================
+// ============================================================
 
 async function readResponse(
   response
 ) {
 
-  const type =
+  const contentType =
     response.headers.get(
       "content-type"
     ) || "";
 
 
   if (
-    type.includes(
+    contentType.includes(
       "application/json"
     )
   ) {
@@ -1251,9 +1504,13 @@ async function readResponse(
     } catch {
 
       return {
-        type: "error",
+
+        type:
+          "error",
+
         text:
           "Invalid response from server."
+
       };
 
     }
@@ -1266,28 +1523,30 @@ async function readResponse(
 
 
   return {
-    type: "text",
+
+    type:
+      "text",
+
     text:
       text ||
       "Unknown server response."
+
   };
 
 }
 
 
-// =====================================================
+// ============================================================
 // 🚀 SEND MESSAGE
-// =====================================================
+// ============================================================
 
 async function sendMessage() {
 
   if (isSending) return;
 
-  if (!userInput) return;
-
 
   const text =
-    userInput.value.trim();
+    userInput?.value.trim();
 
 
   if (!text) return;
@@ -1307,6 +1566,7 @@ async function sendMessage() {
     true
   );
 
+
   showThinking();
 
 
@@ -1320,12 +1580,15 @@ async function sendMessage() {
       await fetch(
         "/api/chat",
         {
+
           method:
             "POST",
 
           headers: {
+
             "Content-Type":
               "application/json"
+
           },
 
           body:
@@ -1364,15 +1627,17 @@ async function sendMessage() {
       );
 
       return;
+
     }
 
 
-    // =================================================
-    // 🎨 IMAGE
-    // =================================================
+    // ======================================================
+    // 🎨 IMAGE RESPONSE
+    // ======================================================
 
     if (
-      data?.type === "image" &&
+      data?.type ===
+        "image" &&
       data?.image
     ) {
 
@@ -1416,12 +1681,13 @@ async function sendMessage() {
       saveActiveChat();
 
       return;
+
     }
 
 
-    // =================================================
-    // 💬 TEXT
-    // =================================================
+    // ======================================================
+    // 💬 TEXT RESPONSE
+    // ======================================================
 
     const reply =
       data?.text ||
@@ -1464,13 +1730,10 @@ async function sendMessage() {
 
     saveActiveChat();
 
-  }
-
-
-  catch (error) {
+  } catch (error) {
 
     console.error(
-      "🔥 KIRONG FRONTEND ERROR:",
+      "🔥 Kirong frontend error:",
       error
     );
 
@@ -1483,10 +1746,7 @@ async function sendMessage() {
       "ai"
     );
 
-  }
-
-
-  finally {
+  } finally {
 
     hideThinking();
 
@@ -1501,9 +1761,9 @@ async function sendMessage() {
 }
 
 
-// =====================================================
-// ✂️ LIMIT HISTORY
-// =====================================================
+// ============================================================
+// ✂️ HISTORY LIMIT
+// ============================================================
 
 function trimHistory() {
 
@@ -1522,9 +1782,9 @@ function trimHistory() {
 }
 
 
-// =====================================================
-// 📤 FORM
-// =====================================================
+// ============================================================
+// 📤 FORM SUBMIT
+// ============================================================
 
 if (chatForm) {
 
@@ -1542,9 +1802,9 @@ if (chatForm) {
 }
 
 
-// =====================================================
-// ⌨️ ENTER
-// =====================================================
+// ============================================================
+// ⌨️ ENTER KEY
+// ============================================================
 
 if (userInput) {
 
@@ -1570,29 +1830,33 @@ if (userInput) {
 }
 
 
-// =====================================================
+// ============================================================
 // 🌙 THEME
-// =====================================================
+// ============================================================
 
 function loadTheme() {
 
-  const saved =
+  const theme =
     localStorage.getItem(
-      "theme"
+      THEME_KEY
     );
 
 
   if (
-    saved === "dark"
+    theme ===
+    "dark"
   ) {
 
     document.body.classList.add(
       "dark"
     );
 
+
     if (themeBtn) {
+
       themeBtn.textContent =
         "☀️";
+
     }
 
   }
@@ -1627,7 +1891,7 @@ if (themeBtn) {
 
 
       localStorage.setItem(
-        "theme",
+        THEME_KEY,
         dark
           ? "dark"
           : "light"
@@ -1639,9 +1903,9 @@ if (themeBtn) {
 }
 
 
-// =====================================================
-// ⚡ QUICK ACTIONS
-// =====================================================
+// ============================================================
+// ⚡ QUICK ACTION BUTTONS
+// ============================================================
 
 document
   .querySelectorAll(
@@ -1663,7 +1927,7 @@ document
             case "Image":
 
               userInput.value =
-                "Nigeneretie picha ya ";
+                "Generate an image of ";
 
               break;
 
@@ -1671,7 +1935,7 @@ document
             case "Code":
 
               userInput.value =
-                "Nisaidie code ya ";
+                "Help me write code for ";
 
               break;
 
@@ -1695,7 +1959,7 @@ document
             case "Email":
 
               userInput.value =
-                "Write an email ";
+                "Write an email about ";
 
               break;
 
@@ -1717,9 +1981,9 @@ document
   );
 
 
-// =====================================================
+// ============================================================
 // 🗑️ CLEAR CURRENT CHAT
-// =====================================================
+// ============================================================
 
 const clearBtn =
   document.getElementById(
@@ -1742,10 +2006,13 @@ if (clearBtn) {
 
       chatHistory = [];
 
+
       chat.history = [];
+
 
       chat.title =
         "New Chat";
+
 
       chat.updatedAt =
         Date.now();
@@ -1753,9 +2020,12 @@ if (clearBtn) {
 
       saveChats();
 
+
       renderChat();
 
+
       renderShelves();
+
 
       userInput?.focus();
 
@@ -1765,9 +2035,9 @@ if (clearBtn) {
 }
 
 
-// =====================================================
-// 💾 EXPORT CURRENT CHAT
-// =====================================================
+// ============================================================
+// 💾 EXPORT CHAT
+// ============================================================
 
 const exportBtn =
   document.getElementById(
@@ -1790,7 +2060,9 @@ if (exportBtn) {
 
 
       if (!messages.length) {
+
         return;
+
       }
 
 
@@ -1831,6 +2103,7 @@ if (exportBtn) {
       link.href =
         url;
 
+
       link.download =
         "KirongAI_Chat.txt";
 
@@ -1841,6 +2114,7 @@ if (exportBtn) {
 
 
       link.click();
+
 
       link.remove();
 
@@ -1855,9 +2129,9 @@ if (exportBtn) {
 }
 
 
-// =====================================================
+// ============================================================
 // 📍 LOCATION
-// =====================================================
+// ============================================================
 
 const locationBtn =
   document.getElementById(
@@ -1936,6 +2210,7 @@ if (locationBtn) {
 
 
         {
+
           enableHighAccuracy:
             true,
 
@@ -1944,6 +2219,7 @@ if (locationBtn) {
 
           maximumAge:
             60000
+
         }
 
       );
@@ -1954,9 +2230,9 @@ if (locationBtn) {
 }
 
 
-// =====================================================
-// 📎 FILE INPUT
-// =====================================================
+// ============================================================
+// 📎 FILE UPLOAD
+// ============================================================
 
 const fileInput =
   document.getElementById(
@@ -1993,7 +2269,9 @@ if (
         !fileInput.files ||
         !fileInput.files.length
       ) {
+
         return;
+
       }
 
 
@@ -2022,9 +2300,9 @@ if (
 }
 
 
-// =====================================================
+// ============================================================
 // 🎤 VOICE INPUT
-// =====================================================
+// ============================================================
 
 const micBtn =
   document.getElementById(
@@ -2064,6 +2342,7 @@ if (
 
     recognition.continuous =
       false;
+
 
     recognition.interimResults =
       false;
@@ -2109,6 +2388,7 @@ if (
           userInput.value =
             transcript;
 
+
           userInput.focus();
 
         }
@@ -2138,7 +2418,7 @@ if (
         } catch (error) {
 
           console.error(
-            "Speech start error:",
+            "🎤 Speech error:",
             error
           );
 
@@ -2152,9 +2432,9 @@ if (
 }
 
 
-// =====================================================
-// 🚀 BOOT MEMORY SYSTEM
-// =====================================================
+// ============================================================
+// 🚀 STARTUP
+// ============================================================
 
 loadChats();
 
@@ -2163,31 +2443,35 @@ createShelvesUI();
 renderChat();
 
 
-// =====================================================
-// 🏁 READY
-// =====================================================
+// ============================================================
+// 🏁 KIRONG AI READY
+// ============================================================
 
 console.log(
-  "⚡ Kirong AI Memory Layer loaded."
+  "⚡ Kirong AI frontend loaded"
 );
 
 console.log(
-  "🗂️ Chat Shelves: ENABLED"
+  "🧠 Memory: ON"
 );
 
 console.log(
-  "💾 Persistent chat memory: ENABLED"
+  "🗂️ Chat Shelves: ON"
 );
 
 console.log(
-  "🧠 Backend history sync: ENABLED"
+  "📱 Mobile drawer: ON"
 );
 
 console.log(
-  "🎨 Image support: ENABLED"
+  "🎨 Image handling: ON"
 );
 
 console.log(
-  "🎤 Voice support: ENABLED"
+  "🎤 Voice: ON"
+);
+
+console.log(
+  "💾 Local persistence: ON"
 );
 
