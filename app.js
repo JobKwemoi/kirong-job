@@ -1,9 +1,15 @@
 // ============================================================
-// ⚡ KIRONG AI — FRONTEND ENGINE V4
-// 🧠 Memory + 🗂️ Chat Shelves + 📱 Mobile Drawer
-// ⚡ Quick Actions + 📎 Files + 🎤 Voice
-// 💾 Local Storage + 🌍 Language + 🌙 Theme
-// ✨ Swipe from left to open Chats
+// ⚡ KIRONG AI — FRONTEND ENGINE V5
+// 🧠 Memory + 🗂️ Chat Shelves + 📱 Mobile Swipe Drawer
+// ⚡ Power Quick Actions
+// 📎 File Upload
+// 🎤 Voice Input
+// 🎨 Image Handling
+// 💾 Local Storage
+// 🌍 Language
+// 🌙 Theme
+// ✨ Swipe from LEFT to open Chats
+// ❌ No floating shelves button
 // ============================================================
 
 "use strict";
@@ -13,22 +19,40 @@
 // 🔌 DOM
 // ============================================================
 
-const chatBox = document.getElementById("chatBox");
-const userInput = document.getElementById("userInput");
-const sendBtn = document.getElementById("sendBtn");
-const themeBtn = document.getElementById("themeBtn");
-const thinking = document.getElementById("thinking");
-const chatForm = document.getElementById("chatForm");
-const languageSelect = document.getElementById("languageSelect");
+const chatBox =
+    document.getElementById("chatBox");
+
+const userInput =
+    document.getElementById("userInput");
+
+const sendBtn =
+    document.getElementById("sendBtn");
+
+const themeBtn =
+    document.getElementById("themeBtn");
+
+const thinking =
+    document.getElementById("thinking");
+
+const chatForm =
+    document.getElementById("chatForm");
+
+const languageSelect =
+    document.getElementById("languageSelect");
 
 
 // ============================================================
 // 💾 STORAGE
 // ============================================================
 
-const STORAGE_KEY = "kirong_ai_chats_v3";
-const ACTIVE_CHAT_KEY = "kirong_ai_active_chat_v3";
-const THEME_KEY = "kirong_ai_theme_v2";
+const STORAGE_KEY =
+    "kirong_ai_chats_v3";
+
+const ACTIVE_CHAT_KEY =
+    "kirong_ai_active_chat_v3";
+
+const THEME_KEY =
+    "kirong_ai_theme_v2";
 
 
 // ============================================================
@@ -36,20 +60,25 @@ const THEME_KEY = "kirong_ai_theme_v2";
 // ============================================================
 
 let chats = [];
+
 let activeChatId = null;
+
 let chatHistory = [];
+
 let isSending = false;
 
 
 // ============================================================
-// 🆔 ID
+// 🆔 ID GENERATOR
 // ============================================================
 
 function createId() {
 
     return (
         Date.now().toString(36) +
-        Math.random().toString(36).slice(2, 9)
+        Math.random()
+            .toString(36)
+            .slice(2, 9)
     );
 
 }
@@ -120,13 +149,15 @@ function loadChats() {
 
     try {
 
-        const saved = localStorage.getItem(
-            STORAGE_KEY
-        );
+        const saved =
+            localStorage.getItem(
+                STORAGE_KEY
+            );
 
         if (saved) {
 
-            chats = JSON.parse(saved);
+            chats =
+                JSON.parse(saved);
 
         }
 
@@ -158,45 +189,59 @@ function loadChats() {
     if (
         savedActive &&
         chats.some(
-            chat => chat.id === savedActive
+            chat =>
+                chat.id === savedActive
         )
     ) {
 
-        activeChatId = savedActive;
+        activeChatId =
+            savedActive;
 
     }
 
 
-    if (!activeChatId && chats.length) {
+    if (
+        !activeChatId &&
+        chats.length
+    ) {
 
         chats.sort(
             (a, b) =>
-                b.updatedAt - a.updatedAt
+                b.updatedAt -
+                a.updatedAt
         );
 
-        activeChatId = chats[0].id;
+        activeChatId =
+            chats[0].id;
 
     }
 
 
     if (!activeChatId) {
 
-        const firstChat = createChat();
+        const firstChat =
+            createChat();
 
-        chats.unshift(firstChat);
+        chats.unshift(
+            firstChat
+        );
 
-        activeChatId = firstChat.id;
+        activeChatId =
+            firstChat.id;
 
         saveChats();
 
     }
 
 
-    const active = getActiveChat();
+    const active =
+        getActiveChat();
 
 
     chatHistory =
-        Array.isArray(active?.history)
+        Array.isArray(
+            active?.history
+        )
             ? [...active.history]
             : [];
 
@@ -204,13 +249,15 @@ function loadChats() {
 
 
 // ============================================================
-// 🔎 ACTIVE CHAT
+// 🔎 GET ACTIVE CHAT
 // ============================================================
 
 function getActiveChat() {
 
     return chats.find(
-        chat => chat.id === activeChatId
+        chat =>
+            chat.id ===
+            activeChatId
     );
 
 }
@@ -222,18 +269,23 @@ function getActiveChat() {
 
 function saveActiveChat() {
 
-    const chat = getActiveChat();
+    const chat =
+        getActiveChat();
 
     if (!chat) return;
 
 
     chat.history =
-        Array.isArray(chatHistory)
+        Array.isArray(
+            chatHistory
+        )
             ? chatHistory.slice(-20)
             : [];
 
 
-    chat.updatedAt = Date.now();
+    chat.updatedAt =
+        Date.now();
+
 
     saveChats();
 
@@ -243,14 +295,17 @@ function saveActiveChat() {
 
 
 // ============================================================
-// 🏷️ TITLE
+// 🏷️ CREATE CHAT TITLE
 // ============================================================
 
 function makeChatTitle(text) {
 
     const clean =
         String(text || "")
-            .replace(/\s+/g, " ")
+            .replace(
+                /\s+/g,
+                " "
+            )
             .trim();
 
 
@@ -261,14 +316,19 @@ function makeChatTitle(text) {
     }
 
 
-    if (clean.length <= 36) {
+    if (
+        clean.length <= 36
+    ) {
 
         return clean;
 
     }
 
 
-    return clean.slice(0, 33) + "...";
+    return (
+        clean.slice(0, 33) +
+        "..."
+    );
 
 }
 
@@ -279,19 +339,23 @@ function makeChatTitle(text) {
 
 function maybeSetTitle(text) {
 
-    const chat = getActiveChat();
+    const chat =
+        getActiveChat();
 
     if (!chat) return;
 
 
     if (
-        chat.title === "New Chat" &&
+        chat.title ===
+            "New Chat" &&
         chatHistory.length <= 2
     ) {
 
-        chat.title = makeChatTitle(text);
+        chat.title =
+            makeChatTitle(text);
 
-        chat.updatedAt = Date.now();
+        chat.updatedAt =
+            Date.now();
 
         saveChats();
 
@@ -303,7 +367,7 @@ function maybeSetTitle(text) {
 
 
 // ============================================================
-// 🗂️ SHELVES UI
+// 🗂️ CREATE SHELVES UI
 // ============================================================
 
 function createShelvesUI() {
@@ -319,15 +383,29 @@ function createShelvesUI() {
     }
 
 
+    // --------------------------------------------------------
+    // Overlay
+    // --------------------------------------------------------
+
     const overlay =
-        document.createElement("div");
+        document.createElement(
+            "div"
+        );
+
 
     overlay.id =
         "kirongShelvesOverlay";
 
 
+    // --------------------------------------------------------
+    // Drawer
+    // --------------------------------------------------------
+
     const shelves =
-        document.createElement("aside");
+        document.createElement(
+            "aside"
+        );
+
 
     shelves.id =
         "kirongShelves";
@@ -341,7 +419,9 @@ function createShelvesUI() {
 
     shelves.innerHTML = `
 
-        <div class="kirongShelvesHeader">
+        <div
+            class="kirongShelvesHeader"
+        >
 
             <strong>
                 🧠 Chats
@@ -376,20 +456,22 @@ function createShelvesUI() {
     `;
 
 
-    document.body.prepend(overlay);
+    document.body.prepend(
+        overlay
+    );
 
-    document.body.prepend(shelves);
+    document.body.prepend(
+        shelves
+    );
 
+
+    // --------------------------------------------------------
+    // New chat
+    // --------------------------------------------------------
 
     const newChatBtn =
         document.getElementById(
             "newChatBtn"
-        );
-
-
-    const closeBtn =
-        document.getElementById(
-            "closeShelvesBtn"
         );
 
 
@@ -405,11 +487,25 @@ function createShelvesUI() {
     );
 
 
+    // --------------------------------------------------------
+    // Close button
+    // --------------------------------------------------------
+
+    const closeBtn =
+        document.getElementById(
+            "closeShelvesBtn"
+        );
+
+
     closeBtn?.addEventListener(
         "click",
         closeShelves
     );
 
+
+    // --------------------------------------------------------
+    // Overlay close
+    // --------------------------------------------------------
 
     overlay.addEventListener(
         "click",
@@ -417,59 +513,18 @@ function createShelvesUI() {
     );
 
 
+    // --------------------------------------------------------
+    // Runtime fallback styles
+    // --------------------------------------------------------
+
     injectShelvesStyles();
 
-    createChatMenuButton();
+
+    // --------------------------------------------------------
+    // Render
+    // --------------------------------------------------------
 
     renderShelves();
-
-}
-
-
-// ============================================================
-// ☰ CHAT BUTTON
-// ============================================================
-
-function createChatMenuButton() {
-
-    if (
-        document.getElementById(
-            "kirongOpenShelvesBtn"
-        )
-    ) {
-
-        return;
-
-    }
-
-
-    const button =
-        document.createElement("button");
-
-
-    button.id =
-        "kirongOpenShelvesBtn";
-
-
-    button.type = "button";
-
-    button.innerHTML = "☰";
-
-    button.title = "Open chats";
-
-    button.setAttribute(
-        "aria-label",
-        "Open chats"
-    );
-
-
-    document.body.appendChild(button);
-
-
-    button.addEventListener(
-        "click",
-        openShelves
-    );
 
 }
 
@@ -495,9 +550,15 @@ function openShelves() {
     if (!shelves) return;
 
 
-    shelves.classList.add("open");
+    shelves.classList.add(
+        "open"
+    );
 
-    overlay?.classList.add("open");
+
+    overlay?.classList.add(
+        "open"
+    );
+
 
     document.body.classList.add(
         "shelves-open"
@@ -524,9 +585,15 @@ function closeShelves() {
         );
 
 
-    shelves?.classList.remove("open");
+    shelves?.classList.remove(
+        "open"
+    );
 
-    overlay?.classList.remove("open");
+
+    overlay?.classList.remove(
+        "open"
+    );
+
 
     document.body.classList.remove(
         "shelves-open"
@@ -536,14 +603,21 @@ function closeShelves() {
 
 
 // ============================================================
-// 📱 MOBILE SWIPE GESTURE
-// Swipe from LEFT → RIGHT = open shelves
-// Swipe drawer RIGHT → LEFT = close
+// 📱 MOBILE SWIPE SHELVES
+//
+// LEFT EDGE → RIGHT
+// Opens shelves.
+//
+// SHELVES OPEN → LEFT
+// Closes shelves.
+//
+// NO BUTTON.
 // ============================================================
 
 function enableSwipeShelves() {
 
     let startX = 0;
+
     let startY = 0;
 
     let tracking = false;
@@ -553,8 +627,13 @@ function enableSwipeShelves() {
         "touchstart",
         event => {
 
-            if (!event.touches?.length) {
+            if (
+                !event.touches ||
+                !event.touches.length
+            ) {
+
                 return;
+
             }
 
 
@@ -562,9 +641,13 @@ function enableSwipeShelves() {
                 event.touches[0];
 
 
-            startX = touch.clientX;
+            startX =
+                touch.clientX;
 
-            startY = touch.clientY;
+
+            startY =
+                touch.clientY;
+
 
             tracking = true;
 
@@ -579,13 +662,23 @@ function enableSwipeShelves() {
         "touchend",
         event => {
 
-            if (!tracking) return;
+            if (!tracking) {
+
+                return;
+
+            }
+
 
             tracking = false;
 
 
-            if (!event.changedTouches?.length) {
+            if (
+                !event.changedTouches ||
+                !event.changedTouches.length
+            ) {
+
                 return;
+
             }
 
 
@@ -593,31 +686,44 @@ function enableSwipeShelves() {
                 event.changedTouches[0];
 
 
-            const endX = touch.clientX;
+            const endX =
+                touch.clientX;
 
-            const endY = touch.clientY;
+
+            const endY =
+                touch.clientY;
 
 
             const deltaX =
                 endX - startX;
 
+
             const deltaY =
-                Math.abs(endY - startY);
+                Math.abs(
+                    endY - startY
+                );
 
 
-            const isHorizontal =
-                Math.abs(deltaX) > deltaY;
+            const horizontal =
+                Math.abs(deltaX) >
+                deltaY;
 
 
-            if (!isHorizontal) {
+            if (!horizontal) {
+
                 return;
+
             }
 
 
-            // Open drawer
+            // ------------------------------------------------
+            // Open shelves
+            // Must begin near LEFT edge
+            // ------------------------------------------------
+
             if (
-                startX < 45 &&
-                deltaX > 65
+                startX <= 55 &&
+                deltaX >= 65
             ) {
 
                 openShelves();
@@ -627,9 +733,12 @@ function enableSwipeShelves() {
             }
 
 
-            // Close drawer
+            // ------------------------------------------------
+            // Close shelves
+            // ------------------------------------------------
+
             if (
-                deltaX < -65 &&
+                deltaX <= -65 &&
                 document.body.classList.contains(
                     "shelves-open"
                 )
@@ -649,7 +758,7 @@ function enableSwipeShelves() {
 
 
 // ============================================================
-// 📋 RENDER SHELVES
+// 📋 RENDER CHAT SHELVES
 // ============================================================
 
 function renderShelves() {
@@ -669,84 +778,121 @@ function renderShelves() {
     const sortedChats =
         [...chats].sort(
             (a, b) =>
-                b.updatedAt - a.updatedAt
+                b.updatedAt -
+                a.updatedAt
         );
 
 
-    sortedChats.forEach(chat => {
+    sortedChats.forEach(
+        chat => {
 
-        const item =
-            document.createElement("div");
+            const item =
+                document.createElement(
+                    "div"
+                );
 
 
-        item.className =
-            "kirongChatItem";
+            item.className =
+                "kirongChatItem";
 
 
-        if (chat.id === activeChatId) {
+            if (
+                chat.id ===
+                activeChatId
+            ) {
 
-            item.classList.add("active");
+                item.classList.add(
+                    "active"
+                );
+
+            }
+
+
+            const title =
+                document.createElement(
+                    "span"
+                );
+
+
+            title.className =
+                "kirongChatTitle";
+
+
+            title.textContent =
+                chat.title ||
+                "New Chat";
+
+
+            const deleteBtn =
+                document.createElement(
+                    "button"
+                );
+
+
+            deleteBtn.className =
+                "kirongDeleteChat";
+
+
+            deleteBtn.type =
+                "button";
+
+
+            deleteBtn.title =
+                "Delete chat";
+
+
+            deleteBtn.setAttribute(
+                "aria-label",
+                "Delete chat"
+            );
+
+
+            deleteBtn.textContent =
+                "🗑️";
+
+
+            deleteBtn.addEventListener(
+                "click",
+                event => {
+
+                    event.stopPropagation();
+
+                    deleteChat(
+                        chat.id
+                    );
+
+                }
+            );
+
+
+            item.appendChild(
+                title
+            );
+
+
+            item.appendChild(
+                deleteBtn
+            );
+
+
+            item.addEventListener(
+                "click",
+                () => {
+
+                    switchChat(
+                        chat.id
+                    );
+
+                }
+            );
+
+
+            list.appendChild(
+                item
+            );
 
         }
-
-
-        const title =
-            document.createElement("span");
-
-
-        title.className =
-            "kirongChatTitle";
-
-
-        title.textContent =
-            chat.title || "New Chat";
-
-
-        const deleteBtn =
-            document.createElement("button");
-
-
-        deleteBtn.className =
-            "kirongDeleteChat";
-
-
-        deleteBtn.type = "button";
-
-        deleteBtn.title = "Delete chat";
-
-        deleteBtn.textContent = "🗑️";
-
-
-        deleteBtn.addEventListener(
-            "click",
-            event => {
-
-                event.stopPropagation();
-
-                deleteChat(chat.id);
-
-            }
-        );
-
-
-        item.appendChild(title);
-
-        item.appendChild(deleteBtn);
-
-
-        item.addEventListener(
-            "click",
-            () => {
-
-                switchChat(chat.id);
-
-            }
-        );
-
-
-        list.appendChild(item);
-
-    });
+    );
 
 }
 
@@ -761,10 +907,14 @@ function createNewChat() {
         createChat();
 
 
-    chats.unshift(newChat);
+    chats.unshift(
+        newChat
+    );
+
 
     activeChatId =
         newChat.id;
+
 
     chatHistory = [];
 
@@ -789,7 +939,8 @@ function switchChat(id) {
 
     const selected =
         chats.find(
-            chat => chat.id === id
+            chat =>
+                chat.id === id
         );
 
 
@@ -820,6 +971,7 @@ function switchChat(id) {
 
     closeShelves();
 
+
     userInput?.focus();
 
 }
@@ -833,7 +985,8 @@ function deleteChat(id) {
 
     const selected =
         chats.find(
-            chat => chat.id === id
+            chat =>
+                chat.id === id
         );
 
 
@@ -851,7 +1004,8 @@ function deleteChat(id) {
 
     chats =
         chats.filter(
-            chat => chat.id !== id
+            chat =>
+                chat.id !== id
         );
 
 
@@ -860,21 +1014,27 @@ function deleteChat(id) {
         const fresh =
             createChat();
 
-        chats.push(fresh);
+        chats.push(
+            fresh
+        );
 
     }
 
 
     if (
         !chats.some(
-            chat => chat.id === activeChatId
+            chat =>
+                chat.id ===
+                activeChatId
         )
     ) {
 
         chats.sort(
             (a, b) =>
-                b.updatedAt - a.updatedAt
+                b.updatedAt -
+                a.updatedAt
         );
+
 
         activeChatId =
             chats[0].id;
@@ -900,7 +1060,7 @@ function deleteChat(id) {
 
 
 // ============================================================
-// 🖥️ RENDER CHAT
+// 🖥️ RENDER CURRENT CHAT
 // ============================================================
 
 function renderChat() {
@@ -941,52 +1101,60 @@ function renderChat() {
     `;
 
 
-    chatHistory.forEach(item => {
-
-        if (
-            !item ||
-            !item.content
-        ) {
-
-            return;
-
-        }
-
-
-        if (item.role === "user") {
-
-            addMessage(
-                item.content,
-                "user"
-            );
-
-        }
-
-
-        if (item.role === "assistant") {
+    chatHistory.forEach(
+        item => {
 
             if (
-                item.content ===
-                "[Image generated by Kirong AI]"
+                !item ||
+                !item.content
+            ) {
+
+                return;
+
+            }
+
+
+            if (
+                item.role ===
+                "user"
             ) {
 
                 addMessage(
-                    "🎨 Image generated by Kirong AI.",
-                    "ai"
-                );
-
-            } else {
-
-                addMessage(
                     item.content,
-                    "ai"
+                    "user"
                 );
 
             }
 
-        }
 
-    });
+            if (
+                item.role ===
+                "assistant"
+            ) {
+
+                if (
+                    item.content ===
+                    "[Image generated by Kirong AI]"
+                ) {
+
+                    addMessage(
+                        "🎨 Image generated by Kirong AI.",
+                        "ai"
+                    );
+
+                } else {
+
+                    addMessage(
+                        item.content,
+                        "ai"
+                    );
+
+                }
+
+            }
+
+        }
+    );
 
 
     scrollToBottom();
@@ -1000,12 +1168,29 @@ function renderChat() {
 
 function escapeHTML(value) {
 
-    return String(value ?? "")
-        .replace(/&/g, "&amp;")
-        .replace(/</g, "&lt;")
-        .replace(/>/g, "&gt;")
-        .replace(/"/g, "&quot;")
-        .replace(/'/g, "&#039;");
+    return String(
+        value ?? ""
+    )
+        .replace(
+            /&/g,
+            "&amp;"
+        )
+        .replace(
+            /</g,
+            "&lt;"
+        )
+        .replace(
+            />/g,
+            "&gt;"
+        )
+        .replace(
+            /"/g,
+            "&quot;"
+        )
+        .replace(
+            /'/g,
+            "&#039;"
+        );
 
 }
 
@@ -1017,7 +1202,9 @@ function escapeHTML(value) {
 function renderMarkdown(text) {
 
     let content =
-        escapeHTML(text || "");
+        escapeHTML(
+            text || ""
+        );
 
 
     content =
@@ -1095,7 +1282,9 @@ function addMessage(
 
 
     const message =
-        document.createElement("div");
+        document.createElement(
+            "div"
+        );
 
 
     message.className =
@@ -1103,16 +1292,25 @@ function addMessage(
 
 
     const paragraph =
-        document.createElement("p");
+        document.createElement(
+            "p"
+        );
 
 
     paragraph.innerHTML =
-        renderMarkdown(text);
+        renderMarkdown(
+            text
+        );
 
 
-    message.appendChild(paragraph);
+    message.appendChild(
+        paragraph
+    );
 
-    chatBox.appendChild(message);
+
+    chatBox.appendChild(
+        message
+    );
 
 
     scrollToBottom();
@@ -1144,7 +1342,9 @@ function addImage(
 
 
     const message =
-        document.createElement("div");
+        document.createElement(
+            "div"
+        );
 
 
     message.className =
@@ -1154,57 +1354,90 @@ function addImage(
     if (caption) {
 
         const paragraph =
-            document.createElement("p");
+            document.createElement(
+                "p"
+            );
 
 
         paragraph.innerHTML =
-            renderMarkdown(caption);
+            renderMarkdown(
+                caption
+            );
 
 
-        message.appendChild(paragraph);
+        message.appendChild(
+            paragraph
+        );
 
     }
 
 
     const img =
-        document.createElement("img");
+        document.createElement(
+            "img"
+        );
 
 
-    img.src = image;
+    img.src =
+        image;
+
 
     img.alt =
         "Kirong AI generated image";
 
-    img.loading = "lazy";
+
+    img.loading =
+        "lazy";
 
 
-    message.appendChild(img);
+    img.style.maxWidth =
+        "100%";
+
+
+    img.style.borderRadius =
+        "16px";
+
+
+    message.appendChild(
+        img
+    );
 
 
     if (provider) {
 
         const small =
-            document.createElement("small");
+            document.createElement(
+                "small"
+            );
 
 
         small.textContent =
             `🎨 ${provider}`;
 
 
-        small.style.display = "block";
-
-        small.style.marginTop = "8px";
-
-        small.style.opacity = ".65";
+        small.style.display =
+            "block";
 
 
-        message.appendChild(small);
+        small.style.marginTop =
+            "8px";
+
+
+        small.style.opacity =
+            ".65";
+
+
+        message.appendChild(
+            small
+        );
 
     }
 
 
     const controls =
-        document.createElement("div");
+        document.createElement(
+            "div"
+        );
 
 
     controls.className =
@@ -1212,28 +1445,39 @@ function addImage(
 
 
     const download =
-        document.createElement("a");
+        document.createElement(
+            "a"
+        );
 
 
-    download.href = image;
+    download.href =
+        image;
+
 
     download.download =
         "KirongAI_Generated.png";
 
+
     download.textContent =
         "📥 Save Image";
+
 
     download.style.textDecoration =
         "none";
 
 
     const open =
-        document.createElement("button");
+        document.createElement(
+            "button"
+        );
 
 
-    open.type = "button";
+    open.type =
+        "button";
 
-    open.textContent = "🔍 Open";
+
+    open.textContent =
+        "🔍 Open";
 
 
     open.addEventListener(
@@ -1250,14 +1494,24 @@ function addImage(
     );
 
 
-    controls.appendChild(download);
-
-    controls.appendChild(open);
-
-    message.appendChild(controls);
+    controls.appendChild(
+        download
+    );
 
 
-    chatBox.appendChild(message);
+    controls.appendChild(
+        open
+    );
+
+
+    message.appendChild(
+        controls
+    );
+
+
+    chatBox.appendChild(
+        message
+    );
 
 
     scrollToBottom();
@@ -1274,12 +1528,14 @@ function scrollToBottom() {
     if (!chatBox) return;
 
 
-    requestAnimationFrame(() => {
+    requestAnimationFrame(
+        () => {
 
-        chatBox.scrollTop =
-            chatBox.scrollHeight;
+            chatBox.scrollTop =
+                chatBox.scrollHeight;
 
-    });
+        }
+    );
 
 }
 
@@ -1293,7 +1549,10 @@ function showThinking() {
     if (!thinking) return;
 
 
-    thinking.classList.remove("hidden");
+    thinking.classList.remove(
+        "hidden"
+    );
+
 
     thinking.textContent =
         "Kirong AI is thinking...";
@@ -1303,7 +1562,9 @@ function showThinking() {
 
 function hideThinking() {
 
-    thinking?.classList.add("hidden");
+    thinking?.classList.add(
+        "hidden"
+    );
 
 }
 
@@ -1314,16 +1575,21 @@ function hideThinking() {
 
 function setSendingState(state) {
 
-    isSending = state;
+    isSending =
+        state;
 
 
     if (!sendBtn) return;
 
 
-    sendBtn.disabled = state;
+    sendBtn.disabled =
+        state;
+
 
     sendBtn.style.opacity =
-        state ? ".6" : "1";
+        state
+            ? ".6"
+            : "1";
 
 }
 
@@ -1368,7 +1634,8 @@ async function readResponse(response) {
 
             return {
 
-                type: "error",
+                type:
+                    "error",
 
                 text:
                     "Invalid response from server."
@@ -1386,7 +1653,8 @@ async function readResponse(response) {
 
     return {
 
-        type: "text",
+        type:
+            "text",
 
         text:
             text ||
@@ -1419,10 +1687,14 @@ async function sendMessage() {
     );
 
 
-    userInput.value = "";
+    userInput.value =
+        "";
 
 
-    setSendingState(true);
+    setSendingState(
+        true
+    );
+
 
     showThinking();
 
@@ -1438,7 +1710,8 @@ async function sendMessage() {
                 "/api/chat",
                 {
 
-                    method: "POST",
+                    method:
+                        "POST",
 
                     headers: {
 
@@ -1450,7 +1723,8 @@ async function sendMessage() {
                     body:
                         JSON.stringify({
 
-                            message: text,
+                            message:
+                                text,
 
                             history:
                                 chatHistory,
@@ -1487,11 +1761,12 @@ async function sendMessage() {
 
 
         // ====================================================
-        // 🎨 IMAGE
+        // 🎨 IMAGE RESPONSE
         // ====================================================
 
         if (
-            data?.type === "image" &&
+            data?.type ===
+                "image" &&
             data?.image
         ) {
 
@@ -1506,16 +1781,19 @@ async function sendMessage() {
 
             chatHistory.push({
 
-                role: "user",
+                role:
+                    "user",
 
-                content: text
+                content:
+                    text
 
             });
 
 
             chatHistory.push({
 
-                role: "assistant",
+                role:
+                    "assistant",
 
                 content:
                     "[Image generated by Kirong AI]"
@@ -1525,7 +1803,9 @@ async function sendMessage() {
 
             trimHistory();
 
-            maybeSetTitle(text);
+            maybeSetTitle(
+                text
+            );
 
             saveActiveChat();
 
@@ -1535,7 +1815,7 @@ async function sendMessage() {
 
 
         // ====================================================
-        // 💬 TEXT
+        // 💬 TEXT RESPONSE
         // ====================================================
 
         const reply =
@@ -1551,25 +1831,31 @@ async function sendMessage() {
 
         chatHistory.push({
 
-            role: "user",
+            role:
+                "user",
 
-            content: text
+            content:
+                text
 
         });
 
 
         chatHistory.push({
 
-            role: "assistant",
+            role:
+                "assistant",
 
-            content: reply
+            content:
+                reply
 
         });
 
 
         trimHistory();
 
-        maybeSetTitle(text);
+        maybeSetTitle(
+            text
+        );
 
         saveActiveChat();
 
@@ -1593,7 +1879,9 @@ async function sendMessage() {
 
         hideThinking();
 
-        setSendingState(false);
+        setSendingState(
+            false
+        );
 
         userInput?.focus();
 
@@ -1608,10 +1896,15 @@ async function sendMessage() {
 
 function trimHistory() {
 
-    if (chatHistory.length > 20) {
+    if (
+        chatHistory.length >
+        20
+    ) {
 
         chatHistory =
-            chatHistory.slice(-20);
+            chatHistory.slice(
+                -20
+            );
 
     }
 
@@ -1619,7 +1912,7 @@ function trimHistory() {
 
 
 // ============================================================
-// 📤 FORM
+// 📤 FORM SUBMIT
 // ============================================================
 
 if (chatForm) {
@@ -1639,7 +1932,7 @@ if (chatForm) {
 
 
 // ============================================================
-// ⌨️ ENTER
+// ⌨️ ENTER KEY
 // ============================================================
 
 if (userInput) {
@@ -1649,7 +1942,8 @@ if (userInput) {
         event => {
 
             if (
-                event.key === "Enter" &&
+                event.key ===
+                    "Enter" &&
                 !event.shiftKey
             ) {
 
@@ -1677,14 +1971,20 @@ function loadTheme() {
         );
 
 
-    if (theme === "dark") {
+    if (
+        theme ===
+        "dark"
+    ) {
 
-        document.body.classList.add("dark");
+        document.body.classList.add(
+            "dark"
+        );
 
 
         if (themeBtn) {
 
-            themeBtn.textContent = "☀️";
+            themeBtn.textContent =
+                "☀️";
 
         }
 
@@ -1778,47 +2078,52 @@ const quickPrompts = {
 
 
 document
-    .querySelectorAll(".quickBtn")
-    .forEach(button => {
+    .querySelectorAll(
+        ".quickBtn"
+    )
+    .forEach(
+        button => {
 
-        button.addEventListener(
-            "click",
-            () => {
+            button.addEventListener(
+                "click",
+                () => {
 
-                const action =
-                    button.dataset.action;
-
-
-                const prompt =
-                    quickPrompts[action];
-
-
-                userInput.value =
-                    prompt ||
-                    `${action} `;
+                    const action =
+                        button.dataset.action;
 
 
-                userInput.focus();
+                    const prompt =
+                        quickPrompts[
+                            action
+                        ];
 
 
-                // Put cursor at end
-                try {
+                    userInput.value =
+                        prompt ||
+                        `${action} `;
 
-                    userInput.setSelectionRange(
-                        userInput.value.length,
-                        userInput.value.length
-                    );
 
-                } catch {}
+                    userInput.focus();
 
-            }
-        );
 
-    });
+                    try {
+
+                        userInput.setSelectionRange(
+                            userInput.value.length,
+                            userInput.value.length
+                        );
+
+                    } catch {}
+
+                }
+            );
+
+        }
+    );
 
 
 // ============================================================
-// 🗑️ CLEAR CHAT
+// 🗑️ CLEAR CURRENT CHAT
 // ============================================================
 
 const clearBtn =
@@ -1844,9 +2149,11 @@ if (clearBtn) {
 
             chat.history = [];
 
-            chat.title = "New Chat";
+            chat.title =
+                "New Chat";
 
-            chat.updatedAt = Date.now();
+            chat.updatedAt =
+                Date.now();
 
 
             saveChats();
@@ -1887,7 +2194,11 @@ if (exportBtn) {
                 );
 
 
-            if (!messages.length) return;
+            if (!messages.length) {
+
+                return;
+
+            }
 
 
             const text =
@@ -1906,34 +2217,48 @@ if (exportBtn) {
                 new Blob(
                     [text],
                     {
+
                         type:
                             "text/plain;charset=utf-8"
+
                     }
                 );
 
 
             const url =
-                URL.createObjectURL(blob);
+                URL.createObjectURL(
+                    blob
+                );
 
 
             const link =
-                document.createElement("a");
+                document.createElement(
+                    "a"
+                );
 
 
-            link.href = url;
+            link.href =
+                url;
+
 
             link.download =
                 "KirongAI_Chat.txt";
 
 
-            document.body.appendChild(link);
+            document.body.appendChild(
+                link
+            );
+
 
             link.click();
+
 
             link.remove();
 
 
-            URL.revokeObjectURL(url);
+            URL.revokeObjectURL(
+                url
+            );
 
         }
     );
@@ -1957,7 +2282,9 @@ if (locationBtn) {
         "click",
         () => {
 
-            if (!navigator.geolocation) {
+            if (
+                !navigator.geolocation
+            ) {
 
                 addMessage(
                     "📍 Location is not supported by this browser.",
@@ -1969,7 +2296,8 @@ if (locationBtn) {
             }
 
 
-            locationBtn.disabled = true;
+            locationBtn.disabled =
+                true;
 
 
             addMessage(
@@ -1998,7 +2326,8 @@ if (locationBtn) {
                     );
 
 
-                    locationBtn.disabled = false;
+                    locationBtn.disabled =
+                        false;
 
                 },
 
@@ -2011,18 +2340,22 @@ if (locationBtn) {
                     );
 
 
-                    locationBtn.disabled = false;
+                    locationBtn.disabled =
+                        false;
 
                 },
 
 
                 {
 
-                    enableHighAccuracy: true,
+                    enableHighAccuracy:
+                        true,
 
-                    timeout: 10000,
+                    timeout:
+                        10000,
 
-                    maximumAge: 60000
+                    maximumAge:
+                        60000
 
                 }
 
@@ -2095,7 +2428,8 @@ if (
             );
 
 
-            fileInput.value = "";
+            fileInput.value =
+                "";
 
         }
     );
@@ -2143,48 +2477,60 @@ if (
             new SpeechRecognition();
 
 
-        recognition.continuous = false;
-
-        recognition.interimResults = false;
-
-
-        recognition.onstart = () => {
-
-            micBtn.textContent = "🔴";
-
-            micBtn.classList.add(
-                "recording"
-            );
-
-        };
+        recognition.continuous =
+            false;
 
 
-        recognition.onend = () => {
-
-            micBtn.textContent = "🎤";
-
-            micBtn.classList.remove(
-                "recording"
-            );
-
-        };
+        recognition.interimResults =
+            false;
 
 
-        recognition.onerror = error => {
+        recognition.onstart =
+            () => {
 
-            console.error(
-                "🎤 Speech error:",
-                error
-            );
+                micBtn.textContent =
+                    "🔴";
 
 
-            micBtn.textContent = "🎤";
+                micBtn.classList.add(
+                    "recording"
+                );
 
-            micBtn.classList.remove(
-                "recording"
-            );
+            };
 
-        };
+
+        recognition.onend =
+            () => {
+
+                micBtn.textContent =
+                    "🎤";
+
+
+                micBtn.classList.remove(
+                    "recording"
+                );
+
+            };
+
+
+        recognition.onerror =
+            error => {
+
+                console.error(
+                    "🎤 Speech error:",
+                    error
+                );
+
+
+                micBtn.textContent =
+                    "🎤";
+
+
+                micBtn.classList.remove(
+                    "recording"
+                );
+
+            };
 
 
         recognition.onresult =
@@ -2199,6 +2545,7 @@ if (
 
                     userInput.value =
                         transcript;
+
 
                     userInput.focus();
 
@@ -2245,7 +2592,10 @@ if (
 
 // ============================================================
 // 🎨 SHELVES FALLBACK CSS
-// Only used if shelves CSS is missing
+//
+// IMPORTANT:
+// There is NO floating shelves button here.
+// Shelves are opened only by swipe.
 // ============================================================
 
 function injectShelvesStyles() {
@@ -2262,7 +2612,9 @@ function injectShelvesStyles() {
 
 
     const style =
-        document.createElement("style");
+        document.createElement(
+            "style"
+        );
 
 
     style.id =
@@ -2271,160 +2623,515 @@ function injectShelvesStyles() {
 
     style.textContent = `
 
+        /* ================================================
+           SHELVES OVERLAY
+        ================================================ */
+
         #kirongShelvesOverlay {
+
             position: fixed;
+
             inset: 0;
-            background: rgba(0,0,0,.45);
+
+            background:
+                rgba(0, 0, 0, .45);
+
             opacity: 0;
+
             visibility: hidden;
+
             pointer-events: none;
+
             z-index: 9998;
-            transition: opacity .25s ease;
+
+            transition:
+                opacity .25s ease;
+
+            backdrop-filter:
+                blur(3px);
+
         }
+
 
         #kirongShelvesOverlay.open {
+
             opacity: 1;
+
             visibility: visible;
+
             pointer-events: auto;
+
         }
+
+
+        /* ================================================
+           CHAT SHELVES
+        ================================================ */
 
         #kirongShelves {
+
             position: fixed;
+
             top: 0;
+
             left: 0;
+
             bottom: 0;
-            width: min(330px, 86vw);
-            transform: translateX(-105%);
-            transition: transform .3s cubic-bezier(.2,.8,.2,1);
+
+            width:
+                min(330px, 86vw);
+
+            transform:
+                translateX(-105%);
+
+            transition:
+                transform .30s cubic-bezier(
+                    .2,
+                    .8,
+                    .2,
+                    1
+                );
+
             z-index: 9999;
+
             overflow-y: auto;
-            background: #090912;
-            border-right: 1px solid rgba(255,255,255,.1);
-            box-shadow: 20px 0 60px rgba(0,0,0,.45);
+
+            overscroll-behavior:
+                contain;
+
+            background:
+                #090912;
+
+            border-right:
+                1px solid
+                rgba(255,255,255,.10);
+
+            box-shadow:
+                20px 0 60px
+                rgba(0,0,0,.45);
+
         }
+
 
         #kirongShelves.open {
-            transform: translateX(0);
+
+            transform:
+                translateX(0);
+
         }
 
-        #kirongOpenShelvesBtn {
-            position: fixed;
-            left: 12px;
-            bottom: 90px;
-            width: 48px;
-            height: 48px;
-            border: 1px solid rgba(255,255,255,.12);
-            border-radius: 15px;
-            background: rgba(15,15,28,.94);
-            color: white;
-            font-size: 21px;
-            z-index: 9997;
-            cursor: pointer;
-            box-shadow: 0 10px 30px rgba(0,0,0,.35);
-        }
+
+        /* ================================================
+           SHELVES HEADER
+        ================================================ */
 
         .kirongShelvesHeader {
+
             display: flex;
+
             align-items: center;
-            justify-content: space-between;
-            padding: 18px;
-            color: white;
+
+            justify-content:
+                space-between;
+
+            padding:
+                18px;
+
+            color:
+                white;
+
+            position:
+                sticky;
+
+            top: 0;
+
+            z-index: 2;
+
+            background:
+                rgba(9,9,18,.94);
+
+            backdrop-filter:
+                blur(12px);
+
         }
+
+
+        .kirongShelvesHeader strong {
+
+            font-size:
+                16px;
+
+        }
+
 
         .kirongShelvesHeader button {
+
             border: 0;
-            background: transparent;
-            color: #aaa;
-            font-size: 18px;
-            cursor: pointer;
+
+            background:
+                transparent;
+
+            color:
+                #aaa;
+
+            font-size:
+                18px;
+
+            width:
+                38px;
+
+            height:
+                38px;
+
+            border-radius:
+                10px;
+
+            cursor:
+                pointer;
+
         }
+
+
+        .kirongShelvesHeader button:hover {
+
+            background:
+                rgba(255,255,255,.08);
+
+            color:
+                white;
+
+        }
+
+
+        /* ================================================
+           NEW CHAT
+        ================================================ */
 
         .kirongNewChatBtn {
-            width: calc(100% - 28px);
-            margin: 0 14px 14px;
-            height: 44px;
-            border: 1px solid rgba(139,92,246,.4);
-            border-radius: 13px;
-            background: rgba(139,92,246,.14);
-            color: white;
-            font-weight: 700;
-            cursor: pointer;
+
+            width:
+                calc(100% - 28px);
+
+            margin:
+                0 14px 14px;
+
+            height:
+                44px;
+
+            border:
+                1px solid
+                rgba(139,92,246,.4);
+
+            border-radius:
+                13px;
+
+            background:
+                rgba(139,92,246,.14);
+
+            color:
+                white;
+
+            font-weight:
+                700;
+
+            cursor:
+                pointer;
+
+            transition:
+                transform .18s ease,
+                background .18s ease;
+
         }
+
+
+        .kirongNewChatBtn:hover {
+
+            background:
+                rgba(139,92,246,.22);
+
+        }
+
+
+        .kirongNewChatBtn:active {
+
+            transform:
+                scale(.98);
+
+        }
+
+
+        /* ================================================
+           CHAT LIST
+        ================================================ */
 
         .kirongChatList {
-            padding: 8px 12px 20px;
+
+            padding:
+                8px 12px 20px;
+
         }
+
 
         .kirongChatItem {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            min-height: 48px;
-            padding: 10px 11px;
-            margin-bottom: 6px;
-            border-radius: 12px;
-            color: #cbd5e1;
-            cursor: pointer;
-            transition: background .2s ease;
+
+            display:
+                flex;
+
+            align-items:
+                center;
+
+            gap:
+                10px;
+
+            min-height:
+                48px;
+
+            padding:
+                10px 11px;
+
+            margin-bottom:
+                6px;
+
+            border-radius:
+                12px;
+
+            color:
+                #cbd5e1;
+
+            cursor:
+                pointer;
+
+            transition:
+                background .2s ease,
+                transform .15s ease;
+
         }
 
-        .kirongChatItem:hover,
-        .kirongChatItem.active {
-            background: rgba(139,92,246,.14);
+
+        .kirongChatItem:hover {
+
+            background:
+                rgba(139,92,246,.12);
+
         }
+
+
+        .kirongChatItem:active {
+
+            transform:
+                scale(.985);
+
+        }
+
+
+        .kirongChatItem.active {
+
+            background:
+                rgba(139,92,246,.18);
+
+        }
+
 
         .kirongChatTitle {
-            flex: 1;
-            min-width: 0;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
-            font-size: 13px;
+
+            flex:
+                1;
+
+            min-width:
+                0;
+
+            overflow:
+                hidden;
+
+            text-overflow:
+                ellipsis;
+
+            white-space:
+                nowrap;
+
+            font-size:
+                13px;
+
         }
+
 
         .kirongDeleteChat {
-            border: 0;
-            background: transparent;
-            cursor: pointer;
-            opacity: .55;
+
+            border:
+                0;
+
+            background:
+                transparent;
+
+            cursor:
+                pointer;
+
+            opacity:
+                .55;
+
+            border-radius:
+                8px;
+
+            padding:
+                6px;
+
         }
+
 
         .kirongDeleteChat:hover {
-            opacity: 1;
+
+            opacity:
+                1;
+
+            background:
+                rgba(255,255,255,.06);
+
         }
 
+
+        /* ================================================
+           IMAGE CONTROLS
+        ================================================ */
+
         .imageControls {
-            display: flex;
-            gap: 10px;
-            margin-top: 12px;
-            flex-wrap: wrap;
+
+            display:
+                flex;
+
+            gap:
+                10px;
+
+            margin-top:
+                12px;
+
+            flex-wrap:
+                wrap;
+
         }
+
 
         .imageControls a,
         .imageControls button {
-            padding: 8px 12px;
-            border-radius: 10px;
-            border: 1px solid rgba(255,255,255,.1);
-            background: rgba(255,255,255,.05);
-            color: white;
-            cursor: pointer;
+
+            padding:
+                8px 12px;
+
+            border-radius:
+                10px;
+
+            border:
+                1px solid
+                rgba(255,255,255,.1);
+
+            background:
+                rgba(255,255,255,.05);
+
+            color:
+                white;
+
+            cursor:
+                pointer;
+
+            text-decoration:
+                none;
+
         }
+
+
+        .imageControls a:hover,
+        .imageControls button:hover {
+
+            background:
+                rgba(255,255,255,.10);
+
+        }
+
+
+        /* ================================================
+           VOICE RECORDING
+        ================================================ */
 
         #micBtn.recording {
-            animation: kirongPulse 1s infinite;
+
+            animation:
+                kirongPulse 1s infinite;
+
         }
 
+
         @keyframes kirongPulse {
+
             50% {
-                transform: scale(1.08);
-                box-shadow: 0 0 0 8px rgba(239,68,68,.1);
+
+                transform:
+                    scale(1.08);
+
+                box-shadow:
+                    0 0 0 8px
+                    rgba(239,68,68,.10);
+
             }
+
+        }
+
+
+        /* ================================================
+           MOBILE
+        ================================================ */
+
+        @media (max-width: 600px) {
+
+            #kirongShelves {
+
+                width:
+                    min(320px, 88vw);
+
+            }
+
+        }
+
+
+        /* ================================================
+           DARK MODE COMPATIBILITY
+        ================================================ */
+
+        body.dark #kirongShelves {
+
+            background:
+                #08080f;
+
         }
 
     `;
 
 
-    document.head.appendChild(style);
+    document.head.appendChild(
+        style
+    );
+
+}
+
+
+// ============================================================
+// 🧹 REMOVE OLD SHELVES BUTTON
+//
+// This protects us if an older app.js version or cached DOM
+// somehow created the old floating button.
+// ============================================================
+
+function removeOldShelvesButton() {
+
+    const oldButton =
+        document.getElementById(
+            "kirongOpenShelvesBtn"
+        );
+
+
+    if (oldButton) {
+
+        oldButton.remove();
+
+    }
 
 }
 
@@ -2439,15 +3146,17 @@ createShelvesUI();
 
 enableSwipeShelves();
 
+removeOldShelvesButton();
+
 renderChat();
 
 
 // ============================================================
-// 🏁 READY
+// 🏁 KIRONG AI READY
 // ============================================================
 
 console.log(
-    "⚡ Kirong AI frontend V4 loaded"
+    "⚡ Kirong AI frontend V5 loaded"
 );
 
 console.log(
@@ -2460,6 +3169,10 @@ console.log(
 
 console.log(
     "👆 Swipe Shelves: ON"
+);
+
+console.log(
+    "🚫 Floating Shelves Button: REMOVED"
 );
 
 console.log(
@@ -2485,3 +3198,4 @@ console.log(
 console.log(
     "💾 Local Persistence: ON"
 );
+
