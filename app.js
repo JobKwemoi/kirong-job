@@ -2066,7 +2066,7 @@ const quickPrompts = {
         "📊 Analyze this and give me the key insights: ",
 
     Developer:
-        "🧑🏽‍💻 My developer: ",
+        "🧑🏽‍💻 About my developer: ",
 
     Ideas:
         "💡 Give me creative ideas for ",
