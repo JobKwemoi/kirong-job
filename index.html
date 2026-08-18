@@ -25,6 +25,11 @@
     content="Kirong Job Kwemoi"
   >
 
+  <meta
+    name="robots"
+    content="index, follow"
+  >
+
   <title>Kirong AI — Intelligent Assistant</title>
 
   <link
@@ -65,10 +70,13 @@
         </div>
 
 
+        <!-- LANGUAGE -->
+
         <select
           id="languageSelect"
           aria-label="Select language"
-        >=
+          title="Select language"
+        >
 
           <option value="English">
             English
@@ -86,14 +94,22 @@
             Español
           </option>
 
+          <option value="Hindi">
+            हिन्दी
+          </option>
+
         </select>
 
       </div>
 
 
+      <!-- HEADER ACTIONS -->
+
       <div class="headerActions">
 
-        <!-- Shelves button is created by app.js -->
+        <!--
+          Shelves button is created by app.js
+        -->
 
         <button
           id="themeBtn"
@@ -120,28 +136,44 @@
       aria-label="Kirong AI conversation"
     >
 
-    <div class="kirongWelcome">
+      <!-- =================================================
+           WELCOME SCREEN
+      ================================================== -->
 
-  <div class="kirongWelcomeLogo">
-    ⚡
-  </div>
+      <div class="kirongWelcome">
 
-  <h2>
-    Hello, I'm <span>Kirong AI</span> 👋
-  </h2>
+        <div class="kirongWelcomeLogo">
+          ⚡
+        </div>
 
-  <p>
-    Your intelligent AI assistant.
-    <br>
-    Ask me anything, build something, or let's solve a problem together.
-  </p>
+        <h2>
+          Hello, I'm
+          <span>Kirong AI</span>
+          👋
+        </h2>
 
-  <div class="welcomeHint">
-    <span>✨</span>
-    <span>What can I help you with today?</span>
-  </div>
+        <p>
+          Your intelligent AI assistant.
+          <br>
+          Ask me anything, build something,
+          or let's solve a problem together.
+        </p>
 
-</div>
+        <div class="welcomeHint">
+
+          <span>✨</span>
+
+          <span>
+            What can I help you with today?
+          </span>
+
+        </div>
+
+      </div>
+
+
+    </section>
+
 
 
     <!-- ===================================================
@@ -153,7 +185,7 @@
       class="hidden"
       aria-live="polite"
     >
-      Kirong AI is thinking...
+      Kirong AI is thinking
     </div>
 
 
@@ -167,8 +199,6 @@
       aria-label="Quick actions"
     >
 
-      <!-- Coding -->
-
       <button
         class="quickBtn"
         data-action="Code"
@@ -178,8 +208,6 @@
         💻 Code
       </button>
 
-
-      <!-- Explain -->
 
       <button
         class="quickBtn"
@@ -191,8 +219,6 @@
       </button>
 
 
-      <!-- Writing -->
-
       <button
         class="quickBtn"
         data-action="Write"
@@ -202,8 +228,6 @@
         ✍️ Write
       </button>
 
-
-      <!-- Image -->
 
       <button
         class="quickBtn"
@@ -215,8 +239,6 @@
       </button>
 
 
-      <!-- Email -->
-
       <button
         class="quickBtn"
         data-action="Email"
@@ -226,8 +248,6 @@
         📧 Email
       </button>
 
-
-      <!-- Business -->
 
       <button
         class="quickBtn"
@@ -239,8 +259,6 @@
       </button>
 
 
-      <!-- Study -->
-
       <button
         class="quickBtn"
         data-action="Study"
@@ -250,8 +268,6 @@
         📚 Study
       </button>
 
-
-      <!-- Translation -->
 
       <button
         class="quickBtn"
@@ -263,8 +279,6 @@
       </button>
 
 
-      <!-- Analysis -->
-
       <button
         class="quickBtn"
         data-action="Analyze"
@@ -274,8 +288,6 @@
         📊 Analyze
       </button>
 
-
-      <!-- Developer -->
 
       <button
         class="quickBtn"
@@ -287,8 +299,6 @@
       </button>
 
 
-      <!-- Ideas -->
-
       <button
         class="quickBtn"
         data-action="Ideas"
@@ -299,8 +309,6 @@
       </button>
 
 
-      <!-- Summarize -->
-
       <button
         class="quickBtn"
         data-action="Summarize"
@@ -310,8 +318,6 @@
         📝 Summarize
       </button>
 
-
-      <!-- Location -->
 
       <button
         id="locationBtn"
@@ -336,7 +342,7 @@
       autocomplete="off"
     >
 
-      <!-- Voice language -->
+      <!-- VOICE LANGUAGE -->
 
       <select
         id="voiceSelect"
@@ -355,8 +361,7 @@
       </select>
 
 
-
-      <!-- File upload -->
+      <!-- FILE UPLOAD -->
 
       <button
         id="uploadBtn"
@@ -376,21 +381,19 @@
       >
 
 
-
-      <!-- Main message input -->
+      <!-- MESSAGE INPUT -->
 
       <input
         type="text"
         id="userInput"
         placeholder="Message Kirong AI..."
         autocomplete="off"
-        maxlength="4000"
+        maxlength="12000"
         aria-label="Message Kirong AI"
       >
 
 
-
-      <!-- Voice input -->
+      <!-- VOICE INPUT -->
 
       <button
         id="micBtn"
@@ -402,8 +405,7 @@
       </button>
 
 
-
-      <!-- Send -->
+      <!-- SEND -->
 
       <button
         id="sendBtn"
