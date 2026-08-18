@@ -12,7 +12,7 @@
 
   <meta
     name="theme-color"
-    content="#08070f"
+    content="#07060d"
   >
 
   <meta
@@ -37,35 +37,59 @@
 
 <body>
 
-  <!-- ================================================
-       BACKGROUND EFFECTS
-  ================================================= -->
 
-  <div class="ambient ambientOne"></div>
-  <div class="ambient ambientTwo"></div>
-  <div class="ambient ambientThree"></div>
+  <!-- =====================================================
+       🌌 AMBIENT BACKGROUND
+  ====================================================== -->
+
+  <div
+    class="ambient ambientOne"
+    aria-hidden="true"
+  ></div>
+
+  <div
+    class="ambient ambientTwo"
+    aria-hidden="true"
+  ></div>
+
+  <div
+    class="ambient ambientThree"
+    aria-hidden="true"
+  ></div>
 
 
-  <!-- ================================================
-       MAIN APP
-  ================================================= -->
+
+  <!-- =====================================================
+       🧠 MAIN APPLICATION
+  ====================================================== -->
 
   <main class="container">
 
 
-    <!-- ==============================================
-         HEADER
-    =============================================== -->
+    <!-- ===================================================
+         🧭 HEADER
+    ==================================================== -->
 
     <header class="header">
 
+
+      <!-- LEFT SIDE -->
+
       <div class="headerLeft">
+
+
+        <!-- BRAND -->
 
         <div class="brandArea">
 
-          <div class="brandLogo">
+
+          <div
+            class="brandLogo"
+            aria-hidden="true"
+          >
             ⚡
           </div>
+
 
           <div class="brandInfo">
 
@@ -73,19 +97,31 @@
               Kirong AI
             </h1>
 
+
             <span class="brandStatus">
-              <span class="statusDot"></span>
+
+              <span
+                class="statusDot"
+                aria-hidden="true"
+              ></span>
+
               Online
+
             </span>
 
           </div>
 
+
         </div>
 
+
+
+        <!-- LANGUAGE -->
 
         <select
           id="languageSelect"
           aria-label="Select language"
+          title="Select language"
         >
 
           <option value="English">
@@ -110,10 +146,30 @@
 
         </select>
 
+
       </div>
 
 
+
+      <!-- RIGHT SIDE -->
+
       <div class="headerActions">
+
+
+        <!-- Chat / history button.
+             app.js can create or control the shelves button. -->
+
+        <button
+          id="newChatBtn"
+          type="button"
+          aria-label="New chat"
+          title="New chat"
+        >
+          ＋
+        </button>
+
+
+        <!-- THEME -->
 
         <button
           id="themeBtn"
@@ -124,71 +180,175 @@
           🌙
         </button>
 
+
       </div>
+
 
     </header>
 
 
 
-    <!-- ==============================================
-         CHAT AREA
-    =============================================== -->
+    <!-- ===================================================
+         💬 CHAT AREA
+    ==================================================== -->
 
     <section
       id="chatBox"
+      class="chatBox"
       aria-live="polite"
       aria-label="Kirong AI conversation"
     >
 
 
-      <!-- ============================================
-           PREMIUM WELCOME
-      ============================================= -->
+      <!-- =================================================
+           ✨ PREMIUM WELCOME SCREEN
+      ================================================== -->
 
-      <div class="kirongWelcome">
+      <div
+        class="kirongWelcome"
+        id="kirongWelcome"
+      >
 
-  <div class="kirongWelcomeOrb">
-    <div class="kirongWelcomeLogo">⚡</div>
-  </div>
 
-  <div class="kirongWelcomeBadge">
-    <span class="badgeDot"></span>
-    KIRONG AI CORE
-  </div>
+        <!-- LOGO -->
 
-  <h2>
-    Hello, I'm
-    <span>Kirong AI</span>
-    <b>👋</b>
-  </h2>
+        <div
+          class="kirongWelcomeLogo"
+          aria-hidden="true"
+        >
+          ⚡
+        </div>
 
-  <p class="welcomeSubtitle">
-    Your intelligent AI companion for
-    <strong>coding, learning, creativity</strong>
-    and everyday problem solving.
-  </p>
 
-  <div class="welcomeHint">
-    <span class="hintSpark">✦</span>
-    <span>What can I help you build today?</span>
-    <span class="hintArrow">→</span>
-  </div>
 
-</div>
+        <!-- GREETING -->
 
-    <!-- ==============================================
-         QUICK ACTIONS
-    =============================================== -->
+        <div class="welcomeEyebrow">
+
+          <span></span>
+
+          KIRONG AI CORE
+
+          <span></span>
+
+        </div>
+
+
+
+        <h2>
+
+          Hello, I'm
+
+          <span>
+            Kirong AI
+          </span>
+
+          👋
+
+        </h2>
+
+
+
+        <p>
+
+          Your intelligent AI assistant for
+
+          <strong>
+            coding
+          </strong>,
+
+          <strong>
+            learning
+          </strong>,
+
+          <strong>
+            creativity
+          </strong>,
+
+          <strong>
+            business
+          </strong>
+
+          and everyday tasks.
+
+        </p>
+
+
+
+        <!-- WELCOME HINT -->
+
+        <div class="welcomeHint">
+
+          <span
+            class="hintIcon"
+            aria-hidden="true"
+          >
+            ✨
+          </span>
+
+          <span>
+            What can I help you with today?
+          </span>
+
+        </div>
+
+
+      </div>
+
+
+
+      <!-- =================================================
+           🧠 THINKING INDICATOR
+      ================================================== -->
+
+      <div
+        id="thinking"
+        class="thinking hidden"
+        aria-live="polite"
+      >
+
+        <div class="thinkingOrb">
+          ⚡
+        </div>
+
+        <div class="thinkingContent">
+
+          <span>
+            Kirong AI is thinking
+          </span>
+
+          <div class="thinkingDots">
+
+            <i></i>
+            <i></i>
+            <i></i>
+
+          </div>
+
+        </div>
+
+      </div>
+
+
+    </section>
+
+
+
+    <!-- ===================================================
+         ⚡ QUICK ACTIONS
+    ==================================================== -->
 
     <nav
       class="quickActions"
       aria-label="Quick actions"
     >
 
+
       <button
         class="quickBtn"
         data-action="Code"
         type="button"
+        title="Coding assistant"
       >
         <span>💻</span>
         Code
@@ -199,6 +359,7 @@
         class="quickBtn"
         data-action="Explain"
         type="button"
+        title="Explain something"
       >
         <span>🧠</span>
         Explain
@@ -209,6 +370,7 @@
         class="quickBtn"
         data-action="Write"
         type="button"
+        title="Writing assistant"
       >
         <span>✍️</span>
         Write
@@ -219,6 +381,7 @@
         class="quickBtn"
         data-action="Image"
         type="button"
+        title="Generate an image"
       >
         <span>🎨</span>
         Image
@@ -229,6 +392,7 @@
         class="quickBtn"
         data-action="Email"
         type="button"
+        title="Write an email"
       >
         <span>📧</span>
         Email
@@ -239,6 +403,7 @@
         class="quickBtn"
         data-action="Business"
         type="button"
+        title="Business assistant"
       >
         <span>💼</span>
         Business
@@ -249,6 +414,7 @@
         class="quickBtn"
         data-action="Study"
         type="button"
+        title="Study assistant"
       >
         <span>📚</span>
         Study
@@ -259,6 +425,7 @@
         class="quickBtn"
         data-action="Translate"
         type="button"
+        title="Translate text"
       >
         <span>🌍</span>
         Translate
@@ -269,6 +436,7 @@
         class="quickBtn"
         data-action="Analyze"
         type="button"
+        title="Analyze information"
       >
         <span>📊</span>
         Analyze
@@ -279,6 +447,7 @@
         class="quickBtn"
         data-action="Developer"
         type="button"
+        title="Developer assistant"
       >
         <span>🧑🏽‍💻</span>
         Developer
@@ -289,6 +458,7 @@
         class="quickBtn"
         data-action="Ideas"
         type="button"
+        title="Generate ideas"
       >
         <span>💡</span>
         Ideas
@@ -299,6 +469,7 @@
         class="quickBtn"
         data-action="Summarize"
         type="button"
+        title="Summarize text"
       >
         <span>📝</span>
         Summarize
@@ -314,13 +485,14 @@
         📍
       </button>
 
+
     </nav>
 
 
 
-    <!-- ==============================================
-         INPUT
-    =============================================== -->
+    <!-- ===================================================
+         💬 MESSAGE INPUT
+    ==================================================== -->
 
     <form
       class="inputArea"
@@ -329,101 +501,115 @@
     >
 
 
-      <div class="inputShell">
+      <!-- VOICE LANGUAGE -->
+
+      <select
+        id="voiceSelect"
+        aria-label="Voice language"
+        title="Voice language"
+      >
+
+        <option value="en-US">
+          EN
+        </option>
+
+        <option value="sw-KE">
+          SW
+        </option>
+
+      </select>
 
 
-        <select
-          id="voiceSelect"
-          aria-label="Voice language"
-          title="Voice language"
-        >
 
-          <option value="en-US">
-            EN
-          </option>
+      <!-- FILE UPLOAD -->
 
-          <option value="sw-KE">
-            SW
-          </option>
-
-        </select>
+      <button
+        id="uploadBtn"
+        type="button"
+        aria-label="Upload file"
+        title="Upload file"
+      >
+        📎
+      </button>
 
 
-
-        <button
-          id="uploadBtn"
-          type="button"
-          aria-label="Upload file"
-          title="Upload file"
-        >
-          📎
-        </button>
+      <input
+        type="file"
+        id="fileInput"
+        hidden
+        accept=".txt,.pdf,.doc,.docx,.csv,.json,.js,.html,.css,.py,.md,image/*"
+      >
 
 
-        <input
-          type="file"
-          id="fileInput"
-          hidden
-          accept=".txt,.pdf,.doc,.docx,.csv,.json,.js,.html,.css,.py,.md,image/*"
-        >
+
+      <!-- MESSAGE -->
+
+      <input
+        type="text"
+        id="userInput"
+        placeholder="Message Kirong AI..."
+        autocomplete="off"
+        maxlength="4000"
+        aria-label="Message Kirong AI"
+      >
 
 
-        <input
-          type="text"
-          id="userInput"
-          placeholder="Message Kirong AI..."
-          autocomplete="off"
-          maxlength="4000"
-          aria-label="Message Kirong AI"
-        >
+
+      <!-- MICROPHONE -->
+
+      <button
+        id="micBtn"
+        type="button"
+        aria-label="Voice input"
+        title="Voice input"
+      >
+        🎤
+      </button>
 
 
-        <button
-          id="micBtn"
-          type="button"
-          aria-label="Voice input"
-          title="Voice input"
-        >
-          🎤
-        </button>
 
+      <!-- SEND -->
 
-        <button
-          id="sendBtn"
-          type="submit"
-          aria-label="Send message"
-          title="Send message"
-        >
-          ➤
-        </button>
+      <button
+        id="sendBtn"
+        type="submit"
+        aria-label="Send message"
+        title="Send message"
+      >
+        ➤
+      </button>
 
-
-      </div>
 
     </form>
 
 
 
-    <!-- ==============================================
-         FOOTER
-    =============================================== -->
+    <!-- ===================================================
+         🧹 FOOTER
+    ==================================================== -->
 
     <footer class="footerButtons">
+
 
       <button
         id="exportBtn"
         type="button"
+        title="Export current chat"
       >
-        Export 💾
+        <span>💾</span>
+        Export
       </button>
 
 
       <button
         id="clearBtn"
         type="button"
+        title="Clear current chat"
       >
-        Clear 🗑️
+        <span>🗑️</span>
+        Clear
       </button>
+
 
     </footer>
 
@@ -432,14 +618,15 @@
 
 
 
-  <!-- ================================================
-       APP ENGINE
-  ================================================= -->
+  <!-- =====================================================
+       ⚡ APP ENGINE
+  ====================================================== -->
 
   <script
     src="app.js"
     defer
   ></script>
+
 
 </body>
 
