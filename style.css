@@ -1,6 +1,6 @@
 /* =========================================================
-   ⚡ KIRONG AI — MODERN PREMIUM UI
-   Mobile First • Glass • Minimal • AI Experience
+   ⚡ KIRONG AI — FUTURISTIC PREMIUM UI
+   Premium Dark • Glass • Neon • Mobile First
 ========================================================= */
 
 
@@ -10,40 +10,71 @@
 
 :root {
 
-    --bg: #070711;
-    --bg-deep: #030307;
+    --bg:
+        #07060d;
 
-    --surface: rgba(255,255,255,.045);
-    --surface-2: rgba(255,255,255,.065);
-    --surface-hover: rgba(255,255,255,.085);
+    --bg-deep:
+        #030207;
 
-    --border: rgba(255,255,255,.085);
-    --border-light: rgba(255,255,255,.13);
+    --surface:
+        rgba(255,255,255,.045);
 
-    --primary: #8b5cf6;
-    --primary-dark: #6d28d9;
-    --primary-light: #a78bfa;
+    --surface-strong:
+        rgba(255,255,255,.07);
 
-    --purple-glow:
-        rgba(124,58,237,.35);
+    --surface-hover:
+        rgba(255,255,255,.095);
 
-    --text: #f8fafc;
-    --text-soft: #d7dce7;
-    --muted: #8d96a8;
-    --muted-2: #687184;
+    --border:
+        rgba(255,255,255,.085);
 
-    --success: #22c55e;
-    --danger: #ef4444;
+    --border-light:
+        rgba(255,255,255,.14);
 
-    --radius-xl: 26px;
-    --radius-lg: 19px;
-    --radius-md: 14px;
-    --radius-sm: 11px;
+    --primary:
+        #8b5cf6;
+
+    --primary-dark:
+        #6d28d9;
+
+    --primary-light:
+        #b197ff;
+
+    --neon:
+        #a78bfa;
+
+    --text:
+        #f8f7ff;
+
+    --text-soft:
+        #d6d2e5;
+
+    --muted:
+        #8e899e;
+
+    --danger:
+        #ef4444;
+
+    --success:
+        #22c55e;
+
+    --radius-xl:
+        28px;
+
+    --radius-lg:
+        20px;
+
+    --radius-md:
+        15px;
+
+    --radius-sm:
+        11px;
 
     --shadow:
-        0 30px 90px rgba(0,0,0,.45);
+        0 30px 100px rgba(0,0,0,.55);
 
-    --shelf-width: 285px;
+    --glow:
+        0 0 45px rgba(139,92,246,.22);
 
 }
 
@@ -71,14 +102,6 @@ body {
 }
 
 
-html {
-
-    background:
-        var(--bg-deep);
-
-}
-
-
 body {
 
     min-height: 100dvh;
@@ -96,19 +119,6 @@ body {
         var(--text);
 
     background:
-
-        radial-gradient(
-            circle at 15% 10%,
-            rgba(124,58,237,.10),
-            transparent 30%
-        ),
-
-        radial-gradient(
-            circle at 90% 90%,
-            rgba(79,70,229,.07),
-            transparent 30%
-        ),
-
         var(--bg);
 
     overflow: hidden;
@@ -123,41 +133,127 @@ body {
 
 
 /* =========================================================
+   🌌 AMBIENT BACKGROUND
+========================================================= */
+
+.ambient {
+
+    position: fixed;
+
+    width: 420px;
+    height: 420px;
+
+    border-radius: 50%;
+
+    pointer-events: none;
+
+    filter:
+        blur(90px);
+
+    opacity:
+        .22;
+
+    z-index:
+        -2;
+
+}
+
+
+.ambientOne {
+
+    top:
+        -180px;
+
+    left:
+        -100px;
+
+    background:
+        #7c3aed;
+
+}
+
+
+.ambientTwo {
+
+    right:
+        -180px;
+
+    bottom:
+        -180px;
+
+    background:
+        #4f46e5;
+
+}
+
+
+.ambientThree {
+
+    top:
+        38%;
+
+    left:
+        42%;
+
+    width:
+        260px;
+
+    height:
+        260px;
+
+    background:
+        #9333ea;
+
+    opacity:
+        .08;
+
+}
+
+
+/* =========================================================
    🧠 MAIN CONTAINER
 ========================================================= */
 
 .container {
 
-    position: relative;
+    position:
+        relative;
 
-    width: 100%;
-    height: 100dvh;
+    width:
+        100%;
 
-    display: flex;
-    flex-direction: column;
+    height:
+        100dvh;
 
-    overflow: hidden;
+    display:
+        flex;
+
+    flex-direction:
+        column;
+
+    overflow:
+        hidden;
 
     background:
-
         linear-gradient(
             180deg,
             rgba(255,255,255,.018),
-            rgba(255,255,255,.004)
+            rgba(255,255,255,.005)
         );
 
 }
 
 
 /* =========================================================
-   🖥️ DESKTOP FRAME
+   🖥️ DESKTOP APP FRAME
 ========================================================= */
 
 @media (min-width: 769px) {
 
     body {
 
-        padding: 18px;
+        padding:
+            20px;
 
     }
 
@@ -165,10 +261,10 @@ body {
     .container {
 
         width:
-            min(1220px, 100%);
+            min(1240px,100%);
 
         height:
-            min(94dvh, 920px);
+            min(94dvh,920px);
 
         margin:
             auto;
@@ -179,17 +275,17 @@ body {
         border-radius:
             var(--radius-xl);
 
+        background:
+            rgba(7,6,14,.76);
+
         box-shadow:
             var(--shadow);
 
-        overflow:
-            hidden;
-
         backdrop-filter:
-            blur(25px);
+            blur(30px);
 
         -webkit-backdrop-filter:
-            blur(25px);
+            blur(30px);
 
     }
 
@@ -202,190 +298,200 @@ body {
 
 .header {
 
-    position: relative;
+    position:
+        relative;
 
-    height: 68px;
+    height:
+        70px;
 
-    flex-shrink: 0;
+    flex-shrink:
+        0;
 
-    display: flex;
+    display:
+        flex;
 
-    align-items: center;
+    align-items:
+        center;
 
-    justify-content: space-between;
+    justify-content:
+        space-between;
 
     padding:
-        0 16px;
+        0 18px;
 
     background:
-        rgba(7,7,17,.82);
-
-    backdrop-filter:
-        blur(24px);
-
-    -webkit-backdrop-filter:
-        blur(24px);
+        rgba(7,6,14,.78);
 
     border-bottom:
         1px solid var(--border);
 
-    z-index: 50;
+    backdrop-filter:
+        blur(28px);
+
+    -webkit-backdrop-filter:
+        blur(28px);
+
+    z-index:
+        50;
 
 }
 
 
+/* =========================================================
+   ⚡ BRAND
+========================================================= */
+
 .headerLeft {
 
-    min-width: 0;
+    display:
+        flex;
 
-    display: flex;
+    align-items:
+        center;
 
-    align-items: center;
+    gap:
+        14px;
 
-    gap: 11px;
+    min-width:
+        0;
 
 }
 
 
 .brandArea {
 
-    min-width: 0;
+    display:
+        flex;
 
-    display: flex;
+    align-items:
+        center;
 
-    flex-direction: column;
-
-    gap: 2px;
-
-}
-
-
-.brandTitle {
-
-    display: flex;
-
-    align-items: center;
-
-    gap: 4px;
+    gap:
+        10px;
 
 }
 
 
-.brandTitle h1 {
+.brandLogo {
 
-    margin: 0;
+    width:
+        39px;
 
-    font-size: 18px;
+    height:
+        39px;
 
-    line-height: 1;
+    display:
+        grid;
 
-    font-weight: 850;
+    place-items:
+        center;
+
+    flex-shrink:
+        0;
+
+    border:
+        1px solid rgba(167,139,250,.28);
+
+    border-radius:
+        12px;
+
+    background:
+        linear-gradient(
+            145deg,
+            #8b5cf6,
+            #5b21b6
+        );
+
+    color:
+        white;
+
+    font-size:
+        18px;
+
+    box-shadow:
+        0 0 28px
+        rgba(124,58,237,.35);
+
+}
+
+
+.brandInfo {
+
+    display:
+        flex;
+
+    flex-direction:
+        column;
+
+    gap:
+        1px;
+
+}
+
+
+.header h1 {
+
+    font-size:
+        16px;
+
+    line-height:
+        1.1;
+
+    font-weight:
+        850;
 
     letter-spacing:
-        -.7px;
-
-    white-space: nowrap;
-
-}
-
-
-.brandIcon {
-
-    font-size: 15px;
-
-}
-
-
-.brandWorld {
-
-    font-size: 13px;
+        -.45px;
 
 }
 
 
 .brandStatus {
 
-    display: flex;
+    display:
+        flex;
 
-    align-items: center;
+    align-items:
+        center;
 
-    gap: 5px;
+    gap:
+        5px;
 
     color:
         var(--muted);
 
-    font-size: 9px;
+    font-size:
+        9px;
 
-    font-weight: 650;
+    font-weight:
+        700;
+
+    letter-spacing:
+        .4px;
+
+    text-transform:
+        uppercase;
 
 }
 
 
 .statusDot {
 
-    width: 6px;
-    height: 6px;
+    width:
+        6px;
 
-    border-radius: 50%;
+    height:
+        6px;
+
+    border-radius:
+        50%;
 
     background:
         var(--success);
 
     box-shadow:
-        0 0 8px rgba(34,197,94,.7);
-
-}
-
-
-/* =========================================================
-   ☰ SHELF BUTTON
-========================================================= */
-
-#kirongOpenShelvesBtn {
-
-    position: relative;
-
-    width: 40px;
-    height: 40px;
-
-    flex-shrink: 0;
-
-    display: grid;
-
-    place-items: center;
-
-    border:
-        1px solid var(--border);
-
-    border-radius:
-        12px;
-
-    background:
-        rgba(255,255,255,.04);
-
-    color:
-        white;
-
-    font-size: 18px;
-
-    cursor: pointer;
-
-    transition:
-        .22s ease;
-
-}
-
-
-#kirongOpenShelvesBtn:hover {
-
-    background:
-        rgba(139,92,246,.13);
-
-    border-color:
-        rgba(139,92,246,.42);
-
-    transform:
-        translateY(-1px);
+        0 0 10px
+        rgba(34,197,94,.8);
 
 }
 
@@ -396,10 +502,11 @@ body {
 
 #languageSelect {
 
-    width: 108px;
-    height: 36px;
+    height:
+        36px;
 
-    flex-shrink: 0;
+    max-width:
+        110px;
 
     padding:
         0 10px;
@@ -411,18 +518,22 @@ body {
         11px;
 
     background:
-        rgba(255,255,255,.04);
+        rgba(255,255,255,.045);
 
     color:
-        var(--text);
+        var(--text-soft);
 
-    font-size: 11px;
+    font-size:
+        11px;
 
-    font-weight: 700;
+    font-weight:
+        700;
 
-    outline: none;
+    outline:
+        none;
 
-    cursor: pointer;
+    cursor:
+        pointer;
 
     transition:
         .2s ease;
@@ -432,8 +543,8 @@ body {
 
 #languageSelect:hover {
 
-    background:
-        rgba(255,255,255,.07);
+    border-color:
+        rgba(167,139,250,.35);
 
 }
 
@@ -441,20 +552,19 @@ body {
 #languageSelect:focus {
 
     border-color:
-        rgba(139,92,246,.55);
+        rgba(139,92,246,.7);
 
     box-shadow:
         0 0 0 3px
-        rgba(139,92,246,.07);
+        rgba(139,92,246,.08);
 
 }
 
 
-#languageSelect option,
-#voiceSelect option {
+#languageSelect option {
 
     background:
-        #11111d;
+        #11101a;
 
     color:
         white;
@@ -468,41 +578,49 @@ body {
 
 .headerActions {
 
-    display: flex;
+    display:
+        flex;
 
-    align-items: center;
+    align-items:
+        center;
 
-    gap: 7px;
+    gap:
+        8px;
 
 }
 
 
 #themeBtn {
 
-    width: 40px;
-    height: 40px;
+    width:
+        40px;
 
-    flex-shrink: 0;
+    height:
+        40px;
 
-    display: grid;
+    display:
+        grid;
 
-    place-items: center;
+    place-items:
+        center;
 
     border:
         1px solid var(--border);
 
     border-radius:
-        12px;
+        13px;
 
     background:
-        rgba(255,255,255,.04);
+        rgba(255,255,255,.045);
 
     color:
         white;
 
-    font-size: 16px;
+    font-size:
+        16px;
 
-    cursor: pointer;
+    cursor:
+        pointer;
 
     transition:
         .25s ease;
@@ -512,14 +630,18 @@ body {
 
 #themeBtn:hover {
 
+    border-color:
+        rgba(139,92,246,.5);
+
     background:
         rgba(139,92,246,.13);
 
-    border-color:
-        rgba(139,92,246,.45);
-
     transform:
-        rotate(10deg);
+        rotate(12deg);
+
+    box-shadow:
+        0 0 25px
+        rgba(139,92,246,.15);
 
 }
 
@@ -530,26 +652,27 @@ body {
 
 #chatBox {
 
-    position: relative;
+    flex:
+        1;
 
-    flex: 1;
+    min-height:
+        0;
 
-    min-height: 0;
-
-    overflow-y: auto;
-
-    overflow-x: hidden;
+    overflow-y:
+        auto;
 
     padding:
-        18px
-        clamp(14px, 5vw, 90px)
-        28px;
+        30px
+        clamp(14px,5vw,90px);
 
-    display: flex;
+    display:
+        flex;
 
-    flex-direction: column;
+    flex-direction:
+        column;
 
-    gap: 17px;
+    gap:
+        18px;
 
     scroll-behavior:
         smooth;
@@ -557,20 +680,17 @@ body {
     overscroll-behavior:
         contain;
 
-    background:
-
-        radial-gradient(
-            circle at 50% 22%,
-            rgba(124,58,237,.055),
-            transparent 32%
-        );
-
 }
 
 
+/* =========================================================
+   🧹 SCROLLBAR
+========================================================= */
+
 #chatBox::-webkit-scrollbar {
 
-    width: 6px;
+    width:
+        5px;
 
 }
 
@@ -597,41 +717,40 @@ body {
 #chatBox::-webkit-scrollbar-thumb:hover {
 
     background:
-        rgba(255,255,255,.18);
+        rgba(139,92,246,.5);
 
 }
 
 
 /* =========================================================
-   ✨ MODERN WELCOME
+   ✨ PREMIUM WELCOME
 ========================================================= */
 
 .kirongWelcome {
 
-    width: 100%;
+    position:
+        relative;
 
     min-height:
-        min(520px, 67vh);
+        100%;
 
-    margin:
-        auto;
+    display:
+        flex;
+
+    flex-direction:
+        column;
+
+    align-items:
+        center;
+
+    justify-content:
+        center;
+
+    text-align:
+        center;
 
     padding:
-        40px 20px 35px;
-
-    display: flex;
-
-    flex-direction: column;
-
-    align-items: center;
-
-    justify-content: center;
-
-    text-align: center;
-
-    animation:
-        welcomeIn .65s
-        cubic-bezier(.2,.8,.2,1);
+        30px 15px 70px;
 
 }
 
@@ -642,94 +761,114 @@ body {
 
 .kirongWelcomeLogo {
 
-    position: relative;
+    position:
+        relative;
 
-    width: 74px;
-    height: 74px;
+    width:
+        76px;
 
-    margin-bottom: 28px;
+    height:
+        76px;
 
-    display: grid;
+    display:
+        grid;
 
-    place-items: center;
+    place-items:
+        center;
+
+    margin-bottom:
+        25px;
+
+    border:
+        1px solid
+        rgba(167,139,250,.3);
 
     border-radius:
         24px;
 
     background:
-
         linear-gradient(
             145deg,
-            #9b5cff,
-            #7028e8
+            #9658ff,
+            #6d28d9
         );
 
-    color:
-        #ff9f1c;
-
-    font-size: 38px;
-
     box-shadow:
+        0 0 0 8px rgba(124,58,237,.06),
+        0 0 50px rgba(124,58,237,.35),
+        0 20px 60px rgba(0,0,0,.35);
 
-        0 0 0 9px
-        rgba(139,92,246,.07),
-
-        0 18px 50px
-        rgba(109,40,217,.32);
-
-    transition:
-        transform .3s ease,
-        box-shadow .3s ease;
-
-}
-
-
-.kirongWelcomeLogo::before {
-
-    content: "";
-
-    position: absolute;
-
-    inset:
-        -10px;
-
-    border-radius:
-        29px;
-
-    border:
-        1px solid
-        rgba(139,92,246,.09);
-
-    pointer-events:
-        none;
+    animation:
+        logoFloat 4s ease-in-out infinite;
 
 }
 
 
 .kirongWelcomeLogo span {
 
+    font-size:
+        38px;
+
     filter:
         drop-shadow(
-            0 3px 5px
-            rgba(0,0,0,.15)
+            0 4px 8px rgba(0,0,0,.3)
         );
 
 }
 
 
-.kirongWelcomeLogo:hover {
+@keyframes logoFloat {
 
-    transform:
-        translateY(-4px)
-        scale(1.025);
+    0%,
+    100% {
 
-    box-shadow:
+        transform:
+            translateY(0);
 
-        0 0 0 10px
-        rgba(139,92,246,.09),
+    }
 
-        0 23px 60px
-        rgba(109,40,217,.42);
+    50% {
+
+        transform:
+            translateY(-6px);
+
+    }
+
+}
+
+
+/* =========================================================
+   🌟 WELCOME GLOW
+========================================================= */
+
+.welcomeGlow {
+
+    position:
+        absolute;
+
+    top:
+        30%;
+
+    width:
+        280px;
+
+    height:
+        120px;
+
+    border-radius:
+        50%;
+
+    background:
+        rgba(139,92,246,.12);
+
+    filter:
+        blur(55px);
+
+    pointer-events:
+        none;
+
+    z-index:
+        -1;
 
 }
 
@@ -740,16 +879,11 @@ body {
 
 .kirongWelcome h2 {
 
-    margin: 0;
-
-    color:
-        #f8fafc;
-
     font-size:
-        clamp(30px, 4vw, 42px);
+        clamp(30px,5vw,42px);
 
     line-height:
-        1.15;
+        1.12;
 
     font-weight:
         850;
@@ -757,19 +891,27 @@ body {
     letter-spacing:
         -1.6px;
 
+    color:
+        #faf9ff;
+
 }
 
 
 .kirongWelcome h2 span {
 
-    background:
+    color:
+        var(--primary-light);
 
+    background:
         linear-gradient(
-            90deg,
+            100deg,
             #8b5cf6,
-            #a78bfa,
-            #c084fc
+            #c4b5fd,
+            #8b5cf6
         );
+
+    background-size:
+        200% auto;
 
     -webkit-background-clip:
         text;
@@ -780,79 +922,78 @@ body {
     -webkit-text-fill-color:
         transparent;
 
-    color:
-        transparent;
+    animation:
+        gradientMove 5s linear infinite;
 
 }
 
 
-.kirongWelcome h2::after {
+@keyframes gradientMove {
 
-    content:
-        "👋";
+    to {
 
-    display:
-        inline-block;
+        background-position:
+            200% center;
 
-    margin-left:
-        9px;
+    }
+
+}
+
+
+.kirongWelcome h2 b {
 
     font-size:
-        .8em;
+        .7em;
 
-    vertical-align:
-        middle;
-
-    transform-origin:
-        70% 70%;
-
-    animation:
-        wave 2.7s ease-in-out infinite;
+    margin-left:
+        5px;
 
 }
 
 
 /* =========================================================
-   📝 WELCOME DESCRIPTION
+   📝 WELCOME TEXT
 ========================================================= */
+
+.welcomeSubtitle {
+
+    margin-top:
+        17px;
+
+    color:
+        #b8b2c7;
+
+    font-size:
+        15px;
+
+}
+
 
 .welcomeDescription {
 
-    margin:
-        18px 0 0;
+    margin-top:
+        6px;
 
     max-width:
-        620px;
+        560px;
 
     color:
-        #9ca3b5;
+        #888398;
 
     font-size:
-        clamp(14px, 1.8vw, 16px);
+        14px;
 
     line-height:
-        1.75;
-
-    font-weight:
-        450;
+        1.7;
 
 }
 
 
 /* =========================================================
-   ✨ WELCOME HINT
+   💡 WELCOME HINT
 ========================================================= */
 
 .welcomeHint {
-
-    min-height:
-        39px;
-
-    margin-top:
-        25px;
-
-    padding:
-        0 15px;
 
     display:
         inline-flex;
@@ -860,15 +1001,17 @@ body {
     align-items:
         center;
 
-    justify-content:
-        center;
-
     gap:
-        9px;
+        10px;
+
+    margin-top:
+        25px;
+
+    padding:
+        10px 15px;
 
     border:
-        1px solid
-        rgba(255,255,255,.09);
+        1px solid var(--border);
 
     border-radius:
         999px;
@@ -877,23 +1020,13 @@ body {
         rgba(255,255,255,.025);
 
     color:
-        #9ca3b5;
+        #a8a2b3;
 
     font-size:
-        12px;
+        11px;
 
     box-shadow:
-        inset 0 1px 0
-        rgba(255,255,255,.025);
-
-    backdrop-filter:
-        blur(10px);
-
-    -webkit-backdrop-filter:
-        blur(10px);
-
-    transition:
-        .25s ease;
+        inset 0 1px 0 rgba(255,255,255,.03);
 
 }
 
@@ -904,38 +1037,72 @@ body {
         #fbbf24;
 
     font-size:
-        15px;
-
-}
-
-
-.welcomeHint:hover {
-
-    background:
-        rgba(139,92,246,.06);
-
-    border-color:
-        rgba(139,92,246,.24);
-
-    color:
-        #cbd5e1;
-
-    transform:
-        translateY(-2px);
+        14px;
 
 }
 
 
 /* =========================================================
-   💬 CHAT MESSAGES
+   🧠 CAPABILITIES
+========================================================= */
+
+.welcomeCapabilities {
+
+    display:
+        flex;
+
+    flex-wrap:
+        wrap;
+
+    justify-content:
+        center;
+
+    gap:
+        7px;
+
+    margin-top:
+        15px;
+
+}
+
+
+.welcomeCapabilities span {
+
+    padding:
+        6px 10px;
+
+    border:
+        1px solid rgba(255,255,255,.055);
+
+    border-radius:
+        999px;
+
+    background:
+        rgba(255,255,255,.018);
+
+    color:
+        #777184;
+
+    font-size:
+        9px;
+
+    font-weight:
+        700;
+
+}
+
+
+/* =========================================================
+   💬 MESSAGES
 ========================================================= */
 
 .message {
 
-    position: relative;
+    position:
+        relative;
 
     max-width:
-        min(760px, 88%);
+        min(760px,88%);
 
     padding:
         14px 17px;
@@ -961,6 +1128,102 @@ body {
 }
 
 
+@keyframes messageIn {
+
+    from {
+
+        opacity:
+            0;
+
+        transform:
+            translateY(8px)
+            scale(.985);
+
+    }
+
+    to {
+
+        opacity:
+            1;
+
+        transform:
+            translateY(0)
+            scale(1);
+
+    }
+
+}
+
+
+/* =========================================================
+   🤖 AI MESSAGE
+========================================================= */
+
+.message.ai {
+
+    align-self:
+        flex-start;
+
+    color:
+        var(--text-soft);
+
+    background:
+        linear-gradient(
+            145deg,
+            rgba(255,255,255,.055),
+            rgba(255,255,255,.018)
+        );
+
+    border:
+        1px solid var(--border);
+
+    border-bottom-left-radius:
+        6px;
+
+    box-shadow:
+        0 12px 35px
+        rgba(0,0,0,.12);
+
+}
+
+
+/* =========================================================
+   👤 USER MESSAGE
+========================================================= */
+
+.message.user {
+
+    align-self:
+        flex-end;
+
+    color:
+        white;
+
+    background:
+        linear-gradient(
+            135deg,
+            #8b5cf6,
+            #5b21b6
+        );
+
+    border:
+        1px solid
+        rgba(196,181,253,.22);
+
+    border-bottom-right-radius:
+        6px;
+
+    box-shadow:
+        0 14px 40px
+        rgba(76,29,149,.25);
+
+}
+
+
+/* =========================================================
+   ✍️ TEXT
+========================================================= */
+
 .message p {
 
     margin:
@@ -981,126 +1244,6 @@ body {
 
 
 /* =========================================================
-   🤖 AI MESSAGE
-========================================================= */
-
-.message.ai {
-
-    align-self:
-        flex-start;
-
-    color:
-        var(--text-soft);
-
-    background:
-
-        linear-gradient(
-            145deg,
-            rgba(255,255,255,.065),
-            rgba(255,255,255,.025)
-        );
-
-    border:
-        1px solid var(--border);
-
-    border-bottom-left-radius:
-        6px;
-
-    box-shadow:
-        0 8px 30px
-        rgba(0,0,0,.08);
-
-}
-
-
-.message.ai::before {
-
-    content:
-        "K";
-
-    position:
-        absolute;
-
-    left:
-        -9px;
-
-    top:
-        14px;
-
-    width:
-        20px;
-
-    height:
-        20px;
-
-    display:
-        grid;
-
-    place-items:
-        center;
-
-    border-radius:
-        7px;
-
-    background:
-
-        linear-gradient(
-            135deg,
-            var(--primary),
-            var(--primary-dark)
-        );
-
-    color:
-        white;
-
-    font-size:
-        10px;
-
-    font-weight:
-        900;
-
-    box-shadow:
-        0 4px 15px
-        rgba(109,40,217,.4);
-
-}
-
-
-/* =========================================================
-   👤 USER MESSAGE
-========================================================= */
-
-.message.user {
-
-    align-self:
-        flex-end;
-
-    color:
-        white;
-
-    background:
-
-        linear-gradient(
-            135deg,
-            #7c3aed,
-            #5b21b6
-        );
-
-    border:
-        1px solid
-        rgba(167,139,250,.28);
-
-    border-bottom-right-radius:
-        6px;
-
-    box-shadow:
-        0 12px 35px
-        rgba(76,29,149,.22);
-
-}
-
-
-/* =========================================================
    💻 CODE
 ========================================================= */
 
@@ -1115,20 +1258,19 @@ body {
     overflow-x:
         auto;
 
-    border-radius:
-        13px;
-
-    background:
-        rgba(0,0,0,.48);
-
     border:
         1px solid
         rgba(255,255,255,.08);
 
+    border-radius:
+        14px;
+
+    background:
+        rgba(0,0,0,.48);
+
     font-family:
         "SFMono-Regular",
         Consolas,
-        "Liberation Mono",
         monospace;
 
     font-size:
@@ -1145,7 +1287,6 @@ body {
     font-family:
         "SFMono-Regular",
         Consolas,
-        "Liberation Mono",
         monospace;
 
 }
@@ -1169,14 +1310,14 @@ body {
     margin-top:
         14px;
 
-    border-radius:
-        18px;
-
     border:
         1px solid var(--border);
 
+    border-radius:
+        18px;
+
     box-shadow:
-        0 20px 50px
+        0 20px 55px
         rgba(0,0,0,.35);
 
 }
@@ -1191,28 +1332,19 @@ body {
     flex-shrink:
         0;
 
-    align-self:
-        flex-start;
-
-    margin:
-        0 0 5px;
-
     padding:
-        5px 10px;
+        4px clamp(14px,5vw,90px);
 
     color:
         var(--muted);
 
     font-size:
-        12px;
-
-    font-style:
-        italic;
+        11px;
 
 }
 
 
-#thinking::after {
+#thinking:not(.hidden)::after {
 
     content:
         "...";
@@ -1223,29 +1355,22 @@ body {
 }
 
 
-.thinkingDot {
+@keyframes thinkingDots {
 
-    display:
-        inline-block;
+    0% {
+        opacity:
+            .2;
+    }
 
-    width:
-        6px;
+    50% {
+        opacity:
+            1;
+    }
 
-    height:
-        6px;
-
-    margin-right:
-        5px;
-
-    border-radius:
-        50%;
-
-    background:
-        var(--primary);
-
-    box-shadow:
-        0 0 10px
-        rgba(139,92,246,.65);
+    100% {
+        opacity:
+            .2;
+    }
 
 }
 
@@ -1274,17 +1399,16 @@ body {
         center;
 
     gap:
-        8px;
+        7px;
 
     padding:
-        9px
-        clamp(12px,5vw,90px);
+        9px clamp(12px,5vw,90px);
 
     overflow-x:
         auto;
 
     background:
-        rgba(7,7,17,.86);
+        rgba(6,5,12,.72);
 
     border-top:
         1px solid var(--border);
@@ -1307,7 +1431,7 @@ body {
 
 
 /* =========================================================
-   ⚡ QUICK BUTTON
+   ⚡ QUICK BUTTONS
 ========================================================= */
 
 .quickBtn,
@@ -1317,10 +1441,7 @@ body {
         0;
 
     height:
-        35px;
-
-    padding:
-        0 13px;
+        34px;
 
     display:
         inline-flex;
@@ -1332,7 +1453,10 @@ body {
         center;
 
     gap:
-        5px;
+        6px;
+
+    padding:
+        0 12px;
 
     border:
         1px solid var(--border);
@@ -1341,16 +1465,16 @@ body {
         999px;
 
     background:
-        rgba(255,255,255,.04);
+        rgba(255,255,255,.025);
 
     color:
-        var(--text-soft);
+        #a9a3b4;
 
     font-size:
-        11px;
+        10px;
 
     font-weight:
-        700;
+        750;
 
     white-space:
         nowrap;
@@ -1364,20 +1488,32 @@ body {
 }
 
 
+.quickBtn span {
+
+    font-size:
+        12px;
+
+}
+
+
 .quickBtn:hover,
 #locationBtn:hover {
-
-    background:
-        rgba(139,92,246,.13);
-
-    border-color:
-        rgba(139,92,246,.45);
 
     color:
         white;
 
+    border-color:
+        rgba(139,92,246,.45);
+
+    background:
+        rgba(139,92,246,.12);
+
     transform:
         translateY(-2px);
+
+    box-shadow:
+        0 6px 20px
+        rgba(139,92,246,.12);
 
 }
 
@@ -1400,21 +1536,11 @@ body {
     flex-shrink:
         0;
 
-    display:
-        flex;
-
-    align-items:
-        center;
-
-    gap:
-        7px;
-
     padding:
-        10px
-        clamp(10px,5vw,90px);
+        10px clamp(10px,5vw,90px);
 
     background:
-        rgba(7,7,17,.94);
+        rgba(5,4,11,.78);
 
     backdrop-filter:
         blur(25px);
@@ -1422,11 +1548,61 @@ body {
     -webkit-backdrop-filter:
         blur(25px);
 
-    border-top:
-        1px solid var(--border);
-
     z-index:
         30;
+
+}
+
+
+.inputShell {
+
+    min-height:
+        56px;
+
+    display:
+        flex;
+
+    align-items:
+        center;
+
+    gap:
+        6px;
+
+    padding:
+        6px;
+
+    border:
+        1px solid
+        rgba(255,255,255,.11);
+
+    border-radius:
+        18px;
+
+    background:
+        rgba(255,255,255,.045);
+
+    box-shadow:
+        0 12px 40px
+        rgba(0,0,0,.22),
+        inset 0 1px 0
+        rgba(255,255,255,.035);
+
+    transition:
+        .25s ease;
+
+}
+
+
+.inputShell:focus-within {
+
+    border-color:
+        rgba(139,92,246,.48);
+
+    box-shadow:
+        0 0 0 3px
+        rgba(139,92,246,.055),
+        0 15px 45px
+        rgba(0,0,0,.28);
 
 }
 
@@ -1438,10 +1614,10 @@ body {
 #voiceSelect {
 
     width:
-        55px;
+        48px;
 
     height:
-        43px;
+        42px;
 
     padding:
         0 5px;
@@ -1453,10 +1629,10 @@ body {
         12px;
 
     background:
-        rgba(255,255,255,.04);
+        rgba(255,255,255,.035);
 
     color:
-        white;
+        var(--text-soft);
 
     font-size:
         10px;
@@ -1470,18 +1646,29 @@ body {
 }
 
 
+#voiceSelect option {
+
+    background:
+        #11101a;
+
+    color:
+        white;
+
+}
+
+
 /* =========================================================
-   📎 UPLOAD + MIC
+   📎 INPUT BUTTONS
 ========================================================= */
 
 #uploadBtn,
 #micBtn {
 
     width:
-        43px;
+        42px;
 
     height:
-        43px;
+        42px;
 
     flex-shrink:
         0;
@@ -1499,13 +1686,13 @@ body {
         12px;
 
     background:
-        rgba(255,255,255,.04);
+        transparent;
 
     color:
-        white;
+        #aaa4b5;
 
     font-size:
-        17px;
+        16px;
 
     cursor:
         pointer;
@@ -1519,11 +1706,14 @@ body {
 #uploadBtn:hover,
 #micBtn:hover {
 
-    background:
-        rgba(139,92,246,.13);
+    color:
+        white;
 
     border-color:
         rgba(139,92,246,.45);
+
+    background:
+        rgba(139,92,246,.12);
 
     transform:
         translateY(-1px);
@@ -1532,7 +1722,7 @@ body {
 
 
 /* =========================================================
-   💬 USER INPUT
+   💬 TEXT INPUT
 ========================================================= */
 
 #userInput {
@@ -1544,19 +1734,16 @@ body {
         0;
 
     height:
-        43px;
+        42px;
 
     padding:
-        0 15px;
+        0 10px;
 
     border:
-        1px solid var(--border);
-
-    border-radius:
-        13px;
+        none;
 
     background:
-        rgba(255,255,255,.04);
+        transparent;
 
     color:
         white;
@@ -1567,54 +1754,36 @@ body {
     outline:
         none;
 
-    transition:
-        .25s ease;
-
 }
 
 
 #userInput::placeholder {
 
     color:
-        #70798b;
-
-}
-
-
-#userInput:hover {
-
-    background:
-        rgba(255,255,255,.055);
+        #716b7d;
 
 }
 
 
 #userInput:focus {
 
-    border-color:
-        rgba(139,92,246,.6);
-
-    background:
-        rgba(255,255,255,.06);
-
-    box-shadow:
-        0 0 0 3px
-        rgba(139,92,246,.08);
+    outline:
+        none;
 
 }
 
 
 /* =========================================================
-   ➤ SEND
+   ➤ SEND BUTTON
 ========================================================= */
 
 #sendBtn {
 
     width:
-        46px;
+        44px;
 
     height:
-        43px;
+        44px;
 
     flex-shrink:
         0;
@@ -1629,14 +1798,13 @@ body {
         none;
 
     border-radius:
-        13px;
+        14px;
 
     background:
-
         linear-gradient(
             135deg,
-            var(--primary),
-            var(--primary-dark)
+            #9b65ff,
+            #6d28d9
         );
 
     color:
@@ -1653,7 +1821,7 @@ body {
 
     box-shadow:
         0 8px 25px
-        rgba(109,40,217,.3);
+        rgba(109,40,217,.32);
 
     transition:
         .2s ease;
@@ -1667,8 +1835,8 @@ body {
         translateY(-2px);
 
     box-shadow:
-        0 12px 30px
-        rgba(109,40,217,.45);
+        0 12px 32px
+        rgba(109,40,217,.5);
 
 }
 
@@ -1676,7 +1844,7 @@ body {
 #sendBtn:active {
 
     transform:
-        scale(.94);
+        scale(.92);
 
 }
 
@@ -1694,15 +1862,14 @@ body {
         flex;
 
     gap:
-        8px;
+        7px;
 
     padding:
-        7px
-        clamp(10px,5vw,90px)
-        11px;
+        2px clamp(10px,5vw,90px)
+        10px;
 
     background:
-        rgba(7,7,17,.94);
+        rgba(5,4,11,.78);
 
 }
 
@@ -1714,22 +1881,22 @@ body {
         1;
 
     height:
-        34px;
+        31px;
 
     border:
-        1px solid var(--border);
+        1px solid rgba(255,255,255,.055);
 
     border-radius:
-        10px;
+        9px;
 
     background:
-        rgba(255,255,255,.035);
+        transparent;
 
     color:
-        var(--muted);
+        #6f697a;
 
     font-size:
-        10px;
+        9px;
 
     font-weight:
         700;
@@ -1747,302 +1914,10 @@ body {
 #clearBtn:hover {
 
     color:
-        white;
+        #c9c4d2;
 
     background:
-        rgba(255,255,255,.075);
-
-}
-
-
-/* =========================================================
-   🗂️ CHAT SHELVES
-========================================================= */
-
-#kirongShelves {
-
-    position:
-        fixed;
-
-    top:
-        0;
-
-    left:
-        0;
-
-    width:
-        var(--shelf-width);
-
-    height:
-        100dvh;
-
-    padding:
-        16px;
-
-    background:
-        rgba(10,10,20,.96);
-
-    backdrop-filter:
-        blur(30px);
-
-    -webkit-backdrop-filter:
-        blur(30px);
-
-    border-right:
-        1px solid var(--border);
-
-    box-shadow:
-        20px 0 60px
-        rgba(0,0,0,.4);
-
-    transform:
-        translateX(-105%);
-
-    transition:
-        transform .28s
-        cubic-bezier(.4,0,.2,1);
-
-    z-index:
-        1000;
-
-    overflow-y:
-        auto;
-
-}
-
-
-#kirongShelves.open {
-
-    transform:
-        translateX(0);
-
-}
-
-
-/* =========================================================
-   🗂️ SHELF OVERLAY
-========================================================= */
-
-#kirongShelvesOverlay {
-
-    position:
-        fixed;
-
-    inset:
-        0;
-
-    background:
-        rgba(0,0,0,.55);
-
-    opacity:
-        0;
-
-    visibility:
-        hidden;
-
-    transition:
-        .25s ease;
-
-    z-index:
-        999;
-
-    backdrop-filter:
-        blur(3px);
-
-}
-
-
-#kirongShelvesOverlay.open {
-
-    opacity:
-        1;
-
-    visibility:
-        visible;
-
-}
-
-
-/* =========================================================
-   🧠 SHELF HEADER
-========================================================= */
-
-.kirongShelvesHeader {
-
-    height:
-        48px;
-
-    display:
-        flex;
-
-    align-items:
-        center;
-
-    justify-content:
-        space-between;
-
-    margin-bottom:
-        12px;
-
-}
-
-
-.kirongShelvesHeader strong {
-
-    font-size:
-        16px;
-
-}
-
-
-#closeShelvesBtn {
-
-    width:
-        36px;
-
-    height:
-        36px;
-
-    display:
-        grid;
-
-    place-items:
-        center;
-
-    border:
-        1px solid var(--border);
-
-    border-radius:
-        11px;
-
-    background:
-        rgba(255,255,255,.045);
-
-    color:
-        white;
-
-    cursor:
-        pointer;
-
-}
-
-
-/* =========================================================
-   ➕ NEW CHAT
-========================================================= */
-
-.kirongNewChatBtn {
-
-    width:
-        100%;
-
-    height:
-        44px;
-
-    margin-bottom:
-        14px;
-
-    border:
-        1px solid
-        rgba(139,92,246,.35);
-
-    border-radius:
-        13px;
-
-    background:
-
-        linear-gradient(
-            135deg,
-            rgba(139,92,246,.18),
-            rgba(109,40,217,.10)
-        );
-
-    color:
-        white;
-
-    font-size:
-        13px;
-
-    font-weight:
-        750;
-
-    cursor:
-        pointer;
-
-    transition:
-        .2s ease;
-
-}
-
-
-.kirongNewChatBtn:hover {
-
-    background:
-        rgba(139,92,246,.25);
-
-    transform:
-        translateY(-1px);
-
-}
-
-
-/* =========================================================
-   💬 CHAT LIST
-========================================================= */
-
-.kirongChatList {
-
-    display:
-        flex;
-
-    flex-direction:
-        column;
-
-    gap:
-        6px;
-
-}
-
-
-.kirongChatItem {
-
-    min-height:
-        48px;
-
-    display:
-        flex;
-
-    align-items:
-        center;
-
-    gap:
-        8px;
-
-    padding:
-        8px 9px;
-
-    border:
-        1px solid transparent;
-
-    border-radius:
-        12px;
-
-    color:
-        var(--text-soft);
-
-    cursor:
-        pointer;
-
-    transition:
-        .2s ease;
-
-}
-
-
-.kirongChatItem:hover {
-
-    background:
-        rgba(255,255,255,.06);
+        rgba(255,255,255,.035);
 
     border-color:
         var(--border);
@@ -2050,88 +1925,20 @@ body {
 }
 
 
-.kirongChatItem.active {
+/* =========================================================
+   ♿ ACCESSIBILITY
+========================================================= */
 
-    background:
-        rgba(139,92,246,.13);
+button:focus-visible,
+select:focus-visible,
+input:focus-visible {
 
-    border-color:
-        rgba(139,92,246,.28);
+    outline:
+        2px solid
+        rgba(167,139,250,.75);
 
-}
-
-
-.kirongChatTitle {
-
-    flex:
-        1;
-
-    min-width:
-        0;
-
-    overflow:
-        hidden;
-
-    white-space:
-        nowrap;
-
-    text-overflow:
-        ellipsis;
-
-    font-size:
-        12px;
-
-}
-
-
-.kirongDeleteChat {
-
-    width:
-        32px;
-
-    height:
-        32px;
-
-    flex-shrink:
-        0;
-
-    display:
-        grid;
-
-    place-items:
-        center;
-
-    border:
-        none;
-
-    border-radius:
-        9px;
-
-    background:
-        transparent;
-
-    color:
-        var(--muted);
-
-    cursor:
-        pointer;
-
-    opacity:
-        .7;
-
-}
-
-
-.kirongDeleteChat:hover {
-
-    background:
-        rgba(239,68,68,.12);
-
-    color:
-        #ff7777;
-
-    opacity:
-        1;
+    outline-offset:
+        2px;
 
 }
 
@@ -2142,37 +1949,28 @@ body {
 
 @media (max-width: 768px) {
 
+
     .header {
 
         height:
-            62px;
+            64px;
 
         padding:
-            0 10px 0 10px;
+            0 11px;
 
     }
 
 
-    .headerLeft {
-
-        gap:
-            8px;
-
-    }
-
-
-    #kirongOpenShelvesBtn {
+    .brandLogo {
 
         width:
-            40px;
+            36px;
 
         height:
-            40px;
+            36px;
 
-    }
-
-
-    .brandTitle h1 {
+        border-radius:
+            11px;
 
         font-size:
             16px;
@@ -2180,18 +1978,10 @@ body {
     }
 
 
-    .brandIcon {
+    .header h1 {
 
         font-size:
-            13px;
-
-    }
-
-
-    .brandWorld {
-
-        font-size:
-            11px;
+            15px;
 
     }
 
@@ -2206,11 +1996,11 @@ body {
 
     #languageSelect {
 
-        width:
+        max-width:
             88px;
 
         height:
-            34px;
+            33px;
 
         font-size:
             10px;
@@ -2221,10 +2011,13 @@ body {
     #themeBtn {
 
         width:
-            37px;
+            36px;
 
         height:
-            37px;
+            36px;
+
+        border-radius:
+            11px;
 
     }
 
@@ -2232,20 +2025,15 @@ body {
     #chatBox {
 
         padding:
-            12px 11px 22px;
+            18px 11px;
 
     }
 
 
-    /* Welcome */
-
     .kirongWelcome {
 
-        min-height:
-            calc(100dvh - 245px);
-
         padding:
-            30px 12px;
+            15px 10px 50px;
 
     }
 
@@ -2259,13 +2047,18 @@ body {
             68px;
 
         margin-bottom:
-            23px;
+            21px;
 
         border-radius:
             21px;
 
+    }
+
+
+    .kirongWelcomeLogo span {
+
         font-size:
-            34px;
+            33px;
 
     }
 
@@ -2273,7 +2066,7 @@ body {
     .kirongWelcome h2 {
 
         font-size:
-            clamp(27px, 8vw, 34px);
+            clamp(27px,8vw,36px);
 
         letter-spacing:
             -1.2px;
@@ -2281,30 +2074,24 @@ body {
     }
 
 
-    .kirongWelcome h2::after {
+    .welcomeSubtitle {
 
-        margin-left:
-            5px;
+        margin-top:
+            14px;
 
         font-size:
-            .78em;
+            14px;
 
     }
 
 
     .welcomeDescription {
 
-        margin-top:
-            15px;
-
         max-width:
-            360px;
+            340px;
 
         font-size:
-            14px;
-
-        line-height:
-            1.7;
+            12px;
 
     }
 
@@ -2312,26 +2099,29 @@ body {
     .welcomeHint {
 
         margin-top:
-            21px;
-
-        min-height:
-            37px;
-
-        padding:
-            0 13px;
+            20px;
 
         font-size:
-            11px;
+            10px;
+
+        padding:
+            9px 13px;
 
     }
 
 
-    /* Messages */
+    .welcomeCapabilities {
+
+        max-width:
+            300px;
+
+    }
+
 
     .message {
 
         max-width:
-            93%;
+            94%;
 
         font-size:
             14px;
@@ -2342,20 +2132,10 @@ body {
     }
 
 
-    .message.ai::before {
-
-        display:
-            none;
-
-    }
-
-
-    /* Quick actions */
-
     .quickActions {
 
         padding:
-            8px 10px;
+            8px 9px;
 
     }
 
@@ -2364,26 +2144,35 @@ body {
     #locationBtn {
 
         height:
-            34px;
+            33px;
 
         padding:
-            0 11px;
+            0 10px;
 
         font-size:
-            10px;
+            9px;
 
     }
 
 
-    /* Input */
-
     .inputArea {
 
         padding:
-            8px;
+            7px 8px;
 
-        gap:
-            6px;
+    }
+
+
+    .inputShell {
+
+        min-height:
+            52px;
+
+        border-radius:
+            16px;
+
+        padding:
+            5px;
 
     }
 
@@ -2400,16 +2189,13 @@ body {
     #micBtn {
 
         width:
-            40px;
+            38px;
 
         height:
-            40px;
+            38px;
 
         border-radius:
             11px;
-
-        font-size:
-            16px;
 
     }
 
@@ -2417,13 +2203,7 @@ body {
     #userInput {
 
         height:
-            40px;
-
-        padding:
-            0 12px;
-
-        border-radius:
-            12px;
+            38px;
 
         font-size:
             13px;
@@ -2434,7 +2214,7 @@ body {
     #sendBtn {
 
         width:
-            42px;
+            40px;
 
         height:
             40px;
@@ -2445,22 +2225,10 @@ body {
     }
 
 
-    /* Footer */
-
     .footerButtons {
 
         padding:
-            6px 8px 9px;
-
-    }
-
-
-    /* Shelves */
-
-    #kirongShelves {
-
-        width:
-            min(285px, 86vw);
+            2px 8px 8px;
 
     }
 
@@ -2473,6 +2241,7 @@ body {
 
 @media (max-width: 390px) {
 
+
     .header {
 
         padding:
@@ -2481,7 +2250,34 @@ body {
     }
 
 
-    .brandTitle h1 {
+    .headerLeft {
+
+        gap:
+            8px;
+
+    }
+
+
+    .brandArea {
+
+        gap:
+            7px;
+
+    }
+
+
+    .brandLogo {
+
+        width:
+            34px;
+
+        height:
+            34px;
+
+    }
+
+
+    .header h1 {
 
         font-size:
             14px;
@@ -2489,49 +2285,13 @@ body {
     }
 
 
-    .brandWorld {
-
-        display:
-            none;
-
-    }
-
-
     #languageSelect {
 
-        width:
+        max-width:
             76px;
 
         padding:
-            0 6px;
-
-    }
-
-
-    .kirongWelcome {
-
-        padding:
-            24px 10px;
-
-    }
-
-
-    .kirongWelcomeLogo {
-
-        width:
-            62px;
-
-        height:
-            62px;
-
-        border-radius:
-            19px;
-
-        font-size:
-            31px;
-
-        margin-bottom:
-            20px;
+            0 7px;
 
     }
 
@@ -2547,15 +2307,15 @@ body {
     .welcomeDescription {
 
         font-size:
-            13px;
+            11px;
 
     }
 
 
-    .welcomeHint {
+    .welcomeCapabilities {
 
-        font-size:
-            10px;
+        display:
+            none;
 
     }
 
@@ -2564,10 +2324,10 @@ body {
     #micBtn {
 
         width:
-            38px;
+            36px;
 
         height:
-            38px;
+            36px;
 
     }
 
@@ -2575,7 +2335,7 @@ body {
     #sendBtn {
 
         width:
-            40px;
+            39px;
 
     }
 
@@ -2583,143 +2343,42 @@ body {
 
 
 /* =========================================================
-   ♿ ACCESSIBILITY
+   🖥️ LARGE SCREENS
 ========================================================= */
 
-button:focus-visible,
-select:focus-visible,
-input:focus-visible {
+@media (min-width: 1100px) {
 
-    outline:
-        2px solid
-        rgba(167,139,250,.8);
+    .kirongWelcomeLogo {
 
-    outline-offset:
-        2px;
+        width:
+            82px;
 
-}
-
-
-/* =========================================================
-   ✨ ANIMATIONS
-========================================================= */
-
-@keyframes welcomeIn {
-
-    from {
-
-        opacity:
-            0;
-
-        transform:
-            translateY(18px)
-            scale(.98);
+        height:
+            82px;
 
     }
 
-    to {
 
-        opacity:
-            1;
+    .kirongWelcome h2 {
 
-        transform:
-            translateY(0)
-            scale(1);
+        font-size:
+            44px;
 
     }
 
-}
 
+    .welcomeSubtitle {
 
-@keyframes messageIn {
-
-    from {
-
-        opacity:
-            0;
-
-        transform:
-            translateY(8px)
-            scale(.99);
+        font-size:
+            16px;
 
     }
 
-    to {
 
-        opacity:
-            1;
+    .welcomeDescription {
 
-        transform:
-            translateY(0)
-            scale(1);
-
-    }
-
-}
-
-
-@keyframes wave {
-
-    0%,
-    55%,
-    100% {
-
-        transform:
-            rotate(0deg);
-
-    }
-
-    10% {
-
-        transform:
-            rotate(15deg);
-
-    }
-
-    20% {
-
-        transform:
-            rotate(-8deg);
-
-    }
-
-    30% {
-
-        transform:
-            rotate(12deg);
-
-    }
-
-    40% {
-
-        transform:
-            rotate(-4deg);
-
-    }
-
-}
-
-
-@keyframes thinkingDots {
-
-    0% {
-
-        opacity:
-            .2;
-
-    }
-
-    50% {
-
-        opacity:
-            1;
-
-    }
-
-    100% {
-
-        opacity:
-            .2;
+        font-size:
+            14px;
 
     }
 
