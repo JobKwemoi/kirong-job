@@ -3,491 +3,481 @@
 
 <head>
 
-    <meta charset="UTF-8">
+  <meta charset="UTF-8">
 
-    <meta
-        name="viewport"
-        content="width=device-width, initial-scale=1.0, user-scalable=no"
-    >
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0, user-scalable=no"
+  >
 
-    <meta
-        name="theme-color"
-        content="#070711"
-    >
+  <meta
+    name="theme-color"
+    content="#08070f"
+  >
 
-    <meta
-        name="description"
-        content="Kirong AI — an intelligent AI assistant built by Kirong Job Kwemoi."
-    >
+  <meta
+    name="description"
+    content="Kirong AI — an intelligent AI assistant built by Kirong Job Kwemoi."
+  >
 
-    <meta
-        name="author"
-        content="Kirong Job Kwemoi"
-    >
+  <meta
+    name="author"
+    content="Kirong Job Kwemoi"
+  >
 
-    <meta
-        name="robots"
-        content="index, follow"
-    >
+  <title>Kirong AI — Intelligent Assistant</title>
 
-    <title>Kirong AI — Intelligent Assistant</title>
-
-    <link
-        rel="stylesheet"
-        href="style.css"
-    >
+  <link
+    rel="stylesheet"
+    href="style.css"
+  >
 
 </head>
 
 
 <body>
 
-    <!-- =====================================================
-         KIRONG AI APPLICATION
-    ====================================================== -->
+  <!-- ================================================
+       BACKGROUND EFFECTS
+  ================================================= -->
 
-    <main class="container">
-
-
-        <!-- =================================================
-             HEADER
-        ================================================== -->
-
-        <header class="header">
-
-            <div class="headerLeft">
-
-                <!-- Shelves button -->
-                <button
-                    id="kirongOpenShelvesBtn"
-                    type="button"
-                    aria-label="Open chats"
-                    title="Open chats"
-                >
-                    ☰
-                </button>
+  <div class="ambient ambientOne"></div>
+  <div class="ambient ambientTwo"></div>
+  <div class="ambient ambientThree"></div>
 
 
-                <div class="brandArea">
+  <!-- ================================================
+       MAIN APP
+  ================================================= -->
 
-                    <div class="brandTitle">
-                        <span class="brandIcon">⚡</span>
-                        <h1>Kirong AI</h1>
-                        <span class="brandWorld">🌏</span>
-                    </div>
-
-                    <span class="brandStatus">
-                        <span class="statusDot"></span>
-                        Online
-                    </span>
-
-                </div>
+  <main class="container">
 
 
-                <!-- Language -->
+    <!-- ==============================================
+         HEADER
+    =============================================== -->
 
-                <select
-                    id="languageSelect"
-                    aria-label="Select language"
-                    title="Select language"
-                >
+    <header class="header">
 
-                    <option value="English">
-                        English
-                    </option>
+      <div class="headerLeft">
 
-                    <option value="Swahili">
-                        Kiswahili
-                    </option>
+        <div class="brandArea">
 
-                    <option value="French">
-                        Français
-                    </option>
+          <div class="brandLogo">
+            ⚡
+          </div>
 
-                    <option value="Spanish">
-                        Español
-                    </option>
+          <div class="brandInfo">
 
-                    <option value="Hindi">
-                        हिन्दी
-                    </option>
+            <h1>
+              Kirong AI
+            </h1>
 
-                </select>
+            <span class="brandStatus">
+              <span class="statusDot"></span>
+              Online
+            </span>
 
-            </div>
+          </div>
+
+        </div>
 
 
-            <div class="headerActions">
+        <select
+          id="languageSelect"
+          aria-label="Select language"
+        >
 
-                <button
-                    id="themeBtn"
-                    type="button"
-                    aria-label="Toggle theme"
-                    title="Toggle theme"
-                >
-                    🌙
-                </button>
+          <option value="English">
+            English
+          </option>
 
-            </div>
+          <option value="Swahili">
+            Kiswahili
+          </option>
 
-        </header>
+          <option value="French">
+            Français
+          </option>
+
+          <option value="Spanish">
+            Español
+          </option>
+
+          <option value="Hindi">
+            हिन्दी
+          </option>
+
+        </select>
+
+      </div>
+
+
+      <div class="headerActions">
+
+        <button
+          id="themeBtn"
+          type="button"
+          aria-label="Toggle theme"
+          title="Toggle theme"
+        >
+          🌙
+        </button>
+
+      </div>
+
+    </header>
 
 
 
-        <!-- =================================================
-             CHAT AREA
-        ================================================== -->
+    <!-- ==============================================
+         CHAT AREA
+    =============================================== -->
 
-        <section
-            id="chatBox"
-            aria-live="polite"
-            aria-label="Kirong AI conversation"
+    <section
+      id="chatBox"
+      aria-live="polite"
+      aria-label="Kirong AI conversation"
+    >
+
+
+      <!-- ============================================
+           PREMIUM WELCOME
+      ============================================= -->
+
+      <div class="kirongWelcome">
+
+        <div class="kirongWelcomeLogo">
+          <span>⚡</span>
+        </div>
+
+
+        <div class="welcomeGlow"></div>
+
+
+        <h2>
+          Hello, I'm
+          <span>Kirong AI</span>
+          <b>👋</b>
+        </h2>
+
+
+        <p class="welcomeSubtitle">
+          Your intelligent AI assistant.
+        </p>
+
+
+        <p class="welcomeDescription">
+          Ask me anything, build something,
+          or let's solve a problem together.
+        </p>
+
+
+        <div class="welcomeHint">
+
+          <span class="hintSpark">✦</span>
+
+          <span>
+            What can I help you with today?
+          </span>
+
+        </div>
+
+
+        <div class="welcomeCapabilities">
+
+          <span>⚡ Fast</span>
+          <span>🧠 Smart</span>
+          <span>💻 Creative</span>
+          <span>🌍 Multilingual</span>
+
+        </div>
+
+      </div>
+
+
+    </section>
+
+
+
+    <!-- ==============================================
+         THINKING
+    =============================================== -->
+
+    <div
+      id="thinking"
+      class="hidden"
+      aria-live="polite"
+    >
+      Kirong AI is thinking
+    </div>
+
+
+
+    <!-- ==============================================
+         QUICK ACTIONS
+    =============================================== -->
+
+    <nav
+      class="quickActions"
+      aria-label="Quick actions"
+    >
+
+      <button
+        class="quickBtn"
+        data-action="Code"
+        type="button"
+      >
+        <span>💻</span>
+        Code
+      </button>
+
+
+      <button
+        class="quickBtn"
+        data-action="Explain"
+        type="button"
+      >
+        <span>🧠</span>
+        Explain
+      </button>
+
+
+      <button
+        class="quickBtn"
+        data-action="Write"
+        type="button"
+      >
+        <span>✍️</span>
+        Write
+      </button>
+
+
+      <button
+        class="quickBtn"
+        data-action="Image"
+        type="button"
+      >
+        <span>🎨</span>
+        Image
+      </button>
+
+
+      <button
+        class="quickBtn"
+        data-action="Email"
+        type="button"
+      >
+        <span>📧</span>
+        Email
+      </button>
+
+
+      <button
+        class="quickBtn"
+        data-action="Business"
+        type="button"
+      >
+        <span>💼</span>
+        Business
+      </button>
+
+
+      <button
+        class="quickBtn"
+        data-action="Study"
+        type="button"
+      >
+        <span>📚</span>
+        Study
+      </button>
+
+
+      <button
+        class="quickBtn"
+        data-action="Translate"
+        type="button"
+      >
+        <span>🌍</span>
+        Translate
+      </button>
+
+
+      <button
+        class="quickBtn"
+        data-action="Analyze"
+        type="button"
+      >
+        <span>📊</span>
+        Analyze
+      </button>
+
+
+      <button
+        class="quickBtn"
+        data-action="Developer"
+        type="button"
+      >
+        <span>🧑🏽‍💻</span>
+        Developer
+      </button>
+
+
+      <button
+        class="quickBtn"
+        data-action="Ideas"
+        type="button"
+      >
+        <span>💡</span>
+        Ideas
+      </button>
+
+
+      <button
+        class="quickBtn"
+        data-action="Summarize"
+        type="button"
+      >
+        <span>📝</span>
+        Summarize
+      </button>
+
+
+      <button
+        id="locationBtn"
+        type="button"
+        aria-label="Share location"
+        title="Share location"
+      >
+        📍
+      </button>
+
+    </nav>
+
+
+
+    <!-- ==============================================
+         INPUT
+    =============================================== -->
+
+    <form
+      class="inputArea"
+      id="chatForm"
+      autocomplete="off"
+    >
+
+
+      <div class="inputShell">
+
+
+        <select
+          id="voiceSelect"
+          aria-label="Voice language"
+          title="Voice language"
+        >
+
+          <option value="en-US">
+            EN
+          </option>
+
+          <option value="sw-KE">
+            SW
+          </option>
+
+        </select>
+
+
+
+        <button
+          id="uploadBtn"
+          type="button"
+          aria-label="Upload file"
+          title="Upload file"
+        >
+          📎
+        </button>
+
+
+        <input
+          type="file"
+          id="fileInput"
+          hidden
+          accept=".txt,.pdf,.doc,.docx,.csv,.json,.js,.html,.css,.py,.md,image/*"
         >
 
 
-            <!-- =============================================
-                 MODERN WELCOME SCREEN
-            ============================================== -->
-
-            <div class="kirongWelcome">
-
-                <div class="kirongWelcomeLogo">
-
-                    <span>⚡</span>
-
-                </div>
-
-
-                <h2>
-                    Hello, I'm
-                    <span>Kirong AI</span>
-                </h2>
-
-
-                <p class="welcomeDescription">
-                    Your intelligent AI assistant.
-                    <br>
-                    Ask me anything, build something,
-                    or let's solve a problem together.
-                </p>
-
-
-                <div class="welcomeHint">
-
-                    <span class="hintSpark">✦</span>
-
-                    <span>
-                        What can I help you with today?
-                    </span>
-
-                </div>
-
-            </div>
-
-
-
-            <!-- =============================================
-                 THINKING
-            ============================================== -->
-
-            <div
-                id="thinking"
-                class="hidden"
-                aria-live="polite"
-            >
-                <span class="thinkingDot"></span>
-                Kirong AI is thinking
-            </div>
-
-        </section>
-
-
-
-        <!-- =================================================
-             QUICK ACTIONS
-        ================================================== -->
-
-        <nav
-            class="quickActions"
-            aria-label="Quick actions"
-        >
-
-            <button
-                class="quickBtn"
-                data-action="Code"
-                type="button"
-                title="Coding assistant"
-            >
-                <span>💻</span>
-                Code
-            </button>
-
-
-            <button
-                class="quickBtn"
-                data-action="Explain"
-                type="button"
-                title="Explain something"
-            >
-                <span>🧠</span>
-                Explain
-            </button>
-
-
-            <button
-                class="quickBtn"
-                data-action="Write"
-                type="button"
-                title="Writing assistant"
-            >
-                <span>✍️</span>
-                Write
-            </button>
-
-
-            <button
-                class="quickBtn"
-                data-action="Image"
-                type="button"
-                title="Generate an image"
-            >
-                <span>🎨</span>
-                Image
-            </button>
-
-
-            <button
-                class="quickBtn"
-                data-action="Email"
-                type="button"
-                title="Write an email"
-            >
-                <span>📧</span>
-                Email
-            </button>
-
-
-            <button
-                class="quickBtn"
-                data-action="Business"
-                type="button"
-                title="Business assistant"
-            >
-                <span>💼</span>
-                Business
-            </button>
-
-
-            <button
-                class="quickBtn"
-                data-action="Study"
-                type="button"
-                title="Study assistant"
-            >
-                <span>📚</span>
-                Study
-            </button>
-
-
-            <button
-                class="quickBtn"
-                data-action="Translate"
-                type="button"
-                title="Translate text"
-            >
-                <span>🌍</span>
-                Translate
-            </button>
-
-
-            <button
-                class="quickBtn"
-                data-action="Analyze"
-                type="button"
-                title="Analyze information"
-            >
-                <span>📊</span>
-                Analyze
-            </button>
-
-
-            <button
-                class="quickBtn"
-                data-action="Developer"
-                type="button"
-                title="Developer tools"
-            >
-                <span>🧑🏽‍💻</span>
-                Developer
-            </button>
-
-
-            <button
-                class="quickBtn"
-                data-action="Ideas"
-                type="button"
-                title="Generate ideas"
-            >
-                <span>💡</span>
-                Ideas
-            </button>
-
-
-            <button
-                class="quickBtn"
-                data-action="Summarize"
-                type="button"
-                title="Summarize text"
-            >
-                <span>📝</span>
-                Summarize
-            </button>
-
-
-            <button
-                id="locationBtn"
-                type="button"
-                aria-label="Share location"
-                title="Share location"
-            >
-                📍
-            </button>
-
-        </nav>
-
-
-
-        <!-- =================================================
-             INPUT AREA
-        ================================================== -->
-
-        <form
-            class="inputArea"
-            id="chatForm"
-            autocomplete="off"
+        <input
+          type="text"
+          id="userInput"
+          placeholder="Message Kirong AI..."
+          autocomplete="off"
+          maxlength="4000"
+          aria-label="Message Kirong AI"
         >
 
 
-            <!-- Voice language -->
-
-            <select
-                id="voiceSelect"
-                aria-label="Voice language"
-                title="Voice language"
-            >
-
-                <option value="en-US">
-                    EN
-                </option>
-
-                <option value="sw-KE">
-                    SW
-                </option>
-
-            </select>
+        <button
+          id="micBtn"
+          type="button"
+          aria-label="Voice input"
+          title="Voice input"
+        >
+          🎤
+        </button>
 
 
-
-            <!-- Upload -->
-
-            <button
-                id="uploadBtn"
-                type="button"
-                aria-label="Upload file"
-                title="Upload file"
-            >
-                📎
-            </button>
+        <button
+          id="sendBtn"
+          type="submit"
+          aria-label="Send message"
+          title="Send message"
+        >
+          ➤
+        </button>
 
 
-            <input
-                type="file"
-                id="fileInput"
-                hidden
-                accept=".txt,.pdf,.doc,.docx,.csv,.json,.js,.html,.css,.py,.md,image/*"
-            >
+      </div>
+
+    </form>
 
 
 
-            <!-- Message -->
+    <!-- ==============================================
+         FOOTER
+    =============================================== -->
 
-            <input
-                type="text"
-                id="userInput"
-                placeholder="Message Kirong AI..."
-                autocomplete="off"
-                maxlength="4000"
-                aria-label="Message Kirong AI"
-            >
+    <footer class="footerButtons">
 
-
-
-            <!-- Microphone -->
-
-            <button
-                id="micBtn"
-                type="button"
-                aria-label="Voice input"
-                title="Voice input"
-            >
-                🎤
-            </button>
+      <button
+        id="exportBtn"
+        type="button"
+      >
+        Export 💾
+      </button>
 
 
+      <button
+        id="clearBtn"
+        type="button"
+      >
+        Clear 🗑️
+      </button>
 
-            <!-- Send -->
+    </footer>
 
-            <button
-                id="sendBtn"
-                type="submit"
-                aria-label="Send message"
-                title="Send message"
-            >
-                ➤
-            </button>
 
-        </form>
+  </main>
 
 
 
-        <!-- =================================================
-             FOOTER
-        ================================================== -->
+  <!-- ================================================
+       APP ENGINE
+  ================================================= -->
 
-        <footer class="footerButtons">
-
-            <button
-                id="exportBtn"
-                type="button"
-                title="Export current chat"
-            >
-                Export 💾
-            </button>
-
-
-            <button
-                id="clearBtn"
-                type="button"
-                title="Clear current chat"
-            >
-                Clear 🗑️
-            </button>
-
-        </footer>
-
-
-    </main>
-
-
-
-    <!-- =====================================================
-         APP ENGINE
-    ====================================================== -->
-
-    <script
-        src="app.js"
-        defer
-    ></script>
+  <script
+    src="app.js"
+    defer
+  ></script>
 
 </body>
 
