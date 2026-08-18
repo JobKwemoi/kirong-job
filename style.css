@@ -1,64 +1,51 @@
 /* =========================================================
-   ⚡ KIRONG AI — PREMIUM V5
-   Modern AI Interface • Glassmorphism • Mobile First
-   Chat • Shelves • Quick Actions • Voice • Attachments
+   ⚡ KIRONG AI — MODERN UI V5
+   Premium • Glass • Mobile First • Responsive
 ========================================================= */
 
 
 /* =========================================================
-   🎨 DESIGN SYSTEM
+   🎨 DESIGN TOKENS
 ========================================================= */
 
 :root {
 
-    --bg: #050509;
-    --bg-soft: #090910;
+    --bg: #070711;
+    --bg-2: #0b0b16;
     --surface: rgba(255,255,255,.045);
     --surface-2: rgba(255,255,255,.065);
-    --surface-3: rgba(255,255,255,.09);
+    --surface-hover: rgba(255,255,255,.095);
 
-    --border: rgba(255,255,255,.085);
-    --border-hover: rgba(255,255,255,.16);
+    --border: rgba(255,255,255,.09);
+    --border-light: rgba(255,255,255,.15);
 
     --primary: #8b5cf6;
-    --primary-2: #7c3aed;
-    --primary-dark: #5b21b6;
+    --primary-dark: #6d28d9;
     --primary-light: #a78bfa;
 
-    --text: #fafafa;
-    --text-soft: #d9dce5;
-    --muted: #8b91a1;
-    --muted-2: #656b7b;
+    --text: #f8fafc;
+    --text-soft: #d8ddea;
+    --muted: #8992a5;
 
-    --danger: #ef4444;
     --success: #22c55e;
+    --danger: #ef4444;
 
     --user-gradient:
         linear-gradient(
             135deg,
-            #7c3aed 0%,
-            #6d28d9 55%,
-            #5b21b6 100%
+            #7c3aed,
+            #5b21b6
         );
 
-    --glass:
-        rgba(9,9,16,.78);
+    --shadow:
+        0 30px 90px rgba(0,0,0,.5);
 
-    --shadow-sm:
-        0 8px 25px rgba(0,0,0,.18);
-
-    --shadow-md:
-        0 15px 45px rgba(0,0,0,.28);
-
-    --shadow-lg:
-        0 30px 90px rgba(0,0,0,.45);
-
-    --radius-sm: 10px;
-    --radius-md: 14px;
-    --radius-lg: 19px;
     --radius-xl: 26px;
+    --radius-lg: 19px;
+    --radius-md: 14px;
+    --radius-sm: 11px;
 
-    --shelf-width: 300px;
+    --shelf-width: 285px;
 
 }
 
@@ -71,6 +58,7 @@
 
     margin: 0;
     padding: 0;
+
     box-sizing: border-box;
 
 }
@@ -81,15 +69,6 @@ body {
 
     width: 100%;
     height: 100%;
-
-}
-
-
-html {
-
-    background: var(--bg);
-
-    color-scheme: dark;
 
 }
 
@@ -113,14 +92,14 @@ body {
 
         radial-gradient(
             circle at 5% 0%,
-            rgba(124,58,237,.16),
-            transparent 30%
+            rgba(139,92,246,.20),
+            transparent 28%
         ),
 
         radial-gradient(
-            circle at 95% 100%,
-            rgba(91,33,182,.13),
-            transparent 32%
+            circle at 100% 100%,
+            rgba(79,70,229,.15),
+            transparent 30%
         ),
 
         var(--bg);
@@ -129,13 +108,11 @@ body {
 
     -webkit-font-smoothing: antialiased;
 
-    text-rendering: optimizeLegibility;
-
 }
 
 
 /* =========================================================
-   🧠 MAIN APP
+   🧠 MAIN CONTAINER
 ========================================================= */
 
 .container {
@@ -162,56 +139,26 @@ body {
 
 
 /* =========================================================
-   ✨ SUBTLE BACKGROUND LIGHT
-========================================================= */
-
-.container::before {
-
-    content: "";
-
-    position: absolute;
-
-    width: 420px;
-    height: 420px;
-
-    top: -220px;
-    left: 50%;
-
-    transform: translateX(-50%);
-
-    background:
-        radial-gradient(
-            circle,
-            rgba(139,92,246,.08),
-            transparent 70%
-        );
-
-    pointer-events: none;
-
-    z-index: 0;
-
-}
-
-
-/* =========================================================
-   🖥️ DESKTOP APP FRAME
+   🖥️ DESKTOP FRAME
 ========================================================= */
 
 @media (min-width: 769px) {
 
     body {
 
-        padding: 18px;
+        display: grid;
+        place-items: center;
+
+        padding: 20px;
 
     }
 
+
     .container {
 
-        width: min(1220px, 100%);
+        width: min(1200px, 100%);
 
-        height: min(95dvh, 940px);
-
-        margin: auto;
+        height: min(94dvh, 920px);
 
         border:
             1px solid var(--border);
@@ -220,13 +167,13 @@ body {
             var(--radius-xl);
 
         box-shadow:
-            var(--shadow-lg);
+            var(--shadow);
 
         backdrop-filter:
-            blur(30px);
+            blur(25px);
 
         -webkit-backdrop-filter:
-            blur(30px);
+            blur(25px);
 
     }
 
@@ -241,7 +188,7 @@ body {
 
     position: relative;
 
-    height: 66px;
+    height: 68px;
 
     flex-shrink: 0;
 
@@ -251,17 +198,16 @@ body {
 
     justify-content: space-between;
 
-    padding:
-        0 16px;
+    padding: 0 16px;
 
     background:
-        rgba(6,6,12,.78);
+        rgba(7,7,17,.82);
 
     backdrop-filter:
-        blur(28px);
+        blur(25px);
 
     -webkit-backdrop-filter:
-        blur(28px);
+        blur(25px);
 
     border-bottom:
         1px solid var(--border);
@@ -272,7 +218,7 @@ body {
 
 
 /* =========================================================
-   HEADER LEFT
+   🧠 HEADER LEFT
 ========================================================= */
 
 .headerLeft {
@@ -281,7 +227,20 @@ body {
 
     align-items: center;
 
-    gap: 10px;
+    gap: 12px;
+
+    min-width: 0;
+
+}
+
+
+.brandArea {
+
+    display: flex;
+
+    align-items: center;
+
+    gap: 8px;
 
     min-width: 0;
 
@@ -294,21 +253,39 @@ body {
 
     font-weight: 850;
 
-    letter-spacing: -.65px;
+    letter-spacing: -.6px;
 
     white-space: nowrap;
 
+}
+
+
+.brandStatus {
+
+    display: inline-flex;
+
+    align-items: center;
+
+    gap: 4px;
+
+    padding: 4px 8px;
+
+    border-radius: 999px;
+
     background:
-        linear-gradient(
-            135deg,
-            #ffffff,
-            #c4b5fd
-        );
+        rgba(34,197,94,.08);
 
-    -webkit-background-clip: text;
-    background-clip: text;
+    border:
+        1px solid rgba(34,197,94,.16);
 
-    -webkit-text-fill-color: transparent;
+    color:
+        #7ee2a3;
+
+    font-size: 9px;
+
+    font-weight: 800;
+
+    white-space: nowrap;
 
 }
 
@@ -321,16 +298,14 @@ body {
 
     height: 36px;
 
-    max-width: 112px;
+    max-width: 110px;
 
-    padding:
-        0 10px;
+    padding: 0 10px;
 
     border:
         1px solid var(--border);
 
-    border-radius:
-        11px;
+    border-radius: 11px;
 
     background:
         rgba(255,255,255,.045);
@@ -346,8 +321,7 @@ body {
 
     cursor: pointer;
 
-    transition:
-        .2s ease;
+    transition: .2s ease;
 
 }
 
@@ -355,21 +329,7 @@ body {
 #languageSelect:hover {
 
     background:
-        rgba(255,255,255,.075);
-
-    border-color:
-        var(--border-hover);
-
-}
-
-
-#languageSelect option {
-
-    background:
-        #11111c;
-
-    color:
-        white;
+        rgba(255,255,255,.07);
 
 }
 
@@ -380,15 +340,34 @@ body {
         rgba(139,92,246,.65);
 
     box-shadow:
-        0 0 0 3px
-        rgba(139,92,246,.09);
+        0 0 0 3px rgba(139,92,246,.08);
+
+}
+
+
+#languageSelect option {
+
+    background: #11111d;
+
+    color: white;
 
 }
 
 
 /* =========================================================
-   🌙 THEME
+   🌙 HEADER ACTION
 ========================================================= */
+
+.headerActions {
+
+    display: flex;
+
+    align-items: center;
+
+    gap: 8px;
+
+}
+
 
 #themeBtn {
 
@@ -404,21 +383,18 @@ body {
     border:
         1px solid var(--border);
 
-    border-radius:
-        13px;
+    border-radius: 13px;
 
     background:
         rgba(255,255,255,.045);
 
-    color:
-        white;
+    color: white;
 
     font-size: 17px;
 
     cursor: pointer;
 
-    transition:
-        .25s cubic-bezier(.2,.8,.2,1);
+    transition: .25s ease;
 
 }
 
@@ -426,22 +402,13 @@ body {
 #themeBtn:hover {
 
     background:
-        rgba(139,92,246,.14);
+        rgba(139,92,246,.15);
 
     border-color:
         rgba(139,92,246,.45);
 
     transform:
-        rotate(10deg)
-        scale(1.03);
-
-}
-
-
-#themeBtn:active {
-
-    transform:
-        scale(.92);
+        rotate(12deg);
 
 }
 
@@ -452,8 +419,6 @@ body {
 
 #chatBox {
 
-    position: relative;
-
     flex: 1;
 
     min-height: 0;
@@ -461,32 +426,27 @@ body {
     overflow-y: auto;
 
     padding:
-        30px
-        clamp(16px,5vw,100px);
+        34px
+        clamp(16px,5vw,90px);
 
     display: flex;
 
     flex-direction: column;
 
-    gap: 19px;
+    gap: 18px;
 
     scroll-behavior: smooth;
 
-    overscroll-behavior:
-        contain;
-
-    z-index: 1;
+    overscroll-behavior: contain;
 
 }
 
 
-/* =========================================================
-   CHAT SCROLLBAR
-========================================================= */
+/* scrollbar */
 
 #chatBox::-webkit-scrollbar {
 
-    width: 7px;
+    width: 6px;
 
 }
 
@@ -501,7 +461,1637 @@ body {
 #chatBox::-webkit-scrollbar-thumb {
 
     background:
-        rgba(255,255,255,.10);
+        rgba(255,255,255,.12);
+
+    border-radius: 999px;
+
+}
+
+
+/* =========================================================
+   👋 WELCOME SCREEN
+========================================================= */
+
+.kirongWelcome {
+
+    width: min(650px, 100%);
+
+    margin:
+        auto;
+
+    padding:
+        35px 25px;
+
+    text-align: center;
+
+    animation:
+        welcomeIn .5s ease;
+
+}
+
+
+@keyframes welcomeIn {
+
+    from {
+
+        opacity: 0;
+
+        transform:
+            translateY(15px);
+
+    }
+
+    to {
+
+        opacity: 1;
+
+        transform:
+            translateY(0);
+
+    }
+
+}
+
+
+.kirongWelcomeLogo {
+
+    width: 64px;
+    height: 64px;
+
+    margin:
+        0 auto 20px;
+
+    display: grid;
+
+    place-items: center;
+
+    border-radius: 20px;
+
+    background:
+
+        linear-gradient(
+            135deg,
+            var(--primary),
+            var(--primary-dark)
+        );
+
+    box-shadow:
+
+        0 15px 45px
+        rgba(109,40,217,.35);
+
+    font-size: 28px;
+
+}
+
+
+.kirongWelcome h2 {
+
+    margin-bottom: 12px;
+
+    font-size:
+        clamp(24px,5vw,34px);
+
+    font-weight: 850;
+
+    letter-spacing: -.9px;
+
+}
+
+
+.kirongWelcome h2 span {
+
+    background:
+
+        linear-gradient(
+            135deg,
+            #a78bfa,
+            #c4b5fd
+        );
+
+    -webkit-background-clip: text;
+    background-clip: text;
+
+    color: transparent;
+
+}
+
+
+.kirongWelcome p {
+
+    max-width: 500px;
+
+    margin: auto;
+
+    color:
+        var(--muted);
+
+    font-size: 14px;
+
+    line-height: 1.7;
+
+}
+
+
+.welcomeHint {
+
+    width: fit-content;
+
+    margin:
+        22px auto 0;
+
+    padding:
+        10px 15px;
+
+    display: flex;
+
+    align-items: center;
+
+    gap: 8px;
+
+    border:
+        1px solid var(--border);
+
+    border-radius: 999px;
+
+    background:
+        rgba(255,255,255,.035);
+
+    color:
+        var(--text-soft);
+
+    font-size: 11px;
+
+}
+
+
+/* =========================================================
+   💬 MESSAGES
+========================================================= */
+
+.message {
+
+    position: relative;
+
+    max-width:
+        min(760px,88%);
+
+    padding:
+        14px 17px;
 
     border-radius:
-        999px;
+        var(--radius-lg);
+
+    font-size: 15px;
+
+    line-height: 1.65;
+
+    word-break: break-word;
+
+    overflow-wrap: anywhere;
+
+    animation:
+        messageIn .25s ease;
+
+}
+
+
+@keyframes messageIn {
+
+    from {
+
+        opacity: 0;
+
+        transform:
+            translateY(8px)
+            scale(.99);
+
+    }
+
+    to {
+
+        opacity: 1;
+
+        transform:
+            translateY(0)
+            scale(1);
+
+    }
+
+}
+
+
+/* =========================================================
+   🤖 AI MESSAGE
+========================================================= */
+
+.message.ai {
+
+    align-self: flex-start;
+
+    color:
+        var(--text-soft);
+
+    background:
+
+        linear-gradient(
+            145deg,
+            rgba(255,255,255,.065),
+            rgba(255,255,255,.025)
+        );
+
+    border:
+        1px solid var(--border);
+
+    border-bottom-left-radius: 6px;
+
+    box-shadow:
+        0 8px 30px rgba(0,0,0,.08);
+
+}
+
+
+/* AI badge */
+
+.message.ai::before {
+
+    content: "K";
+
+    position: absolute;
+
+    left: -10px;
+    top: 14px;
+
+    width: 22px;
+    height: 22px;
+
+    display: grid;
+
+    place-items: center;
+
+    border-radius: 7px;
+
+    background:
+
+        linear-gradient(
+            135deg,
+            var(--primary),
+            var(--primary-dark)
+        );
+
+    color: white;
+
+    font-size: 10px;
+
+    font-weight: 900;
+
+    box-shadow:
+        0 4px 15px
+        rgba(109,40,217,.4);
+
+}
+
+
+/* =========================================================
+   👤 USER MESSAGE
+========================================================= */
+
+.message.user {
+
+    align-self: flex-end;
+
+    color: white;
+
+    background:
+        var(--user-gradient);
+
+    border:
+        1px solid
+        rgba(167,139,250,.28);
+
+    border-bottom-right-radius: 6px;
+
+    box-shadow:
+        0 12px 35px
+        rgba(76,29,149,.22);
+
+}
+
+
+/* =========================================================
+   ✍️ MESSAGE TEXT
+========================================================= */
+
+.message p {
+
+    margin: 0;
+
+    white-space: pre-wrap;
+
+}
+
+
+.message strong {
+
+    color: white;
+
+}
+
+
+/* =========================================================
+   💻 CODE
+========================================================= */
+
+.message pre {
+
+    margin-top: 12px;
+
+    padding: 15px;
+
+    overflow-x: auto;
+
+    border-radius: 13px;
+
+    background:
+        rgba(0,0,0,.48);
+
+    border:
+        1px solid
+        rgba(255,255,255,.08);
+
+    font-family:
+        "SFMono-Regular",
+        Consolas,
+        monospace;
+
+    font-size: 13px;
+
+    line-height: 1.6;
+
+}
+
+
+.message code {
+
+    font-family:
+        "SFMono-Regular",
+        Consolas,
+        monospace;
+
+}
+
+
+/* =========================================================
+   🎨 IMAGES
+========================================================= */
+
+.message img {
+
+    display: block;
+
+    width: 100%;
+
+    max-width: 480px;
+
+    margin-top: 14px;
+
+    border-radius: 18px;
+
+    border:
+        1px solid var(--border);
+
+    box-shadow:
+        0 20px 50px rgba(0,0,0,.35);
+
+}
+
+
+/* =========================================================
+   🧠 THINKING
+========================================================= */
+
+#thinking {
+
+    flex-shrink: 0;
+
+    padding:
+        6px
+        clamp(16px,5vw,90px);
+
+    color:
+        var(--muted);
+
+    font-size: 12px;
+
+    font-style: italic;
+
+}
+
+
+#thinking:not(.hidden)::after {
+
+    content: "...";
+
+    animation:
+        thinkingDots 1.2s infinite;
+
+}
+
+
+@keyframes thinkingDots {
+
+    0% {
+        opacity: .2;
+    }
+
+    50% {
+        opacity: 1;
+    }
+
+    100% {
+        opacity: .2;
+    }
+
+}
+
+
+.hidden {
+
+    display: none !important;
+
+}
+
+
+/* =========================================================
+   ⚡ QUICK ACTIONS
+========================================================= */
+
+.quickActions {
+
+    flex-shrink: 0;
+
+    display: flex;
+
+    align-items: center;
+
+    gap: 8px;
+
+    padding:
+        9px
+        clamp(12px,5vw,90px);
+
+    overflow-x: auto;
+
+    background:
+        rgba(7,7,17,.86);
+
+    border-top:
+        1px solid var(--border);
+
+    scrollbar-width: none;
+
+}
+
+
+.quickActions::-webkit-scrollbar {
+
+    display: none;
+
+}
+
+
+/* =========================================================
+   ⚡ QUICK BUTTON
+========================================================= */
+
+.quickBtn,
+#locationBtn {
+
+    flex-shrink: 0;
+
+    height: 35px;
+
+    padding:
+        0 13px;
+
+    display: inline-flex;
+
+    align-items: center;
+
+    justify-content: center;
+
+    gap: 5px;
+
+    border:
+        1px solid var(--border);
+
+    border-radius: 999px;
+
+    background:
+        rgba(255,255,255,.045);
+
+    color:
+        var(--text-soft);
+
+    font-size: 11px;
+
+    font-weight: 700;
+
+    white-space: nowrap;
+
+    cursor: pointer;
+
+    transition: .2s ease;
+
+}
+
+
+.quickBtn:hover,
+#locationBtn:hover {
+
+    background:
+        rgba(139,92,246,.14);
+
+    border-color:
+        rgba(139,92,246,.5);
+
+    color: white;
+
+    transform:
+        translateY(-2px);
+
+}
+
+
+.quickBtn:active,
+#locationBtn:active {
+
+    transform:
+        scale(.95);
+
+}
+
+
+/* =========================================================
+   📝 INPUT AREA
+========================================================= */
+
+.inputArea {
+
+    flex-shrink: 0;
+
+    display: flex;
+
+    align-items: center;
+
+    gap: 7px;
+
+    padding:
+        10px
+        clamp(10px,5vw,90px);
+
+    background:
+        rgba(7,7,17,.94);
+
+    backdrop-filter:
+        blur(25px);
+
+    -webkit-backdrop-filter:
+        blur(25px);
+
+    border-top:
+        1px solid var(--border);
+
+    z-index: 30;
+
+}
+
+
+/* =========================================================
+   🎤 VOICE SELECT
+========================================================= */
+
+#voiceSelect {
+
+    width: 55px;
+    height: 43px;
+
+    padding: 0 5px;
+
+    border:
+        1px solid var(--border);
+
+    border-radius: 12px;
+
+    background:
+        rgba(255,255,255,.045);
+
+    color: white;
+
+    font-size: 10px;
+
+    font-weight: 800;
+
+    outline: none;
+
+}
+
+
+#voiceSelect option {
+
+    background: #11111d;
+
+    color: white;
+
+}
+
+
+/* =========================================================
+   📎 UPLOAD + 🎤 MIC
+========================================================= */
+
+#uploadBtn,
+#micBtn {
+
+    width: 43px;
+    height: 43px;
+
+    flex-shrink: 0;
+
+    display: grid;
+
+    place-items: center;
+
+    border:
+        1px solid var(--border);
+
+    border-radius: 12px;
+
+    background:
+        rgba(255,255,255,.045);
+
+    color: white;
+
+    font-size: 17px;
+
+    cursor: pointer;
+
+    transition: .2s ease;
+
+}
+
+
+#uploadBtn:hover,
+#micBtn:hover {
+
+    background:
+        rgba(139,92,246,.14);
+
+    border-color:
+        rgba(139,92,246,.5);
+
+    transform:
+        translateY(-1px);
+
+}
+
+
+/* =========================================================
+   💬 INPUT
+========================================================= */
+
+#userInput {
+
+    flex: 1;
+
+    min-width: 0;
+
+    height: 43px;
+
+    padding:
+        0 15px;
+
+    border:
+        1px solid var(--border);
+
+    border-radius: 13px;
+
+    background:
+        rgba(255,255,255,.045);
+
+    color: white;
+
+    font-size: 14px;
+
+    outline: none;
+
+    transition: .25s ease;
+
+}
+
+
+#userInput::placeholder {
+
+    color:
+        #70798b;
+
+}
+
+
+#userInput:focus {
+
+    border-color:
+        rgba(139,92,246,.65);
+
+    background:
+        rgba(255,255,255,.06);
+
+    box-shadow:
+        0 0 0 3px
+        rgba(139,92,246,.08);
+
+}
+
+
+/* =========================================================
+   ➤ SEND
+========================================================= */
+
+#sendBtn {
+
+    width: 46px;
+    height: 43px;
+
+    flex-shrink: 0;
+
+    display: grid;
+
+    place-items: center;
+
+    border: none;
+
+    border-radius: 13px;
+
+    background:
+
+        linear-gradient(
+            135deg,
+            var(--primary),
+            var(--primary-dark)
+        );
+
+    color: white;
+
+    font-size: 18px;
+
+    font-weight: 900;
+
+    cursor: pointer;
+
+    box-shadow:
+        0 8px 25px
+        rgba(109,40,217,.3);
+
+    transition: .2s ease;
+
+}
+
+
+#sendBtn:hover {
+
+    transform:
+        translateY(-2px);
+
+    box-shadow:
+        0 12px 30px
+        rgba(109,40,217,.45);
+
+}
+
+
+#sendBtn:active {
+
+    transform:
+        scale(.94);
+
+}
+
+
+/* =========================================================
+   🗂️ CHAT SHELVES
+========================================================= */
+
+#kirongShelves {
+
+    position: fixed;
+
+    top: 0;
+    left: 0;
+
+    width: var(--shelf-width);
+    height: 100dvh;
+
+    padding: 16px;
+
+    background:
+        rgba(10,10,20,.97);
+
+    backdrop-filter:
+        blur(30px);
+
+    -webkit-backdrop-filter:
+        blur(30px);
+
+    border-right:
+        1px solid var(--border);
+
+    box-shadow:
+        20px 0 60px rgba(0,0,0,.4);
+
+    transform:
+        translateX(-105%);
+
+    transition:
+        transform .28s cubic-bezier(.4,0,.2,1);
+
+    z-index: 1000;
+
+    overflow-y: auto;
+
+}
+
+
+#kirongShelves.open {
+
+    transform:
+        translateX(0);
+
+}
+
+
+/* =========================================================
+   🗂️ SHELF OVERLAY
+========================================================= */
+
+#kirongShelvesOverlay {
+
+    position: fixed;
+
+    inset: 0;
+
+    background:
+        rgba(0,0,0,.55);
+
+    opacity: 0;
+
+    visibility: hidden;
+
+    transition: .25s ease;
+
+    z-index: 999;
+
+    backdrop-filter:
+        blur(3px);
+
+}
+
+
+#kirongShelvesOverlay.open {
+
+    opacity: 1;
+
+    visibility: visible;
+
+}
+
+
+/* =========================================================
+   🧠 SHELF HEADER
+========================================================= */
+
+.kirongShelvesHeader {
+
+    height: 48px;
+
+    display: flex;
+
+    align-items: center;
+
+    justify-content: space-between;
+
+    margin-bottom: 12px;
+
+}
+
+
+.kirongShelvesHeader strong {
+
+    font-size: 16px;
+
+}
+
+
+#closeShelvesBtn {
+
+    width: 36px;
+    height: 36px;
+
+    display: grid;
+
+    place-items: center;
+
+    border:
+        1px solid var(--border);
+
+    border-radius: 11px;
+
+    background:
+        rgba(255,255,255,.045);
+
+    color: white;
+
+    cursor: pointer;
+
+}
+
+
+/* =========================================================
+   ➕ NEW CHAT
+========================================================= */
+
+.kirongNewChatBtn {
+
+    width: 100%;
+
+    height: 44px;
+
+    margin-bottom: 14px;
+
+    border:
+        1px solid rgba(139,92,246,.35);
+
+    border-radius: 13px;
+
+    background:
+
+        linear-gradient(
+            135deg,
+            rgba(139,92,246,.18),
+            rgba(109,40,217,.10)
+        );
+
+    color: white;
+
+    font-size: 13px;
+
+    font-weight: 750;
+
+    cursor: pointer;
+
+    transition: .2s ease;
+
+}
+
+
+.kirongNewChatBtn:hover {
+
+    background:
+        rgba(139,92,246,.25);
+
+    transform:
+        translateY(-1px);
+
+}
+
+
+/* =========================================================
+   💬 CHAT LIST
+========================================================= */
+
+.kirongChatList {
+
+    display: flex;
+
+    flex-direction: column;
+
+    gap: 6px;
+
+}
+
+
+.kirongChatItem {
+
+    min-height: 48px;
+
+    display: flex;
+
+    align-items: center;
+
+    gap: 8px;
+
+    padding:
+        8px 9px;
+
+    border:
+        1px solid transparent;
+
+    border-radius: 12px;
+
+    color:
+        var(--text-soft);
+
+    cursor: pointer;
+
+    transition: .2s ease;
+
+}
+
+
+.kirongChatItem:hover {
+
+    background:
+        rgba(255,255,255,.06);
+
+    border-color:
+        var(--border);
+
+}
+
+
+.kirongChatItem.active {
+
+    background:
+        rgba(139,92,246,.13);
+
+    border-color:
+        rgba(139,92,246,.28);
+
+}
+
+
+.kirongChatTitle {
+
+    flex: 1;
+
+    min-width: 0;
+
+    overflow: hidden;
+
+    white-space: nowrap;
+
+    text-overflow: ellipsis;
+
+    font-size: 12px;
+
+}
+
+
+.kirongDeleteChat {
+
+    width: 32px;
+    height: 32px;
+
+    flex-shrink: 0;
+
+    display: grid;
+
+    place-items: center;
+
+    border: none;
+
+    border-radius: 9px;
+
+    background: transparent;
+
+    color:
+        var(--muted);
+
+    cursor: pointer;
+
+    opacity: .7;
+
+}
+
+
+.kirongDeleteChat:hover {
+
+    background:
+        rgba(239,68,68,.12);
+
+    color:
+        #ff7777;
+
+    opacity: 1;
+
+}
+
+
+/* =========================================================
+   ☰ SHELVES BUTTON
+========================================================= */
+
+#kirongOpenShelvesBtn {
+
+    position: fixed;
+
+    left: 10px;
+
+    top: 82px;
+
+    width: 42px;
+    height: 42px;
+
+    display: grid;
+
+    place-items: center;
+
+    border:
+        1px solid rgba(255,255,255,.13);
+
+    border-radius: 13px;
+
+    background:
+        rgba(12,12,23,.9);
+
+    backdrop-filter:
+        blur(15px);
+
+    color: white;
+
+    font-size: 19px;
+
+    cursor: pointer;
+
+    box-shadow:
+        0 8px 25px rgba(0,0,0,.35);
+
+    z-index: 80;
+
+    transition: .2s ease;
+
+}
+
+
+#kirongOpenShelvesBtn:hover {
+
+    background:
+        rgba(139,92,246,.18);
+
+    border-color:
+        rgba(139,92,246,.5);
+
+    transform:
+        scale(1.04);
+
+}
+
+
+/* =========================================================
+   🦶 FOOTER
+========================================================= */
+
+.footerButtons {
+
+    flex-shrink: 0;
+
+    display: flex;
+
+    gap: 8px;
+
+    padding:
+        7px
+        clamp(10px,5vw,90px)
+        11px;
+
+    background:
+        rgba(7,7,17,.94);
+
+}
+
+
+#exportBtn,
+#clearBtn {
+
+    flex: 1;
+
+    height: 34px;
+
+    border:
+        1px solid var(--border);
+
+    border-radius: 10px;
+
+    background:
+        rgba(255,255,255,.035);
+
+    color:
+        var(--muted);
+
+    font-size: 10px;
+
+    font-weight: 700;
+
+    cursor: pointer;
+
+    transition: .2s ease;
+
+}
+
+
+#exportBtn:hover,
+#clearBtn:hover {
+
+    color: white;
+
+    background:
+        rgba(255,255,255,.075);
+
+}
+
+
+/* =========================================================
+   📱 MOBILE
+========================================================= */
+
+@media (max-width: 768px) {
+
+    .header {
+
+        height: 62px;
+
+        padding:
+            0 10px 0 58px;
+
+    }
+
+
+    .headerLeft {
+
+        gap: 7px;
+
+        min-width: 0;
+
+    }
+
+
+    .brandArea {
+
+        gap: 5px;
+
+    }
+
+
+    .header h1 {
+
+        font-size: 15px;
+
+    }
+
+
+    .brandStatus {
+
+        padding:
+            3px 6px;
+
+        font-size: 8px;
+
+    }
+
+
+    #languageSelect {
+
+        max-width: 82px;
+
+        height: 33px;
+
+        padding: 0 7px;
+
+        font-size: 10px;
+
+    }
+
+
+    #themeBtn {
+
+        width: 37px;
+        height: 37px;
+
+    }
+
+
+    #chatBox {
+
+        padding:
+            20px 12px;
+
+        gap: 14px;
+
+    }
+
+
+    .kirongWelcome {
+
+        padding:
+            25px 12px;
+
+    }
+
+
+    .kirongWelcomeLogo {
+
+        width: 56px;
+        height: 56px;
+
+        margin-bottom: 17px;
+
+        border-radius: 18px;
+
+        font-size: 24px;
+
+    }
+
+
+    .kirongWelcome h2 {
+
+        font-size: 24px;
+
+    }
+
+
+    .kirongWelcome p {
+
+        font-size: 13px;
+
+    }
+
+
+    .welcomeHint {
+
+        font-size: 10px;
+
+        padding:
+            9px 12px;
+
+    }
+
+
+    .message {
+
+        max-width: 93%;
+
+        font-size: 14px;
+
+        padding:
+            12px 14px;
+
+    }
+
+
+    .message.ai::before {
+
+        display: none;
+
+    }
+
+
+    .quickActions {
+
+        padding:
+            8px 10px;
+
+    }
+
+
+    .quickBtn,
+    #locationBtn {
+
+        height: 34px;
+
+        padding:
+            0 11px;
+
+        font-size: 10px;
+
+    }
+
+
+    .inputArea {
+
+        padding:
+            8px;
+
+        gap: 6px;
+
+    }
+
+
+    #voiceSelect {
+
+        display: none;
+
+    }
+
+
+    #uploadBtn,
+    #micBtn {
+
+        width: 40px;
+        height: 40px;
+
+        border-radius: 11px;
+
+    }
+
+
+    #userInput {
+
+        height: 40px;
+
+        border-radius: 12px;
+
+        padding:
+            0 12px;
+
+        font-size: 13px;
+
+    }
+
+
+    #sendBtn {
+
+        width: 42px;
+        height: 40px;
+
+        border-radius: 12px;
+
+    }
+
+
+    .footerButtons {
+
+        padding:
+            6px 8px 9px;
+
+    }
+
+
+    #kirongOpenShelvesBtn {
+
+        left: 9px;
+
+        top: 72px;
+
+        width: 42px;
+        height: 42px;
+
+    }
+
+
+    #kirongShelves {
+
+        width:
+            min(285px,85vw);
+
+    }
+
+}
+
+
+/* =========================================================
+   📱 SMALL PHONES
+========================================================= */
+
+@media (max-width: 390px) {
+
+    .header {
+
+        padding-left: 56px;
+
+    }
+
+
+    .header h1 {
+
+        font-size: 13px;
+
+    }
+
+
+    .brandStatus {
+
+        display: none;
+
+    }
+
+
+    #languageSelect {
+
+        max-width: 75px;
+
+    }
+
+
+    #themeBtn {
+
+        width: 35px;
+        height: 35px;
+
+    }
+
+
+    .kirongWelcome h2 {
+
+        font-size: 21px;
+
+    }
+
+
+    .kirongWelcome p {
+
+        font-size: 12px;
+
+    }
+
+
+    #uploadBtn,
+    #micBtn {
+
+        width: 38px;
+        height: 38px;
+
+    }
+
+
+    #sendBtn {
+
+        width: 40px;
+
+    }
+
+}
+
+
+/* =========================================================
+   ♿ ACCESSIBILITY
+========================================================= */
+
+button:focus-visible,
+select:focus-visible,
+input:focus-visible {
+
+    outline:
+        2px solid
+        rgba(167,139,250,.8);
+
+    outline-offset:
+        2px;
+
+}
+
+
+/* =========================================================
+   🖱️ TOUCH
+========================================================= */
+
+button,
+select,
+input {
+
+    -webkit-tap-highlight-color:
+        transparent;
+
+}
+
+
+button {
+
+    user-select: none;
+
+}
+
+
+/* =========================================================
+   🧘 REDUCED MOTION
+========================================================= */
+
+@media (prefers-reduced-motion: reduce) {
+
+    *,
+    *::before,
+    *::after {
+
+        animation-duration:
+            .01ms !important;
+
+        animation-iteration-count:
+            1 !important;
+
+        transition-duration:
+            .01ms !important;
+
+        scroll-behavior:
+            auto !important;
+
+    }
+
+}
