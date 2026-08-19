@@ -2,36 +2,17 @@
 <html lang="en">
 
 <head>
-
   <meta charset="UTF-8">
-
-  <meta
-    name="viewport"
-    content="width=device-width, initial-scale=1.0, user-scalable=no"
-  >
-
-  <meta
-    name="theme-color"
-    content="#07060d"
-  >
-
-  <meta
-    name="description"
-    content="Kirong AI — an intelligent AI assistant built by Kirong Job Kwemoi."
-  >
-
-  <meta
-    name="author"
-    content="Kirong Job Kwemoi"
-  >
-
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="theme-color" content="#07060d">
+  <meta name="description" content="Kirong AI — an intelligent AI assistant built by Kirong Job Kwemoi.">
+  <meta name="author" content="Kirong Job Kwemoi">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  
   <title>Kirong AI — Intelligent Assistant</title>
-
-  <link
-    rel="stylesheet"
-    href="style.css"
-  >
-
+  <link rel="stylesheet" href="style.css">
+  <link rel="manifest" href="manifest.json"> 
 </head>
 
 <body>
@@ -39,488 +20,135 @@
   <!-- =====================================================
        🌌 AMBIENT BACKGROUND
   ====================================================== -->
-
-  <div
-    class="ambient ambientOne"
-    aria-hidden="true"
-  ></div>
-
-  <div
-    class="ambient ambientTwo"
-    aria-hidden="true"
-  ></div>
-
-  <div
-    class="ambient ambientThree"
-    aria-hidden="true"
-  ></div>
-
+  <div class="ambient ambientOne" aria-hidden="true"></div>
+  <div class="ambient ambientTwo" aria-hidden="true"></div>
+  <div class="ambient ambientThree" aria-hidden="true"></div>
 
   <!-- =====================================================
        🧠 MAIN APPLICATION
   ====================================================== -->
-
   <main class="container">
-
 
     <!-- ===================================================
          🧭 HEADER
     ==================================================== -->
-
     <header class="header">
-
       <div class="headerLeft">
-
         <!-- BRAND -->
-
         <div class="brandArea">
-
-          <div
-            class="brandLogo"
-            aria-hidden="true"
-          >
-            ⚡
-          </div>
-
+          <div class="brandLogo" aria-hidden="true">⚡</div>
           <div class="brandInfo">
-
-            <h1>
-              Kirong AI
-            </h1>
-
+            <h1>Kirong AI</h1>
             <span class="brandStatus">
-
-              <span
-                class="statusDot"
-                aria-hidden="true"
-              ></span>
-
+              <span class="statusDot" aria-hidden="true"></span>
               Online
-
             </span>
-
           </div>
-
         </div>
 
-
         <!-- LANGUAGE -->
-
-        <select
-          id="languageSelect"
-          aria-label="Select language"
-          title="Select language"
-        >
-
-          <option value="English">
-            English
-          </option>
-
-          <option value="Swahili">
-            Kiswahili
-          </option>
-
-          <option value="French">
-            Français
-          </option>
-
-          <option value="Spanish">
-            Español
-          </option>
-
-          <option value="Hindi">
-            हिन्दी
-          </option>
-
+        <select id="languageSelect" aria-label="Select language" title="Select language">
+          <option value="English">English</option>
+          <option value="Swahili">Kiswahili</option>
+          <option value="French">Français</option>
+          <option value="Spanish">Español</option>
+          <option value="Hindi">हिन्दी</option>
         </select>
-
       </div>
 
-
-      <!-- =================================================
-           HEADER ACTIONS
-      ================================================== -->
-
+      <!-- HEADER ACTIONS -->
       <div class="headerActions">
-
-        <!--
-          IMPORTANT:
-          This is NOT New Chat.
-
-          It opens the Chats Shelf.
-        -->
-
-        <button
-          id="newChatBtn"
-          type="button"
-          aria-label="Open chats"
-          title="Open chats"
-        >
-          ＋
-        </button>
-
-
-        <button
-          id="themeBtn"
-          type="button"
-          aria-label="Toggle theme"
-          title="Toggle theme"
-        >
-          🌙
-        </button>
-
+        <button id="newChatBtn" type="button" aria-label="Open chats" title="Open chats">＋</button>
+        <button id="themeBtn" type="button" aria-label="Toggle theme" title="Toggle theme">🌙</button>
       </div>
-
     </header>
-
 
     <!-- ===================================================
          💬 CHAT AREA
     ==================================================== -->
+    <section id="chatBox" class="chatBox" aria-live="polite" aria-label="Kirong AI conversation">
+      
+      <div class="kirongWelcome" id="kirongWelcome">
+        <div class="kirongWelcomeLogo" aria-hidden="true">⚡</div>
+        <div class="welcomeEyebrow"><span></span> KIRONG AI CORE <span></span></div>
+        <h2>Hello, I'm <span>Kirong AI</span> 👋</h2>
+        <p>Your intelligent AI assistant for <strong>coding</strong>, <strong>learning</strong>, <strong>creativity</strong>, <strong>business</strong> and everyday tasks.</p>
 
-    <section
-      id="chatBox"
-      class="chatBox"
-      aria-live="polite"
-      aria-label="Kirong AI conversation"
-    >
-
-      <div
-        class="kirongWelcome"
-        id="kirongWelcome"
-      >
-
-        <div
-          class="kirongWelcomeLogo"
-          aria-hidden="true"
-        >
-          ⚡
+        <!-- UPGRADE: WELCOME CHIPS -->
+        <div class="welcomeChips">
+          <button onclick="quickFill('Explain ')">🧠 Explain</button>
+          <button onclick="quickFill('Write code for ')">💻 Code</button>
+          <button onclick="quickFill('Generate image of ')">🎨 Image</button>
+          <button onclick="quickFill('Give me business ideas for ')">💼 Business</button>
         </div>
-
-
-        <div class="welcomeEyebrow">
-
-          <span></span>
-
-          KIRONG AI CORE
-
-          <span></span>
-
-        </div>
-
-
-        <h2>
-
-          Hello, I'm
-
-          <span>
-            Kirong AI
-          </span>
-
-          👋
-
-        </h2>
-
-
-        <p>
-
-          Your intelligent AI assistant for
-
-          <strong>coding</strong>,
-          <strong>learning</strong>,
-          <strong>creativity</strong>,
-          <strong>business</strong>
-
-          and everyday tasks.
-
-        </p>
-
-
-        <div class="welcomeHint">
-
-          <span
-            class="hintIcon"
-            aria-hidden="true"
-          >
-            ✨
-          </span>
-
-          <span>
-            What can I help you with today?
-          </span>
-
-        </div>
-
       </div>
-
 
       <!-- THINKING -->
-
-      <div
-        id="thinking"
-        class="thinking hidden"
-        aria-live="polite"
-      >
-
-        <div class="thinkingOrb">
-          ⚡
-        </div>
-
+      <div id="thinking" class="thinking hidden" aria-live="polite">
+        <div class="thinkingOrb">⚡</div>
         <div class="thinkingContent">
-
-          <span>
-            Kirong AI is thinking
-          </span>
-
-          <div class="thinkingDots">
-
-            <i></i>
-            <i></i>
-            <i></i>
-
-          </div>
-
+          <span>Kirong AI is thinking</span>
+          <div class="thinkingDots"><i></i><i></i><i></i></div>
         </div>
-
       </div>
-
     </section>
-
 
     <!-- ===================================================
          ⚡ QUICK ACTIONS
     ==================================================== -->
-
-    <nav
-      class="quickActions"
-      aria-label="Quick actions"
-    >
-
-      <button
-        class="quickBtn"
-        data-action="Code"
-        type="button"
-      >
-        <span>💻</span>
-        Code
-      </button>
-
-      <button
-        class="quickBtn"
-        data-action="Explain"
-        type="button"
-      >
-        <span>🧠</span>
-        Explain
-      </button>
-
-      <button
-        class="quickBtn"
-        data-action="Write"
-        type="button"
-      >
-        <span>✍️</span>
-        Write
-      </button>
-
-      <button
-        class="quickBtn"
-        data-action="Image"
-        type="button"
-      >
-        <span>🎨</span>
-        Image
-      </button>
-
-      <button
-        class="quickBtn"
-        data-action="Email"
-        type="button"
-      >
-        <span>📧</span>
-        Email
-      </button>
-
-      <button
-        class="quickBtn"
-        data-action="Business"
-        type="button"
-      >
-        <span>💼</span>
-        Business
-      </button>
-
-      <button
-        class="quickBtn"
-        data-action="Study"
-        type="button"
-      >
-        <span>📚</span>
-        Study
-      </button>
-
-      <button
-        class="quickBtn"
-        data-action="Translate"
-        type="button"
-      >
-        <span>🌍</span>
-        Translate
-      </button>
-
-      <button
-        class="quickBtn"
-        data-action="Analyze"
-        type="button"
-      >
-        <span>📊</span>
-        Analyze
-      </button>
-
-      <button
-        class="quickBtn"
-        data-action="Developer"
-        type="button"
-      >
-        <span>🧑🏽‍💻</span>
-        Developer
-      </button>
-
-      <button
-        class="quickBtn"
-        data-action="Ideas"
-        type="button"
-      >
-        <span>💡</span>
-        Ideas
-      </button>
-
-      <button
-        class="quickBtn"
-        data-action="Summarize"
-        type="button"
-      >
-        <span>📝</span>
-        Summarize
-      </button>
-
-      <button
-        id="locationBtn"
-        type="button"
-        aria-label="Share location"
-        title="Share location"
-      >
-        📍
-      </button>
-
+    <nav class="quickActions" aria-label="Quick actions">
+      <button class="quickBtn" data-action="Code" type="button"><span>💻</span>Code</button>
+      <button class="quickBtn" data-action="Explain" type="button"><span>🧠</span>Explain</button>
+      <button class="quickBtn" data-action="Write" type="button"><span>✍️</span>Write</button>
+      <button class="quickBtn" data-action="Image" type="button"><span>🎨</span>Image</button>
+      <button class="quickBtn" data-action="Email" type="button"><span>📧</span>Email</button>
+      <button class="quickBtn" data-action="Business" type="button"><span>💼</span>Business</button>
+      <button class="quickBtn" data-action="Study" type="button"><span>📚</span>Study</button>
+      <button class="quickBtn" data-action="Translate" type="button"><span>🌍</span>Translate</button>
+      <button class="quickBtn" data-action="Analyze" type="button"><span>📊</span>Analyze</button>
+      <button class="quickBtn" data-action="Developer" type="button"><span>🧑🏽‍💻</span>Developer</button>
+      <button class="quickBtn" data-action="Ideas" type="button"><span>💡</span>Ideas</button>
+      <button class="quickBtn" data-action="Summarize" type="button"><span>📝</span>Summarize</button>
+      <button id="locationBtn" type="button" aria-label="Share location" title="Share location">📍</button>
     </nav>
 
-
     <!-- ===================================================
-         💬 INPUT
+         💬 INPUT AREA - GLASS
     ==================================================== -->
-
-    <form
-      class="inputArea"
-      id="chatForm"
-      autocomplete="off"
-    >
-
-      <select
-        id="voiceSelect"
-        aria-label="Voice language"
-      >
-
-        <option value="en-US">
-          EN
-        </option>
-
-        <option value="sw-KE">
-          SW
-        </option>
-
+    <form class="inputArea" id="chatForm" autocomplete="off">
+      <select id="voiceSelect" aria-label="Voice language">
+        <option value="en-US">EN</option>
+        <option value="sw-KE">SW</option>
       </select>
 
+      <button id="uploadBtn" type="button" aria-label="Upload file">📎</button>
+      <input type="file" id="fileInput" hidden accept=".txt,.pdf,.doc,.docx,.csv,.json,.js,.html,.css,.py,.md,image/*">
 
-      <button
-        id="uploadBtn"
-        type="button"
-        aria-label="Upload file"
-      >
-        📎
-      </button>
+      <input type="text" id="userInput" placeholder="Message Kirong AI..." autocomplete="off" maxlength="4000" aria-label="Message Kirong AI">
 
-
-      <input
-        type="file"
-        id="fileInput"
-        hidden
-        accept=".txt,.pdf,.doc,.docx,.csv,.json,.js,.html,.css,.py,.md,image/*"
-      >
-
-
-      <input
-        type="text"
-        id="userInput"
-        placeholder="Message Kirong AI..."
-        autocomplete="off"
-        maxlength="4000"
-        aria-label="Message Kirong AI"
-      >
-
-
-      <button
-        id="micBtn"
-        type="button"
-        aria-label="Voice input"
-      >
-        🎤
-      </button>
-
-
-      <button
-        id="sendBtn"
-        type="submit"
-        aria-label="Send message"
-      >
-        ➤
-      </button>
-
+      <button id="micBtn" type="button" aria-label="Voice input">🎤</button>
+      <button id="sendBtn" type="submit" aria-label="Send message">➤</button>
     </form>
-
 
     <!-- ===================================================
          FOOTER
     ==================================================== -->
-
     <footer class="footerButtons">
-
-      <button
-        id="exportBtn"
-        type="button"
-      >
-        <span>💾</span>
-        Export
-      </button>
-
-      <button
-        id="clearBtn"
-        type="button"
-      >
-        <span>🗑️</span>
-        Clear
-      </button>
-
+      <button id="exportBtn" type="button"><span>💾</span>Export</button>
+      <button id="clearBtn" type="button"><span>🗑️</span>Clear</button>
     </footer>
 
   </main>
 
-
-  <script
-    src="app.js"
-    defer
-  ></script>
+  <script src="app.js" defer></script>
+  
+  <script>
+    // Helper for welcome chips
+    function quickFill(text) {
+      document.getElementById('userInput').value = text;
+      document.getElementById('userInput').focus();
+    }
+  </script>
 
 </body>
-
 </html>
