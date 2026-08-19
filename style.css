@@ -770,48 +770,4 @@ body::after {
         linear-gradient(
             145deg,
             rgba(139,92,246,.95),
-            rgba(76,29,149,.95)
-        );
-
-    color:
-        white;
-
-    font-size:
-        34px;
-
-    box-shadow:
-        0 0 55px
-        rgba(124,58,237,.35),
-        inset 0 1px 0
-        rgba(255,255,255,.25);
-
-    animation:
-        logoFloat 4s ease-in-out infinite;
-
-}
-
-
-@keyframes logoFloat {
-
-    0%,
-    100% {
-
-        transform:
-            translateY(0);
-
-    }
-
-    50% {
-
-        transform:
-            translateY(-5px);
-
-    }
-
-}
-
-
-.kirongWelcome h2 {
-
-    font-size:
-        clamp(25px,4vw,38px);
+         
