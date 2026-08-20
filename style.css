@@ -1,912 +1,719 @@
-/* =========================================================
-   ⚡ KIRONG AI — FUTURISTIC PREMIUM UI
-   Premium Dark • Glass • Neon • Responsive • Mobile First
-========================================================= */
+
+// ⚡ KIRONG AI — FRONTEND ENGINE V6
+// 🧠 Persistent Memory
+// 🗂️ Chat Shelves
+// ➕ Header Plus = OPEN SHELF
+// 🆕 New Chat = ONLY INSIDE SHELF
+// 📱 Mobile Swipe Drawer
+// ⚡ Quick Actions
+// 📎 File Upload
+// 🎤 Voice Input
+// 🌍 Language
+// 🌙 Theme
+// 💾 Export
+// 📍 Location
+// 🎨 Image Handling
+// ============================================================
+
+"use strict";
 
 
-/* =========================================================
-   🎨 DESIGN TOKENS
-========================================================= */
+// ============================================================
+// 🔌 DOM
+// ============================================================
 
-:root {
+const chatBox = document.getElementById("chatBox");
+const userInput = document.getElementById("userInput");
+const sendBtn = document.getElementById("sendBtn");
+const themeBtn = document.getElementById("themeBtn");
+const thinking = document.getElementById("thinking");
+const chatForm = document.getElementById("chatForm");
+const languageSelect = document.getElementById("languageSelect");
 
-    --bg: #06050b;
-    --bg-deep: #020207;
+// IMPORTANT:
+// Header ＋ button opens SHELF.
+// It does NOT create a new chat.
+const openChatsBtn = document.getElementById("newChatBtn");
 
-    --surface: rgba(255,255,255,.045);
-    --surface-2: rgba(255,255,255,.065);
-    --surface-hover: rgba(255,255,255,.095);
 
-    --border: rgba(255,255,255,.085);
-    --border-light: rgba(255,255,255,.15);
+// ============================================================
+// 💾 STORAGE KEYS
+// ============================================================
 
-    --primary: #8b5cf6;
-    --primary-dark: #6d28d9;
-    --primary-light: #b197ff;
-    --neon: #a78bfa;
+const STORAGE_KEY = "kirong_ai_chats_v4";
+const ACTIVE_CHAT_KEY = "kirong_ai_active_chat_v4";
+const THEME_KEY = "kirong_ai_theme_v3";
 
-    --text: #faf9ff;
-    --text-soft: #ddd8eb;
-    --muted: #918ba3;
 
-    --success: #22c55e;
-    --danger: #ef4444;
+// ============================================================
+// 🧠 STATE
+// ============================================================
 
-    --user-gradient:
-        linear-gradient(
-            135deg,
-            #7c3aed 0%,
-            #6d28d9 55%,
-            #4c1d95 100%
+let chats = [];
+let activeChatId = null;
+let chatHistory = [];
+let isSending = false;
+
+
+// ============================================================
+// 🆔 ID GENERATOR
+// ============================================================
+
+function createId() {
+
+    return (
+        Date.now().toString(36) +
+        Math.random()
+            .toString(36)
+            .slice(2, 10)
+    );
+
+}
+
+
+// ============================================================
+// 🗂️ CREATE CHAT OBJECT
+// ============================================================
+
+function createChat(title = "New Chat") {
+
+    const now = Date.now();
+
+    return {
+
+        id: createId(),
+
+        title: title,
+
+        createdAt: now,
+
+        updatedAt: now,
+
+        history: []
+
+    };
+
+}
+
+
+// ============================================================
+// 💾 SAVE ALL CHATS
+// ============================================================
+
+function saveChats() {
+
+    try {
+
+        localStorage.setItem(
+            STORAGE_KEY,
+            JSON.stringify(chats)
         );
 
-    --radius-xl: 28px;
-    --radius-lg: 20px;
-    --radius-md: 15px;
-    --radius-sm: 11px;
+        if (activeChatId) {
 
-    --shadow:
-        0 30px 100px rgba(0,0,0,.55);
+            localStorage.setItem(
+                ACTIVE_CHAT_KEY,
+                activeChatId
+            );
 
-    --glow:
-        0 0 45px rgba(139,92,246,.25);
+        }
 
-    --ease:
-        cubic-bezier(.16,1,.3,1);
+    } catch (error) {
 
-}
-
-
-/* =========================================================
-   🔄 RESET
-========================================================= */
-
-* {
-
-    margin: 0;
-    padding: 0;
-
-    box-sizing: border-box;
-
-}
-
-
-html,
-body {
-
-    width: 100%;
-    height: 100%;
-
-}
-
-
-body {
-
-    min-height: 100dvh;
-
-    font-family:
-        Inter,
-        -apple-system,
-        BlinkMacSystemFont,
-        "Segoe UI",
-        Roboto,
-        Arial,
-        sans-serif;
-
-    color: var(--text);
-
-    background:
-        radial-gradient(
-            circle at 10% 0%,
-            rgba(124,58,237,.20),
-            transparent 28%
-        ),
-        radial-gradient(
-            circle at 100% 100%,
-            rgba(79,70,229,.15),
-            transparent 30%
-        ),
-        var(--bg);
-
-    overflow: hidden;
-
-    -webkit-font-smoothing: antialiased;
-
-    text-rendering: optimizeLegibility;
-
-}
-
-
-/* =========================================================
-   🌌 AMBIENT LIGHT
-========================================================= */
-
-body::before,
-body::after {
-
-    content: "";
-
-    position: fixed;
-
-    width: 420px;
-    height: 420px;
-
-    border-radius: 50%;
-
-    pointer-events: none;
-
-    filter: blur(110px);
-
-    z-index: -2;
-
-    opacity: .18;
-
-    animation:
-        ambientFloat 15s ease-in-out infinite alternate;
-
-}
-
-
-body::before {
-
-    top: -220px;
-    left: -150px;
-
-    background:
-        #7c3aed;
-
-}
-
-
-body::after {
-
-    right: -180px;
-    bottom: -220px;
-
-    background:
-        #4f46e5;
-
-    animation-delay:
-        -7s;
-
-}
-
-
-@keyframes ambientFloat {
-
-    0% {
-
-        transform:
-            translate3d(0,0,0)
-            scale(1);
-
-    }
-
-    50% {
-
-        transform:
-            translate3d(35px,-20px,0)
-            scale(1.08);
-
-    }
-
-    100% {
-
-        transform:
-            translate3d(-15px,25px,0)
-            scale(.94);
-
-    }
-
-}
-
-
-/* =========================================================
-   🧠 MAIN APP
-========================================================= */
-
-.container {
-
-    position: relative;
-
-    width: 100%;
-    height: 100dvh;
-
-    display: flex;
-
-    flex-direction: column;
-
-    overflow: hidden;
-
-    background:
-        linear-gradient(
-            180deg,
-            rgba(255,255,255,.018),
-            rgba(255,255,255,.004)
+        console.error(
+            "❌ Kirong memory save failed:",
+            error
         );
 
-}
-
-
-/* =========================================================
-   💻 DESKTOP FRAME
-========================================================= */
-
-@media (min-width: 769px) {
-
-    body {
-
-        padding: 20px;
-
-    }
-
-
-    .container {
-
-        width:
-            min(1240px,100%);
-
-        height:
-            min(94dvh,920px);
-
-        margin: auto;
-
-        border:
-            1px solid var(--border);
-
-        border-radius:
-            var(--radius-xl);
-
-        background:
-            rgba(7,6,14,.76);
-
-        box-shadow:
-            var(--shadow),
-            inset 0 1px 0
-            rgba(255,255,255,.05);
-
-        backdrop-filter:
-            blur(30px);
-
-        -webkit-backdrop-filter:
-            blur(30px);
-
     }
 
 }
 
 
-/* =========================================================
-   🧭 HEADER
-========================================================= */
+// ============================================================
+// 📥 LOAD CHATS
+// ============================================================
 
-.header {
+function loadChats() {
 
-    position: relative;
+    try {
 
-    height: 70px;
+        const saved =
+            localStorage.getItem(STORAGE_KEY);
 
-    flex-shrink: 0;
+        if (saved) {
 
-    display: flex;
+            chats = JSON.parse(saved);
 
-    align-items: center;
+        }
 
-    justify-content: space-between;
+    } catch (error) {
 
-    padding:
-        0 18px;
-
-    background:
-        rgba(7,6,14,.80);
-
-    border-bottom:
-        1px solid var(--border);
-
-    backdrop-filter:
-        blur(28px);
-
-    -webkit-backdrop-filter:
-        blur(28px);
-
-    z-index: 50;
-
-}
-
-
-.headerLeft {
-
-    display: flex;
-
-    align-items: center;
-
-    gap: 14px;
-
-    min-width: 0;
-
-}
-
-
-/* =========================================================
-   ⚡ BRAND
-========================================================= */
-
-.brandArea {
-
-    display: flex;
-
-    align-items: center;
-
-    gap: 10px;
-
-    min-width: 0;
-
-}
-
-
-.brandLogo {
-
-    width: 40px;
-    height: 40px;
-
-    flex-shrink: 0;
-
-    display: grid;
-
-    place-items: center;
-
-    border:
-        1px solid
-        rgba(167,139,250,.30);
-
-    border-radius:
-        13px;
-
-    background:
-        linear-gradient(
-            145deg,
-            #8b5cf6,
-            #5b21b6
+        console.error(
+            "❌ Kirong memory load failed:",
+            error
         );
 
-    color: white;
-
-    font-size: 18px;
-
-    box-shadow:
-        0 0 30px
-        rgba(124,58,237,.35);
-
-    transition:
-        .35s var(--ease);
-
-}
-
-
-.brandArea:hover .brandLogo {
-
-    transform:
-        scale(1.06)
-        rotate(-3deg);
-
-    box-shadow:
-        0 0 38px
-        rgba(139,92,246,.55);
-
-}
-
-
-.brandInfo {
-
-    display: flex;
-
-    flex-direction: column;
-
-    gap: 2px;
-
-    min-width: 0;
-
-}
-
-
-.header h1 {
-
-    font-size: 16px;
-
-    line-height: 1.1;
-
-    font-weight: 850;
-
-    letter-spacing: -.5px;
-
-    white-space: nowrap;
-
-}
-
-
-.brandStatus {
-
-    display: flex;
-
-    align-items: center;
-
-    gap: 5px;
-
-    color:
-        var(--muted);
-
-    font-size: 9px;
-
-    font-weight: 750;
-
-    letter-spacing: .45px;
-
-    text-transform: uppercase;
-
-}
-
-
-.statusDot {
-
-    width: 6px;
-    height: 6px;
-
-    border-radius: 50%;
-
-    background:
-        var(--success);
-
-    box-shadow:
-        0 0 10px
-        rgba(34,197,94,.8);
-
-    animation:
-        statusPulse 2s infinite;
-
-}
-
-
-@keyframes statusPulse {
-
-    0%,
-    100% {
-
-        box-shadow:
-            0 0 6px
-            rgba(34,197,94,.5);
+        chats = [];
 
     }
 
-    50% {
 
-        box-shadow:
-            0 0 14px
-            rgba(34,197,94,1);
+    if (!Array.isArray(chats)) {
+
+        chats = [];
 
     }
 
-}
 
-
-/* =========================================================
-   🌍 LANGUAGE
-========================================================= */
-
-#languageSelect {
-
-    height: 36px;
-
-    max-width: 110px;
-
-    padding:
-        0 10px;
-
-    border:
-        1px solid var(--border);
-
-    border-radius:
-        11px;
-
-    background:
-        rgba(255,255,255,.045);
-
-    color:
-        var(--text-soft);
-
-    font-size: 11px;
-
-    font-weight: 700;
-
-    outline: none;
-
-    cursor: pointer;
-
-    transition:
-        .3s var(--ease);
-
-}
-
-
-#languageSelect:hover {
-
-    background:
-        rgba(255,255,255,.075);
-
-    border-color:
-        var(--border-light);
-
-}
-
-
-#languageSelect:focus {
-
-    border-color:
-        rgba(139,92,246,.65);
-
-    box-shadow:
-        0 0 0 3px
-        rgba(139,92,246,.10);
-
-}
-
-
-#languageSelect option {
-
-    background:
-        #11101a;
-
-    color:
-        white;
-
-}
-
-
-/* =========================================================
-   🌙 HEADER ACTIONS
-========================================================= */
-
-.headerActions {
-
-    display: flex;
-
-    align-items: center;
-
-    gap: 8px;
-
-}
-
-
-#themeBtn {
-
-    width: 40px;
-    height: 40px;
-
-    flex-shrink: 0;
-
-    display: grid;
-
-    place-items: center;
-
-    border:
-        1px solid var(--border);
-
-    border-radius:
-        13px;
-
-    background:
-        rgba(255,255,255,.045);
-
-    color: white;
-
-    font-size: 17px;
-
-    cursor: pointer;
-
-    transition:
-        .3s var(--ease);
-
-}
-
-
-#themeBtn:hover {
-
-    background:
-        rgba(139,92,246,.16);
-
-    border-color:
-        rgba(139,92,246,.45);
-
-    transform:
-        translateY(-2px)
-        rotate(10deg);
-
-    box-shadow:
-        0 8px 25px
-        rgba(109,40,217,.20);
-
-}
-
-
-#themeBtn:active {
-
-    transform:
-        scale(.92);
-
-}
-
-
-/* =========================================================
-   💬 CHAT AREA
-========================================================= */
-
-#chatBox {
-
-    flex: 1;
-
-    min-height: 0;
-
-    overflow-y: auto;
-
-    padding:
-        30px
-        clamp(14px,5vw,90px);
-
-    display: flex;
-
-    flex-direction: column;
-
-    gap: 18px;
-
-    scroll-behavior: smooth;
-
-    overscroll-behavior: contain;
-
-}
-
-
-#chatBox::-webkit-scrollbar {
-
-    width: 6px;
-
-}
-
-
-#chatBox::-webkit-scrollbar-track {
-
-    background:
-        transparent;
-
-}
-
-
-#chatBox::-webkit-scrollbar-thumb {
-
-    background:
-        rgba(255,255,255,.12);
-
-    border-radius:
-        999px;
-
-}
-
-
-#chatBox::-webkit-scrollbar-thumb:hover {
-
-    background:
-        rgba(167,139,250,.28);
-
-}
-
-
-/* =========================================================
-   ✨ PREMIUM WELCOME
-========================================================= */
-
-.kirongWelcome {
-
-    width:
-        min(650px,100%);
-
-    margin:
-        auto;
-
-    padding:
-        38px 26px;
-
-    text-align:
-        center;
-
-    animation:
-        welcomeIn .7s var(--ease);
-
-}
-
-
-@keyframes welcomeIn {
-
-    from {
-
-        opacity: 0;
-
-        transform:
-            translateY(20px)
-            scale(.97);
-
-    }
-
-    to {
-
-        opacity: 1;
-
-        transform:
-            translateY(0)
-            scale(1);
-
-    }
-
-}
-
-
-.kirongWelcomeLogo {
-
-    width: 76px;
-    height: 76px;
-
-    margin:
-        0 auto 22px;
-
-    display: grid;
-
-    place-items: center;
-
-    border:
-        1px solid
-        rgba(167,139,250,.35);
-
-    border-radius:
-        24px;
-
-    background:
-        linear-gradient(
-            145deg,
-            rgba(139,92,246,.95),
-            rgba(76,29,149,.95)
+    const savedActive =
+        localStorage.getItem(
+            ACTIVE_CHAT_KEY
         );
 
-    color:
-        white;
 
-    font-size:
-        34px;
+    if (
+        savedActive &&
+        chats.some(
+            chat => chat.id === savedActive
+        )
+    ) {
 
-    box-shadow:
-        0 0 55px
-        rgba(124,58,237,.35),
-        inset 0 1px 0
-        rgba(255,255,255,.25);
-
-    animation:
-        logoFloat 4s ease-in-out infinite;
-
-}
-
-
-@keyframes logoFloat {
-
-    0%,
-    100% {
-
-        transform:
-            translateY(0);
+        activeChatId = savedActive;
 
     }
 
-    50% {
 
-        transform:
-            translateY(-5px);
+    // If no active chat exists,
+    // use the newest one.
+    if (
+        !activeChatId &&
+        chats.length
+    ) {
 
-    }
-
-}
-
-
-.kirongWelcome h2 {
-
-    font-size:
-        clamp(25px,4vw,38px);
-
-    line-height:
-        1.15;
-
-    letter-spacing:
-        -1.2px;
-
-    font-weight:
-        850;
-
-    margin-bottom:
-        13px;
-
-}
-
-
-.kirongWelcome h2 span {
-
-    background:
-        linear-gradient(
-            135deg,
-            #c4b5fd,
-            #8b5cf6,
-            #6d28d9
+        chats.sort(
+            (a, b) =>
+                (b.updatedAt || 0) -
+                (a.updatedAt || 0)
         );
 
-    -webkit-background-clip:
-        text;
+        activeChatId = chats[0].id;
 
-    background-clip:
-        text;
+    }
 
-    color:
-        transparent;
+
+    // First ever launch.
+    if (!activeChatId) {
+
+        const firstChat =
+            createChat();
+
+        chats.unshift(firstChat);
+
+        activeChatId =
+            firstChat.id;
+
+        saveChats();
+
+    }
+
+
+    const active =
+        getActiveChat();
+
+
+    chatHistory =
+        Array.isArray(active?.history)
+            ? [...active.history]
+            : [];
 
 }
 
 
-.kirongWelcome p {
+// ============================================================
+// 🔎 GET ACTIVE CHAT
+// ============================================================
 
-    max-width:
-        520px;
+function getActiveChat() {
 
-    margin:
-        0 auto;
-
-    color:
-        var(--muted);
-
-    font-size:
-        14px;
-
-    line-height:
-        1.7;
+    return chats.find(
+        chat =>
+            chat.id === activeChatId
+    );
 
 }
 
 
-.welcomeHint {
+// ============================================================
+// 💾 SAVE ACTIVE CHAT
+// ============================================================
 
-    display:
-        inline-flex;
+function saveActiveChat() {
 
-    align-items:
-        center;
+    const chat =
+        getActiveChat();
 
-    gap:
-        8px;
+    if (!chat) return;
 
-    margin-top:
-        25px;
 
-    padding:
-        10px 15px;
+    chat.history =
+        Array.isArray(chatHistory)
+            ? chatHistory.slice(-20)
+            : [];
 
-    border:
-        1px solid var(--border);
 
-    border-radius:
-        999px;
+    chat.updatedAt =
+        Date.now();
 
-    background:
-        rgba(255,255,255,.035);
 
-    color:
-        var(--text-soft);
+    saveChats();
 
-    font-size:
-        11px;
+    renderShelves();
 
-    font-weight:
-        650;
+}
 
-    box-shadow:
-        inset 0 1px 0
+
+// ============================================================
+// 🏷️ MAKE CHAT TITLE
+// ============================================================
+
+function makeChatTitle(text) {
+
+    const clean =
+        String(text || "")
+            .replace(/\s+/g, " ")
+            .trim();
+
+
+    if (!clean) {
+
+        return "New Chat";
+
+    }
+
+
+    if (clean.length <= 36) {
+
+        return clean;
+
+    }
+
+
+    return (
+        clean.slice(0, 33) +
+        "..."
+    );
+
+}
+
+
+// ============================================================
+// 🏷️ AUTO CHAT TITLE
+// ============================================================
+
+function maybeSetTitle(text) {
+
+    const chat =
+        getActiveChat();
+
+    if (!chat) return;
+
+
+    if (
+        chat.title === "New Chat" &&
+        chatHistory.length <= 2
+    ) {
+
+        chat.title =
+            makeChatTitle(text);
+
+        chat.updatedAt =
+            Date.now();
+
+        saveChats();
+
+        renderShelves();
+
+    }
+
+}
+
+
+// ============================================================
+// 🧠 SHELVES UI
+// ============================================================
+
+function createShelvesUI() {
+
+    if (
+        document.getElementById(
+            "kirongShelves"
+        )
+    ) {
+
+        return;
+
+    }
+
+
+    // ========================================================
+    // 🌑 OVERLAY
+    // ========================================================
+
+    const overlay =
+        document.createElement("div");
+
+    overlay.id =
+        "kirongShelvesOverlay";
+
+
+    // ========================================================
+    // 🗂️ SHELF DRAWER
+    // ========================================================
+
+    const shelves =
+        document.createElement("aside");
+
+    shelves.id =
+        "kirongShelves";
+
+    shelves.setAttribute(
+        "aria-label",
+        "Chat history"
+    );
+
+
+    shelves.innerHTML = `
+
+        <div class="kirongShelvesHeader">
+
+            <strong>
+                🧠 Chats
+            </strong>
+
+            <button
+                id="closeShelvesBtn"
+                type="button"
+                aria-label="Close chats"
+                title="Close"
+            >
+                ✕
+            </button>
+
+        </div>
+
+
+        <button
+            id="shelfNewChatBtn"
+            class="kirongNewChatBtn"
+            type="button"
+        >
+            ＋ New Chat
+        </button>
+
+
+        <div
+            id="kirongChatList"
+            class="kirongChatList"
+        ></div>
+
+    `;
+
+
+    document.body.prepend(overlay);
+    document.body.prepend(shelves);
+
+
+    // ========================================================
+    // 🆕 NEW CHAT INSIDE SHELF
+    // ========================================================
+
+    const shelfNewChatBtn =
+        document.getElementById(
+            "shelfNewChatBtn"
+        );
+
+
+    shelfNewChatBtn?.addEventListener(
+        "click",
+        () => {
+
+            createNewChat();
+
+            closeShelves();
+
+        }
+    );
+
+
+    // ========================================================
+    // ❌ CLOSE
+    // ========================================================
+
+    const closeBtn =
+        document.getElementById(
+            "closeShelvesBtn"
+        );
+
+
+    closeBtn?.addEventListener(
+        "click",
+        closeShelves
+    );
+
+
+    // ========================================================
+    // 🌑 OVERLAY CLOSE
+    // ========================================================
+
+    overlay.addEventListener(
+        "click",
+        closeShelves
+    );
+
+
+    // ========================================================
+    // 🎨 FALLBACK SHELF CSS
+    // ========================================================
+
+    injectShelvesStyles();
+
+
+    renderShelves();
+
+}
+
+
+// ============================================================
+// ➕ HEADER PLUS → OPEN SHELF
+// ============================================================
+
+function setupHeaderShelfButton() {
+
+    if (!openChatsBtn) {
+
+        console.warn(
+            "⚠️ Header chats button not found."
+        );
+
+        return;
+
+    }
+
+
+    // Remove any old listener by cloning.
+    const freshButton =
+        openChatsBtn.cloneNode(true);
+
+
+    openChatsBtn.replaceWith(
+        freshButton
+    );
+
+
+    freshButton.addEventListener(
+        "click",
+        event => {
+
+            event.preventDefault();
+
+            event.stopPropagation();
+
+            openShelves();
+
+        }
+    );
+
+
+    freshButton.setAttribute(
+        "aria-label",
+        "Open chats"
+    );
+
+
+    freshButton.setAttribute(
+        "title",
+        "Open chats"
+    );
+
+}
+
+
+// ============================================================
+// 📂 OPEN SHELF
+// ============================================================
+
+function openShelves() {
+
+    const shelves =
+        document.getElementById(
+            "kirongShelves"
+        );
+
+
+    const overlay =
+        document.getElementById(
+            "kirongShelvesOverlay"
+        );
+
+
+    if (!shelves) return;
+
+
+    renderShelves();
+
+
+    shelves.classList.add("open");
+
+    overlay?.classList.add("open");
+
+    document.body.classList.add(
+        "shelves-open"
+    );
+
+}
+
+
+// ============================================================
+// ❌ CLOSE SHELF
+// ============================================================
+
+function closeShelves() {
+
+    const shelves =
+        document.getElementById(
+            "kirongShelves"
+        );
+
+
+    const overlay =
+        document.getElementById(
+            "kirongShelvesOverlay"
+        );
+
+
+    shelves?.classList.remove(
+        "open"
+    );
+
+    overlay?.classList.remove(
+        "open"
+    );
+
+    document.body.classList.remove(
+        "shelves-open"
+    );
+
+}
+
+
+// ============================================================
+// 📱 SWIPE SHELF
+// ============================================================
+
+function enableSwipeShelves() {
+
+    let startX = 0;
+    let startY = 0;
+    let tracking = false;
+
+
+    document.addEventListener(
+        "touchstart",
+        event => {
+
+            if (
+                !event.touches ||
+                !event.touches.length
+            ) {
+
+                return;
+
+            }
+
+
+            const touch =
+                event.touches[0];
+
+
+            startX =
+                touch.clientX;
+
+            startY =
+                touch.clientY;
+
+            tracking = true;
+
+        },
+        {
+            passive: true
+        }
+    );
+
+
+    document.addEventListener(
+        "touchend",
+        event => {
+
+            if (!tracking) return;
+
+            tracking = false;
+
+
+            if (
+                !event.changedTouches ||
+                !event.changedTouches.length
+            ) {
+
+                return;
+
+            }
+
+
+            const touch =
+                event.changedTouches[0];
+
+
+            const endX =
+                touch.clientX;
+
+            const endY =
+                touch.clientY;
+
+
+            const deltaX =
+                endX - startX;
+
+
+            const deltaY =
+                Math.abs(endY - startY);
+
+
+            const horizontal =
+                Math.abs(deltaX) >
+                deltaY;
+
+
+            if (!horizontal) return;
+
+
+            // LEFT EDGE → RIGHT
+            if (
+                startX <= 55 &&
+                deltaX >= 65
+            ) {
+
+                openShelves();
+
+                return;
+
+            }
+
+
+            // SHELF → LEFT
+            if (
+                deltaX <= -65 &&
+                document.body.classList.contains(
+                    "shelves-open"
+                )
+         
