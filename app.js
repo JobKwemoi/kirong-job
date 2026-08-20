@@ -1,3221 +1,2093 @@
-// ============================================================
-// ⚡ KIRONG AI — FRONTEND ENGINE V6
-// 🧠 Persistent Memory
-// 🗂️ Chat Shelves
-// ➕ Header Plus = OPEN SHELF
-// 🆕 New Chat = ONLY INSIDE SHELF
-// 📱 Mobile Swipe Drawer
-// ⚡ Quick Actions
-// 📎 File Upload
-// 🎤 Voice Input
-// 🌍 Language
-// 🌙 Theme
-// 💾 Export
-// 📍 Location
-// 🎨 Image Handling
-// ============================================================
+
+/* ============================================================
+   ⚡ KIRONG AI — FRONTEND ENGINE V7.0
+   ------------------------------------------------------------
+   Compatible with:
+   - index.html
+   - /api/chat
+   - formidable file uploads
+   - Groq
+   - OpenAI
+   - Hugging Face
+   - PDF / DOCX / TXT / JS / HTML / CSS / JSON / CSV / MD
+   - Image responses
+   - Chat history
+   - Language selection
+   - Voice input
+   - Theme
+   - Export
+   - Clear chat
+   ============================================================ */
 
 "use strict";
 
+/* ============================================================
+   ⚙️ CONFIGURATION
+   ============================================================ */
 
-// ============================================================
-// 🔌 DOM
-// ============================================================
+const API_ENDPOINT = "/api/chat";
+
+const MAX_HISTORY_ITEMS = 20;
+const MAX_FILE_SIZE = 10 * 1024 * 1024;
+
+const STORAGE_KEYS = {
+  chats: "kirong_ai_chats_v7",
+  activeChat: "kirong_ai_active_chat_v7",
+  theme: "kirong_ai_theme_v7",
+  language: "kirong_ai_language_v7"
+};
+
+
+/* ============================================================
+   🧩 DOM
+   ============================================================ */
 
 const chatBox = document.getElementById("chatBox");
-const userInput = document.getElementById("userInput");
-const sendBtn = document.getElementById("sendBtn");
-const themeBtn = document.getElementById("themeBtn");
-const thinking = document.getElementById("thinking");
 const chatForm = document.getElementById("chatForm");
+const userInput = document.getElementById("userInput");
+
+const sendBtn = document.getElementById("sendBtn");
+const micBtn = document.getElementById("micBtn");
+
+const uploadBtn = document.getElementById("uploadBtn");
+const fileInput = document.getElementById("fileInput");
+
+const themeBtn = document.getElementById("themeBtn");
 const languageSelect = document.getElementById("languageSelect");
+const voiceSelect = document.getElementById("voiceSelect");
 
-// IMPORTANT:
-// Header ＋ button opens SHELF.
-// It does NOT create a new chat.
-const openChatsBtn = document.getElementById("newChatBtn");
+const thinking = document.getElementById("thinking");
 
+const clearBtn = document.getElementById("clearBtn");
+const exportBtn = document.getElementById("exportBtn");
 
-// ============================================================
-// 💾 STORAGE KEYS
-// ============================================================
-
-const STORAGE_KEY = "kirong_ai_chats_v4";
-const ACTIVE_CHAT_KEY = "kirong_ai_active_chat_v4";
-const THEME_KEY = "kirong_ai_theme_v3";
+const locationBtn = document.getElementById("locationBtn");
 
 
-// ============================================================
-// 🧠 STATE
-// ============================================================
+/* ============================================================
+   🛡️ SAFETY CHECK
+   ============================================================ */
 
-let chats = [];
-let activeChatId = null;
-let chatHistory = [];
+if (!chatBox || !chatForm || !userInput) {
+  console.error("❌ Kirong AI: Required HTML elements are missing.");
+}
+
+
+/* ============================================================
+   🧠 STATE
+   ============================================================ */
+
+let messages = [];
+
+let selectedFile = null;
+
 let isSending = false;
 
+let recognition = null;
 
-// ============================================================
-// 🆔 ID GENERATOR
-// ============================================================
+let isListening = false;
 
-function createId() {
 
-    return (
-        Date.now().toString(36) +
-        Math.random()
-            .toString(36)
-            .slice(2, 10)
+/* ============================================================
+   💾 STORAGE HELPERS
+   ============================================================ */
+
+function loadJSON(key, fallback) {
+  try {
+    const raw = localStorage.getItem(key);
+
+    if (!raw) {
+      return fallback;
+    }
+
+    return JSON.parse(raw);
+
+  } catch (error) {
+    console.warn(`⚠️ Could not read ${key}:`, error);
+    return fallback;
+  }
+}
+
+
+function saveJSON(key, value) {
+  try {
+    localStorage.setItem(
+      key,
+      JSON.stringify(value)
     );
+
+  } catch (error) {
+    console.warn(`⚠️ Could not save ${key}:`, error);
+  }
+}
+
+
+/* ============================================================
+   🌍 LANGUAGE
+   ============================================================ */
+
+function getLanguage() {
+
+  if (!languageSelect) {
+    return "English";
+  }
+
+  return (
+    languageSelect.value ||
+    "English"
+  ).trim();
+}
+
+
+function restoreLanguage() {
+
+  if (!languageSelect) {
+    return;
+  }
+
+  const saved =
+    localStorage.getItem(
+      STORAGE_KEYS.language
+    );
+
+  if (!saved) {
+    return;
+  }
+
+  const option =
+    Array.from(
+      languageSelect.options
+    ).find(
+      item => item.value === saved
+    );
+
+  if (option) {
+    languageSelect.value = saved;
+  }
+}
+
+
+if (languageSelect) {
+
+  languageSelect.addEventListener(
+    "change",
+    () => {
+
+      localStorage.setItem(
+        STORAGE_KEYS.language,
+        languageSelect.value
+      );
+
+    }
+  );
 
 }
 
 
-// ============================================================
-// 🗂️ CREATE CHAT OBJECT
-// ============================================================
+/* ============================================================
+   🎨 THEME
+   ============================================================ */
 
-function createChat(title = "New Chat") {
+function applyTheme(theme) {
 
-    const now = Date.now();
-
-    return {
-
-        id: createId(),
-
-        title: title,
-
-        createdAt: now,
-
-        updatedAt: now,
-
-        history: []
-
-    };
-
-}
-
-
-// ============================================================
-// 💾 SAVE ALL CHATS
-// ============================================================
-
-function saveChats() {
-
-    try {
-
-        localStorage.setItem(
-            STORAGE_KEY,
-            JSON.stringify(chats)
-        );
-
-        if (activeChatId) {
-
-            localStorage.setItem(
-                ACTIVE_CHAT_KEY,
-                activeChatId
-            );
-
-        }
-
-    } catch (error) {
-
-        console.error(
-            "❌ Kirong memory save failed:",
-            error
-        );
-
-    }
-
-}
-
-
-// ============================================================
-// 📥 LOAD CHATS
-// ============================================================
-
-function loadChats() {
-
-    try {
-
-        const saved =
-            localStorage.getItem(STORAGE_KEY);
-
-        if (saved) {
-
-            chats = JSON.parse(saved);
-
-        }
-
-    } catch (error) {
-
-        console.error(
-            "❌ Kirong memory load failed:",
-            error
-        );
-
-        chats = [];
-
-    }
-
-
-    if (!Array.isArray(chats)) {
-
-        chats = [];
-
-    }
-
-
-    const savedActive =
-        localStorage.getItem(
-            ACTIVE_CHAT_KEY
-        );
-
-
-    if (
-        savedActive &&
-        chats.some(
-            chat => chat.id === savedActive
-        )
-    ) {
-
-        activeChatId = savedActive;
-
-    }
-
-
-    // If no active chat exists,
-    // use the newest one.
-    if (
-        !activeChatId &&
-        chats.length
-    ) {
-
-        chats.sort(
-            (a, b) =>
-                (b.updatedAt || 0) -
-                (a.updatedAt || 0)
-        );
-
-        activeChatId = chats[0].id;
-
-    }
-
-
-    // First ever launch.
-    if (!activeChatId) {
-
-        const firstChat =
-            createChat();
-
-        chats.unshift(firstChat);
-
-        activeChatId =
-            firstChat.id;
-
-        saveChats();
-
-    }
-
-
-    const active =
-        getActiveChat();
-
-
-    chatHistory =
-        Array.isArray(active?.history)
-            ? [...active.history]
-            : [];
-
-}
-
-
-// ============================================================
-// 🔎 GET ACTIVE CHAT
-// ============================================================
-
-function getActiveChat() {
-
-    return chats.find(
-        chat =>
-            chat.id === activeChatId
-    );
-
-}
-
-
-// ============================================================
-// 💾 SAVE ACTIVE CHAT
-// ============================================================
-
-function saveActiveChat() {
-
-    const chat =
-        getActiveChat();
-
-    if (!chat) return;
-
-
-    chat.history =
-        Array.isArray(chatHistory)
-            ? chatHistory.slice(-20)
-            : [];
-
-
-    chat.updatedAt =
-        Date.now();
-
-
-    saveChats();
-
-    renderShelves();
-
-}
-
-
-// ============================================================
-// 🏷️ MAKE CHAT TITLE
-// ============================================================
-
-function makeChatTitle(text) {
-
-    const clean =
-        String(text || "")
-            .replace(/\s+/g, " ")
-            .trim();
-
-
-    if (!clean) {
-
-        return "New Chat";
-
-    }
-
-
-    if (clean.length <= 36) {
-
-        return clean;
-
-    }
-
-
-    return (
-        clean.slice(0, 33) +
-        "..."
-    );
-
-}
-
-
-// ============================================================
-// 🏷️ AUTO CHAT TITLE
-// ============================================================
-
-function maybeSetTitle(text) {
-
-    const chat =
-        getActiveChat();
-
-    if (!chat) return;
-
-
-    if (
-        chat.title === "New Chat" &&
-        chatHistory.length <= 2
-    ) {
-
-        chat.title =
-            makeChatTitle(text);
-
-        chat.updatedAt =
-            Date.now();
-
-        saveChats();
-
-        renderShelves();
-
-    }
-
-}
-
-
-// ============================================================
-// 🧠 SHELVES UI
-// ============================================================
-
-function createShelvesUI() {
-
-    if (
-        document.getElementById(
-            "kirongShelves"
-        )
-    ) {
-
-        return;
-
-    }
-
-
-    // ========================================================
-    // 🌑 OVERLAY
-    // ========================================================
-
-    const overlay =
-        document.createElement("div");
-
-    overlay.id =
-        "kirongShelvesOverlay";
-
-
-    // ========================================================
-    // 🗂️ SHELF DRAWER
-    // ========================================================
-
-    const shelves =
-        document.createElement("aside");
-
-    shelves.id =
-        "kirongShelves";
-
-    shelves.setAttribute(
-        "aria-label",
-        "Chat history"
-    );
-
-
-    shelves.innerHTML = `
-
-        <div class="kirongShelvesHeader">
-
-            <strong>
-                🧠 Chats
-            </strong>
-
-            <button
-                id="closeShelvesBtn"
-                type="button"
-                aria-label="Close chats"
-                title="Close"
-            >
-                ✕
-            </button>
-
-        </div>
-
-
-        <button
-            id="shelfNewChatBtn"
-            class="kirongNewChatBtn"
-            type="button"
-        >
-            ＋ New Chat
-        </button>
-
-
-        <div
-            id="kirongChatList"
-            class="kirongChatList"
-        ></div>
-
-    `;
-
-
-    document.body.prepend(overlay);
-    document.body.prepend(shelves);
-
-
-    // ========================================================
-    // 🆕 NEW CHAT INSIDE SHELF
-    // ========================================================
-
-    const shelfNewChatBtn =
-        document.getElementById(
-            "shelfNewChatBtn"
-        );
-
-
-    shelfNewChatBtn?.addEventListener(
-        "click",
-        () => {
-
-            createNewChat();
-
-            closeShelves();
-
-        }
-    );
-
-
-    // ========================================================
-    // ❌ CLOSE
-    // ========================================================
-
-    const closeBtn =
-        document.getElementById(
-            "closeShelvesBtn"
-        );
-
-
-    closeBtn?.addEventListener(
-        "click",
-        closeShelves
-    );
-
-
-    // ========================================================
-    // 🌑 OVERLAY CLOSE
-    // ========================================================
-
-    overlay.addEventListener(
-        "click",
-        closeShelves
-    );
-
-
-    // ========================================================
-    // 🎨 FALLBACK SHELF CSS
-    // ========================================================
-
-    injectShelvesStyles();
-
-
-    renderShelves();
-
-}
-
-
-// ============================================================
-// ➕ HEADER PLUS → OPEN SHELF
-// ============================================================
-
-function setupHeaderShelfButton() {
-
-    if (!openChatsBtn) {
-
-        console.warn(
-            "⚠️ Header chats button not found."
-        );
-
-        return;
-
-    }
-
-
-    // Remove any old listener by cloning.
-    const freshButton =
-        openChatsBtn.cloneNode(true);
-
-
-    openChatsBtn.replaceWith(
-        freshButton
-    );
-
-
-    freshButton.addEventListener(
-        "click",
-        event => {
-
-            event.preventDefault();
-
-            event.stopPropagation();
-
-            openShelves();
-
-        }
-    );
-
-
-    freshButton.setAttribute(
-        "aria-label",
-        "Open chats"
-    );
-
-
-    freshButton.setAttribute(
-        "title",
-        "Open chats"
-    );
-
-}
-
-
-// ============================================================
-// 📂 OPEN SHELF
-// ============================================================
-
-function openShelves() {
-
-    const shelves =
-        document.getElementById(
-            "kirongShelves"
-        );
-
-
-    const overlay =
-        document.getElementById(
-            "kirongShelvesOverlay"
-        );
-
-
-    if (!shelves) return;
-
-
-    renderShelves();
-
-
-    shelves.classList.add("open");
-
-    overlay?.classList.add("open");
+  if (theme === "light") {
 
     document.body.classList.add(
-        "shelves-open"
+      "light-theme"
     );
 
-}
+    if (themeBtn) {
+      themeBtn.textContent = "☀️";
+    }
 
-
-// ============================================================
-// ❌ CLOSE SHELF
-// ============================================================
-
-function closeShelves() {
-
-    const shelves =
-        document.getElementById(
-            "kirongShelves"
-        );
-
-
-    const overlay =
-        document.getElementById(
-            "kirongShelvesOverlay"
-        );
-
-
-    shelves?.classList.remove(
-        "open"
-    );
-
-    overlay?.classList.remove(
-        "open"
-    );
+  } else {
 
     document.body.classList.remove(
-        "shelves-open"
+      "light-theme"
     );
 
-}
-
-
-// ============================================================
-// 📱 SWIPE SHELF
-// ============================================================
-
-function enableSwipeShelves() {
-
-    let startX = 0;
-    let startY = 0;
-    let tracking = false;
-
-
-    document.addEventListener(
-        "touchstart",
-        event => {
-
-            if (
-                !event.touches ||
-                !event.touches.length
-            ) {
-
-                return;
-
-            }
-
-
-            const touch =
-                event.touches[0];
-
-
-            startX =
-                touch.clientX;
-
-            startY =
-                touch.clientY;
-
-            tracking = true;
-
-        },
-        {
-            passive: true
-        }
-    );
-
-
-    document.addEventListener(
-        "touchend",
-        event => {
-
-            if (!tracking) return;
-
-            tracking = false;
-
-
-            if (
-                !event.changedTouches ||
-                !event.changedTouches.length
-            ) {
-
-                return;
-
-            }
-
-
-            const touch =
-                event.changedTouches[0];
-
-
-            const endX =
-                touch.clientX;
-
-            const endY =
-                touch.clientY;
-
-
-            const deltaX =
-                endX - startX;
-
-
-            const deltaY =
-                Math.abs(endY - startY);
-
-
-            const horizontal =
-                Math.abs(deltaX) >
-                deltaY;
-
-
-            if (!horizontal) return;
-
-
-            // LEFT EDGE → RIGHT
-            if (
-                startX <= 55 &&
-                deltaX >= 65
-            ) {
-
-                openShelves();
-
-                return;
-
-            }
-
-
-            // SHELF → LEFT
-            if (
-                deltaX <= -65 &&
-                document.body.classList.contains(
-                    "shelves-open"
-                )
-            ) {
-
-                closeShelves();
-
-            }
-
-        },
-        {
-            passive: true
-        }
-    );
-
-}
-
-
-// ============================================================
-// 📋 RENDER SHELVES
-// ============================================================
-
-function renderShelves() {
-
-    const list =
-        document.getElementById(
-            "kirongChatList"
-        );
-
-
-    if (!list) return;
-
-
-    list.innerHTML = "";
-
-
-    const sortedChats =
-        [...chats].sort(
-            (a, b) =>
-                (b.updatedAt || 0) -
-                (a.updatedAt || 0)
-        );
-
-
-    if (!sortedChats.length) {
-
-        const empty =
-            document.createElement("div");
-
-        empty.className =
-            "kirongEmptyChats";
-
-        empty.textContent =
-            "No conversations yet.";
-
-        list.appendChild(empty);
-
-        return;
-
+    if (themeBtn) {
+      themeBtn.textContent = "🌙";
     }
 
+  }
 
-    sortedChats.forEach(
-        chat => {
-
-            const item =
-                document.createElement("div");
-
-
-            item.className =
-                "kirongChatItem";
+  localStorage.setItem(
+    STORAGE_KEYS.theme,
+    theme
+  );
+}
 
 
-            if (
-                chat.id === activeChatId
-            ) {
+function restoreTheme() {
 
-                item.classList.add(
-                    "active"
-                );
-
-            }
-
-
-            // Chat icon
-            const icon =
-                document.createElement("span");
-
-            icon.className =
-                "kirongChatIcon";
-
-            icon.textContent =
-                "💬";
-
-
-            // Title
-            const title =
-                document.createElement("span");
-
-            title.className =
-                "kirongChatTitle";
-
-            title.textContent =
-                chat.title ||
-                "New Chat";
-
-
-            // Delete
-            const deleteBtn =
-                document.createElement("button");
-
-            deleteBtn.className =
-                "kirongDeleteChat";
-
-            deleteBtn.type =
-                "button";
-
-            deleteBtn.title =
-                "Delete chat";
-
-            deleteBtn.setAttribute(
-                "aria-label",
-                "Delete chat"
-            );
-
-            deleteBtn.textContent =
-                "🗑️";
-
-
-            item.appendChild(icon);
-
-            item.appendChild(title);
-
-            item.appendChild(deleteBtn);
-
-
-            // =================================================
-            // 🧠 OPEN CHAT
-            // =================================================
-
-            item.addEventListener(
-                "click",
-                () => {
-
-                    switchChat(
-                        chat.id
-                    );
-
-                }
-            );
-
-
-            // =================================================
-            // 🗑️ DELETE CHAT
-            // =================================================
-
-            deleteBtn.addEventListener(
-                "click",
-                event => {
-
-                    event.stopPropagation();
-
-                    deleteChat(
-                        chat.id
-                    );
-
-                }
-            );
-
-
-            list.appendChild(item);
-
-        }
+  const saved =
+    localStorage.getItem(
+      STORAGE_KEYS.theme
     );
 
+  applyTheme(
+    saved === "light"
+      ? "light"
+      : "dark"
+  );
 }
-
-
-// ============================================================
-// ➕ CREATE NEW CHAT
-// ============================================================
-
-function createNewChat() {
-
-    const newChat =
-        createChat();
-
-
-    chats.unshift(
-        newChat
-    );
-
-
-    activeChatId =
-        newChat.id;
-
-
-    chatHistory = [];
-
-
-    saveChats();
-
-    renderChat();
-
-    renderShelves();
-
-
-    userInput?.focus();
-
-}
-
-
-// ============================================================
-// 🔄 SWITCH CHAT
-// ============================================================
-
-function switchChat(id) {
-
-    const selected =
-        chats.find(
-            chat =>
-                chat.id === id
-        );
-
-
-    if (!selected) return;
-
-
-    activeChatId =
-        selected.id;
-
-
-    chatHistory =
-        Array.isArray(
-            selected.history
-        )
-            ? [...selected.history]
-            : [];
-
-
-    localStorage.setItem(
-        ACTIVE_CHAT_KEY,
-        activeChatId
-    );
-
-
-    renderChat();
-
-    renderShelves();
-
-    closeShelves();
-
-
-    userInput?.focus();
-
-}
-
-
-// ============================================================
-// 🗑️ DELETE CHAT
-// ============================================================
-
-function deleteChat(id) {
-
-    const selected =
-        chats.find(
-            chat =>
-                chat.id === id
-        );
-
-
-    if (!selected) return;
-
-
-    const confirmed =
-        window.confirm(
-            `Delete "${selected.title || "New Chat"}"?`
-        );
-
-
-    if (!confirmed) return;
-
-
-    chats =
-        chats.filter(
-            chat =>
-                chat.id !== id
-        );
-
-
-    // Always keep at least one chat.
-    if (!chats.length) {
-
-        const fresh =
-            createChat();
-
-        chats.push(fresh);
-
-    }
-
-
-    // If active chat was deleted,
-    // switch to newest.
-    if (
-        !chats.some(
-            chat =>
-                chat.id === activeChatId
-        )
-    ) {
-
-        chats.sort(
-            (a, b) =>
-                (b.updatedAt || 0) -
-                (a.updatedAt || 0)
-        );
-
-        activeChatId =
-            chats[0].id;
-
-    }
-
-
-    const active =
-        getActiveChat();
-
-
-    chatHistory =
-        Array.isArray(active?.history)
-            ? [...active.history]
-            : [];
-
-
-    saveChats();
-
-    renderChat();
-
-    renderShelves();
-
-}
-
-
-// ============================================================
-// 🖥️ RENDER CHAT
-// ============================================================
-
-function renderChat() {
-
-    if (!chatBox) return;
-
-
-    chatBox.innerHTML = "";
-
-
-    // ========================================================
-    // WELCOME SCREEN
-    // ========================================================
-
-    if (!chatHistory.length) {
-
-        chatBox.innerHTML = `
-
-            <div
-                class="kirongWelcome"
-                id="kirongWelcome"
-            >
-
-                <div
-                    class="kirongWelcomeLogo"
-                    aria-hidden="true"
-                >
-                    ⚡
-                </div>
-
-                <div class="welcomeEyebrow">
-
-                    <span></span>
-
-                    KIRONG AI CORE
-
-                    <span></span>
-
-                </div>
-
-                <h2>
-
-                    Hello, I'm
-
-                    <span>
-                        Kirong AI
-                    </span>
-
-                    👋
-
-                </h2>
-
-                <p>
-
-                    Your intelligent AI assistant for
-
-                    <strong>coding</strong>,
-                    <strong>learning</strong>,
-                    <strong>creativity</strong>,
-                    <strong>business</strong>
-
-                    and everyday tasks.
-
-                </p>
-
-                <div class="welcomeHint">
-
-                    <span
-                        class="hintIcon"
-                        aria-hidden="true"
-                    >
-                        ✨
-                    </span>
-
-                    <span>
-                        What can I help you with today?
-                    </span>
-
-                </div>
-
-            </div>
-
-        `;
-
-    }
-
-
-    // ========================================================
-    // HISTORY
-    // ========================================================
-
-    chatHistory.forEach(
-        item => {
-
-            if (
-                !item ||
-                !item.content
-            ) {
-
-                return;
-
-            }
-
-
-            if (
-                item.role === "user"
-            ) {
-
-                addMessage(
-                    item.content,
-                    "user"
-                );
-
-            }
-
-
-            if (
-                item.role === "assistant"
-            ) {
-
-                if (
-                    item.content ===
-                    "[Image generated by Kirong AI]"
-                ) {
-
-                    addMessage(
-                        "🎨 Image generated by Kirong AI.",
-                        "ai"
-                    );
-
-                } else {
-
-                    addMessage(
-                        item.content,
-                        "ai"
-                    );
-
-                }
-
-            }
-
-        }
-    );
-
-
-    scrollToBottom();
-
-}
-
-
-// ============================================================
-// 🧹 ESCAPE HTML
-// ============================================================
-
-function escapeHTML(value) {
-
-    return String(value ?? "")
-        .replace(/&/g, "&amp;")
-        .replace(/</g, "&lt;")
-        .replace(/>/g, "&gt;")
-        .replace(/"/g, "&quot;")
-        .replace(/'/g, "&#039;");
-
-}
-
-
-// ============================================================
-// 📝 MARKDOWN
-// ============================================================
-
-function renderMarkdown(text) {
-
-    let content =
-        escapeHTML(text || "");
-
-
-    content =
-        content.replace(
-            /```([\s\S]*?)```/g,
-            (_, code) =>
-                `<pre><code>${code.trim()}</code></pre>`
-        );
-
-
-    content =
-        content.replace(
-            /`([^`]+)`/g,
-            "<code>$1</code>"
-        );
-
-
-    content =
-        content.replace(
-            /\*\*(.*?)\*\*/g,
-            "<strong>$1</strong>"
-        );
-
-
-    content =
-        content.replace(
-            /^### (.*)$/gm,
-            "<strong>$1</strong>"
-        );
-
-
-    content =
-        content.replace(
-            /^## (.*)$/gm,
-            "<strong>$1</strong>"
-        );
-
-
-    content =
-        content.replace(
-            /^# (.*)$/gm,
-            "<strong>$1</strong>"
-        );
-
-
-    content =
-        content.replace(
-            /^\s*[-*]\s+(.*)$/gm,
-            "• $1"
-        );
-
-
-    content =
-        content.replace(
-            /\n/g,
-            "<br>"
-        );
-
-
-    return content;
-
-}
-
-
-// ============================================================
-// 💬 ADD MESSAGE
-// ============================================================
-
-function addMessage(
-    text,
-    sender = "ai"
-) {
-
-    if (!chatBox) return null;
-
-
-    const message =
-        document.createElement("div");
-
-
-    message.className =
-        `message ${sender}`;
-
-
-    const paragraph =
-        document.createElement("p");
-
-
-    paragraph.innerHTML =
-        renderMarkdown(text);
-
-
-    message.appendChild(
-        paragraph
-    );
-
-
-    chatBox.appendChild(
-        message
-    );
-
-
-    scrollToBottom();
-
-
-    return message;
-
-}
-
-
-// ============================================================
-// 🎨 ADD IMAGE
-// ============================================================
-
-function addImage(
-    image,
-    caption = "",
-    provider = ""
-) {
-
-    if (
-        !chatBox ||
-        !image
-    ) {
-
-        return;
-
-    }
-
-
-    const message =
-        document.createElement("div");
-
-
-    message.className =
-        "message ai";
-
-
-    if (caption) {
-
-        const paragraph =
-            document.createElement("p");
-
-
-        paragraph.innerHTML =
-            renderMarkdown(caption);
-
-
-        message.appendChild(
-            paragraph
-        );
-
-    }
-
-
-    const img =
-        document.createElement("img");
-
-
-    img.src =
-        image;
-
-    img.alt =
-        "Kirong AI generated image";
-
-    img.loading =
-        "lazy";
-
-
-    message.appendChild(img);
-
-
-    if (provider) {
-
-        const small =
-            document.createElement("small");
-
-
-        small.textContent =
-            `🎨 ${provider}`;
-
-
-        message.appendChild(
-            small
-        );
-
-    }
-
-
-    const controls =
-        document.createElement("div");
-
-
-    controls.className =
-        "imageControls";
-
-
-    const download =
-        document.createElement("a");
-
-
-    download.href =
-        image;
-
-    download.download =
-        "KirongAI_Generated.png";
-
-    download.textContent =
-        "📥 Save Image";
-
-
-    const open =
-        document.createElement("button");
-
-
-    open.type =
-        "button";
-
-    open.textContent =
-        "🔍 Open";
-
-
-    open.addEventListener(
-        "click",
-        () => {
-
-            window.open(
-                image,
-                "_blank",
-                "noopener,noreferrer"
-            );
-
-        }
-    );
-
-
-    controls.appendChild(
-        download
-    );
-
-    controls.appendChild(
-        open
-    );
-
-
-    message.appendChild(
-        controls
-    );
-
-
-    chatBox.appendChild(
-        message
-    );
-
-
-    scrollToBottom();
-
-}
-
-
-// ============================================================
-// 📜 SCROLL
-// ============================================================
-
-function scrollToBottom() {
-
-    if (!chatBox) return;
-
-
-    requestAnimationFrame(
-        () => {
-
-            chatBox.scrollTop =
-                chatBox.scrollHeight;
-
-        }
-    );
-
-}
-
-
-// ============================================================
-// 🧠 THINKING
-// ============================================================
-
-function showThinking() {
-
-    if (!thinking) return;
-
-
-    thinking.classList.remove(
-        "hidden"
-    );
-
-}
-
-
-function hideThinking() {
-
-    thinking?.classList.add(
-        "hidden"
-    );
-
-}
-
-
-// ============================================================
-// 🔒 SENDING STATE
-// ============================================================
-
-function setSendingState(state) {
-
-    isSending =
-        state;
-
-
-    if (!sendBtn) return;
-
-
-    sendBtn.disabled =
-        state;
-
-    sendBtn.style.opacity =
-        state ? ".6" : "1";
-
-}
-
-
-// ============================================================
-// 🌍 LANGUAGE
-// ============================================================
-
-function getSelectedLanguage() {
-
-    return (
-        languageSelect?.value ||
-        "English"
-    );
-
-}
-
-
-// ============================================================
-// 📡 SAFE RESPONSE
-// ============================================================
-
-async function readResponse(response) {
-
-    const contentType =
-        response.headers.get(
-            "content-type"
-        ) || "";
-
-
-    if (
-        contentType.includes(
-            "application/json"
-        )
-    ) {
-
-        try {
-
-            return await response.json();
-
-        } catch {
-
-            return {
-
-                type: "error",
-
-                text:
-                    "Invalid response from server."
-
-            };
-
-        }
-
-    }
-
-
-    const text =
-        await response.text();
-
-
-    return {
-
-        type: "text",
-
-        text:
-            text ||
-            "Unknown server response."
-
-    };
-
-}
-
-
-// ============================================================
-// 🚀 SEND MESSAGE
-// ============================================================
-
-async function sendMessage() {
-
-    if (isSending) return;
-
-
-    const text =
-        userInput?.value.trim();
-
-
-    if (!text) return;
-
-
-    // Show user message immediately.
-    addMessage(
-        text,
-        "user"
-    );
-
-
-    userInput.value =
-        "";
-
-
-    setSendingState(true);
-
-    showThinking();
-
-
-    try {
-
-        const language =
-            getSelectedLanguage();
-
-
-        const response =
-            await fetch(
-                "/api/chat",
-                {
-
-                    method: "POST",
-
-                    headers: {
-
-                        "Content-Type":
-                            "application/json"
-
-                    },
-
-                    body:
-                        JSON.stringify({
-
-                            message: text,
-
-                            history:
-                                chatHistory,
-
-                            language:
-                                language
-
-                        })
-
-                }
-            );
-
-
-        const data =
-            await readResponse(
-                response
-            );
-
-
-        hideThinking();
-
-
-        if (!response.ok) {
-
-            addMessage(
-                data?.text ||
-                "⚠️ Kirong AI could not process your request.",
-                "ai"
-            );
-
-            return;
-
-        }
-
-
-        // ====================================================
-        // 🎨 IMAGE RESPONSE
-        // ====================================================
-
-        if (
-            data?.type === "image" &&
-            data?.image
-        ) {
-
-            addImage(
-                data.image,
-                data.text ||
-                    "🎨 Here is your image.",
-                data.provider ||
-                    "Image Engine"
-            );
-
-
-            chatHistory.push({
-
-                role: "user",
-
-                content: text
-
-            });
-
-
-            chatHistory.push({
-
-                role: "assistant",
-
-                content:
-                    "[Image generated by Kirong AI]"
-
-            });
-
-
-            trimHistory();
-
-            maybeSetTitle(text);
-
-            saveActiveChat();
-
-            return;
-
-        }
-
-
-        // ====================================================
-        // 💬 TEXT RESPONSE
-        // ====================================================
-
-        const reply =
-            data?.text ||
-            "⚠️ Kirong AI returned an empty response.";
-
-
-        addMessage(
-            reply,
-            "ai"
-        );
-
-
-        chatHistory.push({
-
-            role: "user",
-
-            content: text
-
-        });
-
-
-        chatHistory.push({
-
-            role: "assistant",
-
-            content: reply
-
-        });
-
-
-        trimHistory();
-
-        maybeSetTitle(text);
-
-        saveActiveChat();
-
-    } catch (error) {
-
-        console.error(
-            "🔥 Kirong frontend error:",
-            error
-        );
-
-
-        hideThinking();
-
-
-        addMessage(
-            "⚠️ Connection problem. Kirong AI could not respond right now.",
-            "ai"
-        );
-
-    } finally {
-
-        hideThinking();
-
-        setSendingState(false);
-
-        userInput?.focus();
-
-    }
-
-}
-
-
-// ============================================================
-// ✂️ HISTORY LIMIT
-// ============================================================
-
-function trimHistory() {
-
-    if (
-        chatHistory.length > 20
-    ) {
-
-        chatHistory =
-            chatHistory.slice(-20);
-
-    }
-
-}
-
-
-// ============================================================
-// 📤 FORM SUBMIT
-// ============================================================
-
-if (chatForm) {
-
-    chatForm.addEventListener(
-        "submit",
-        event => {
-
-            event.preventDefault();
-
-            sendMessage();
-
-        }
-    );
-
-}
-
-
-// ============================================================
-// ⌨️ ENTER
-// ============================================================
-
-if (userInput) {
-
-    userInput.addEventListener(
-        "keydown",
-        event => {
-
-            if (
-                event.key === "Enter" &&
-                !event.shiftKey
-            ) {
-
-                event.preventDefault();
-
-                sendMessage();
-
-            }
-
-        }
-    );
-
-}
-
-
-// ============================================================
-// 🌙 THEME
-// ============================================================
-
-function loadTheme() {
-
-    const theme =
-        localStorage.getItem(
-            THEME_KEY
-        );
-
-
-    if (theme === "dark") {
-
-        document.body.classList.add(
-            "dark"
-        );
-
-
-        if (themeBtn) {
-
-            themeBtn.textContent =
-                "☀️";
-
-        }
-
-    }
-
-}
-
-
-loadTheme();
 
 
 if (themeBtn) {
 
-    themeBtn.addEventListener(
-        "click",
-        () => {
+  themeBtn.addEventListener(
+    "click",
+    () => {
 
-            document.body.classList.toggle(
-                "dark"
-            );
-
-
-            const dark =
-                document.body.classList.contains(
-                    "dark"
-                );
-
-
-            themeBtn.textContent =
-                dark ? "☀️" : "🌙";
-
-
-            localStorage.setItem(
-                THEME_KEY,
-                dark ? "dark" : "light"
-            );
-
-        }
-    );
-
-}
-
-
-// ============================================================
-// ⚡ QUICK ACTIONS
-// ============================================================
-
-const quickPrompts = {
-
-    Code:
-        "💻 Help me write clean code for ",
-
-    Explain:
-        "🧠 Explain this clearly and simply: ",
-
-    Write:
-        "✍️ Help me write ",
-
-    Image:
-        "🎨 Generate an image of ",
-
-    Email:
-        "📧 Help me write a professional email about ",
-
-    Business:
-        "💼 Give me a practical business strategy for ",
-
-    Study:
-        "📚 Teach me this topic step by step: ",
-
-    Translate:
-        "🌍 Translate this into English: ",
-
-    Analyze:
-        "📊 Analyze this and give me the key insights: ",
-
-    Developer:
-        "🧑🏽‍💻 Help me with this developer task: ",
-
-    Ideas:
-        "💡 Give me creative ideas for ",
-
-    Summarize:
-        "📝 Summarize this clearly: "
-
-};
-
-
-document
-    .querySelectorAll(".quickBtn")
-    .forEach(button => {
-
-        button.addEventListener(
-            "click",
-            () => {
-
-                const action =
-                    button.dataset.action;
-
-
-                const prompt =
-                    quickPrompts[action] ||
-                    `${action} `;
-
-
-                userInput.value =
-                    prompt;
-
-
-                userInput.focus();
-
-
-                try {
-
-                    userInput.setSelectionRange(
-                        userInput.value.length,
-                        userInput.value.length
-                    );
-
-                } catch {}
-
-            }
+      const light =
+        document.body.classList.contains(
+          "light-theme"
         );
 
-    });
+      applyTheme(
+        light
+          ? "dark"
+          : "light"
+      );
 
-
-// ============================================================
-// 🗑️ CLEAR CURRENT CHAT
-// ============================================================
-
-const clearBtn =
-    document.getElementById(
-        "clearBtn"
-    );
-
-
-if (clearBtn) {
-
-    clearBtn.addEventListener(
-        "click",
-        () => {
-
-            const chat =
-                getActiveChat();
-
-
-            if (!chat) return;
-
-
-            const confirmed =
-                window.confirm(
-                    "Clear this conversation?"
-                );
-
-
-            if (!confirmed) return;
-
-
-            chatHistory = [];
-
-            chat.history = [];
-
-            chat.title =
-                "New Chat";
-
-            chat.updatedAt =
-                Date.now();
-
-
-            saveChats();
-
-            renderChat();
-
-            renderShelves();
-
-            userInput?.focus();
-
-        }
-    );
+    }
+  );
 
 }
 
 
-// ============================================================
-// 💾 EXPORT CHAT
-// ============================================================
+/* ============================================================
+   🧹 TEXT ESCAPING
+   ============================================================ */
 
-const exportBtn =
-    document.getElementById(
-        "exportBtn"
-    );
+function escapeHTML(value) {
 
+  const div =
+    document.createElement("div");
 
-if (exportBtn) {
+  div.textContent =
+    String(value ?? "");
 
-    exportBtn.addEventListener(
-        "click",
-        () => {
-
-            const messages =
-                Array.from(
-                    document.querySelectorAll(
-                        "#chatBox .message"
-                    )
-                );
-
-
-            if (!messages.length) {
-
-                return;
-
-            }
-
-
-            const text =
-                messages
-                    .map(
-                        message =>
-                            message.innerText.trim()
-                    )
-                    .filter(Boolean)
-                    .join(
-                        "\n\n--------------------\n\n"
-                    );
-
-
-            const blob =
-                new Blob(
-                    [text],
-                    {
-                        type:
-                            "text/plain;charset=utf-8"
-                    }
-                );
-
-
-            const url =
-                URL.createObjectURL(blob);
-
-
-            const link =
-                document.createElement("a");
-
-
-            link.href =
-                url;
-
-
-            link.download =
-                "KirongAI_Chat.txt";
-
-
-            document.body.appendChild(
-                link
-            );
-
-
-            link.click();
-
-            link.remove();
-
-
-            URL.revokeObjectURL(
-                url
-            );
-
-        }
-    );
-
+  return div.innerHTML;
 }
 
 
-// ============================================================
-// 📍 LOCATION
-// ============================================================
+/* ============================================================
+   📝 SIMPLE MARKDOWN RENDERER
+   ============================================================ */
 
-const locationBtn =
-    document.getElementById(
-        "locationBtn"
+function renderMarkdown(text) {
+
+  let html =
+    escapeHTML(text);
+
+
+  /* Code blocks */
+
+  html =
+    html.replace(
+      /```([\s\S]*?)```/g,
+      (_, code) => {
+
+        return `
+          <pre class="codeBlock">
+            <code>${code.trim()}</code>
+          </pre>
+        `;
+
+      }
     );
 
 
-if (locationBtn) {
+  /* Inline code */
 
-    locationBtn.addEventListener(
-        "click",
-        () => {
-
-            if (
-                !navigator.geolocation
-            ) {
-
-                addMessage(
-                    "📍 Location is not supported by this browser.",
-                    "ai"
-                );
-
-                return;
-
-            }
-
-
-            locationBtn.disabled =
-                true;
-
-
-            addMessage(
-                "📍 Getting your location...",
-                "ai"
-            );
-
-
-            navigator.geolocation.getCurrentPosition(
-
-                position => {
-
-                    const latitude =
-                        position.coords.latitude
-                            .toFixed(4);
-
-
-                    const longitude =
-                        position.coords.longitude
-                            .toFixed(4);
-
-
-                    addMessage(
-                        `📍 Location received.\nLatitude: ${latitude}\nLongitude: ${longitude}`,
-                        "ai"
-                    );
-
-
-                    locationBtn.disabled =
-                        false;
-
-                },
-
-                () => {
-
-                    addMessage(
-                        "📍 I could not access your location.",
-                        "ai"
-                    );
-
-
-                    locationBtn.disabled =
-                        false;
-
-                },
-
-                {
-
-                    enableHighAccuracy: true,
-
-                    timeout: 10000,
-
-                    maximumAge: 60000
-
-                }
-
-            );
-
-        }
+  html =
+    html.replace(
+      /`([^`]+)`/g,
+      "<code>$1</code>"
     );
 
+
+  /* Bold */
+
+  html =
+    html.replace(
+      /\*\*(.*?)\*\*/g,
+      "<strong>$1</strong>"
+    );
+
+
+  /* Italic */
+
+  html =
+    html.replace(
+      /\*(.*?)\*/g,
+      "<em>$1</em>"
+    );
+
+
+  /* Headings */
+
+  html =
+    html.replace(
+      /^### (.*)$/gm,
+      "<h4>$1</h4>"
+    );
+
+  html =
+    html.replace(
+      /^## (.*)$/gm,
+      "<h3>$1</h3>"
+    );
+
+  html =
+    html.replace(
+      /^# (.*)$/gm,
+      "<h2>$1</h2>"
+    );
+
+
+  /* Lists */
+
+  html =
+    html.replace(
+      /^[-•] (.*)$/gm,
+      "<li>$1</li>"
+    );
+
+
+  /* New lines */
+
+  html =
+    html.replace(
+      /\n/g,
+      "<br>"
+    );
+
+
+  return html;
 }
 
 
-// ============================================================
-// 📎 FILE UPLOAD
-// ============================================================
+/* ============================================================
+   💬 MESSAGE UI
+   ============================================================ */
 
-const fileInput =
-    document.getElementById(
-        "fileInput"
-    );
-
-
-const uploadBtn =
-    document.getElementById(
-        "uploadBtn"
-    );
-
-
-if (
-    uploadBtn &&
-    fileInput
+function addMessage(
+  role,
+  text,
+  options = {}
 ) {
 
-    uploadBtn.addEventListener(
-        "click",
-        () => {
+  if (!chatBox) {
+    return;
+  }
 
-            fileInput.click();
 
-        }
+  const message =
+    document.createElement("div");
+
+  message.className =
+    `message ${role}-message`;
+
+
+  const bubble =
+    document.createElement("div");
+
+  bubble.className =
+    "messageBubble";
+
+
+  if (options.file) {
+
+    const fileCard =
+      document.createElement("div");
+
+    fileCard.className =
+      "attachedFile";
+
+    fileCard.innerHTML = `
+      <span class="fileIcon">📎</span>
+      <span class="fileName">
+        ${escapeHTML(options.file)}
+      </span>
+    `;
+
+    bubble.appendChild(
+      fileCard
     );
 
-
-    fileInput.addEventListener(
-        "change",
-        () => {
-
-            if (
-                !fileInput.files ||
-                !fileInput.files.length
-            ) {
-
-                return;
-
-            }
+  }
 
 
-            const file =
-                fileInput.files[0];
+  if (text) {
+
+    const content =
+      document.createElement("div");
+
+    content.className =
+      "messageContent";
 
 
-            addMessage(
-                `📎 ${file.name}`,
-                "user"
-            );
+    if (role === "assistant") {
 
-
-            addMessage(
-                "📎 File selected successfully. File Intelligence will be connected next.",
-                "ai"
-            );
-
-
-            fileInput.value =
-                "";
-
-        }
-    );
-
-}
-
-
-// ============================================================
-// 🎤 VOICE INPUT
-// ============================================================
-
-const micBtn =
-    document.getElementById(
-        "micBtn"
-    );
-
-
-if (
-    micBtn &&
-    userInput
-) {
-
-    const SpeechRecognition =
-        window.SpeechRecognition ||
-        window.webkitSpeechRecognition;
-
-
-    if (!SpeechRecognition) {
-
-        micBtn.addEventListener(
-            "click",
-            () => {
-
-                addMessage(
-                    "🎤 Voice input is not supported by this browser.",
-                    "ai"
-                );
-
-            }
-        );
+      content.innerHTML =
+        renderMarkdown(text);
 
     } else {
 
-        const recognition =
-            new SpeechRecognition();
-
-
-        recognition.continuous =
-            false;
-
-        recognition.interimResults =
-            false;
-
-
-        recognition.onstart =
-            () => {
-
-                micBtn.textContent =
-                    "🔴";
-
-                micBtn.classList.add(
-                    "recording"
-                );
-
-            };
-
-
-        recognition.onend =
-            () => {
-
-                micBtn.textContent =
-                    "🎤";
-
-                micBtn.classList.remove(
-                    "recording"
-                );
-
-            };
-
-
-        recognition.onerror =
-            error => {
-
-                console.error(
-                    "🎤 Speech error:",
-                    error
-                );
-
-
-                micBtn.textContent =
-                    "🎤";
-
-                micBtn.classList.remove(
-                    "recording"
-                );
-
-            };
-
-
-        recognition.onresult =
-            event => {
-
-                const transcript =
-                    event.results?.[0]?.[0]
-                        ?.transcript;
-
-
-                if (transcript) {
-
-                    userInput.value =
-                        transcript;
-
-                    userInput.focus();
-
-                }
-
-            };
-
-
-        micBtn.addEventListener(
-            "click",
-            () => {
-
-                const voiceSelect =
-                    document.getElementById(
-                        "voiceSelect"
-                    );
-
-
-                recognition.lang =
-                    voiceSelect?.value ||
-                    "en-US";
-
-
-                try {
-
-                    recognition.start();
-
-                } catch (error) {
-
-                    console.error(
-                        "🎤 Speech start error:",
-                        error
-                    );
-
-                }
-
-            }
-        );
+      content.textContent =
+        text;
 
     }
 
+
+    bubble.appendChild(
+      content
+    );
+
+  }
+
+
+  message.appendChild(
+    bubble
+  );
+
+
+  chatBox.appendChild(
+    message
+  );
+
+
+  scrollToBottom();
+
+
+  return message;
 }
 
 
-// ============================================================
-// 🎨 SHELF + IMAGE FALLBACK CSS
-// ============================================================
+/* ============================================================
+   🎨 IMAGE RESPONSE
+   ============================================================ */
 
-function injectShelvesStyles() {
+function addImageMessage(
+  text,
+  image,
+  provider = ""
+) {
 
-    if (
-        document.getElementById(
-            "kirongShelvesRuntimeStyles"
-        )
-    ) {
+  if (!chatBox || !image) {
+    return;
+  }
+
+
+  const message =
+    document.createElement("div");
+
+  message.className =
+    "message assistant-message";
+
+
+  const bubble =
+    document.createElement("div");
+
+  bubble.className =
+    "messageBubble imageMessage";
+
+
+  if (text) {
+
+    const intro =
+      document.createElement("div");
+
+    intro.className =
+      "messageContent";
+
+    intro.innerHTML =
+      renderMarkdown(text);
+
+    bubble.appendChild(
+      intro
+    );
+
+  }
+
+
+  const imageElement =
+    document.createElement("img");
+
+  imageElement.src =
+    image;
+
+  imageElement.alt =
+    "Generated by Kirong AI";
+
+  imageElement.loading =
+    "lazy";
+
+  imageElement.className =
+    "generatedImage";
+
+
+  imageElement.addEventListener(
+    "click",
+    () => {
+
+      window.open(
+        imageElement.src,
+        "_blank"
+      );
+
+    }
+  );
+
+
+  bubble.appendChild(
+    imageElement
+  );
+
+
+  if (provider) {
+
+    const providerText =
+      document.createElement("small");
+
+    providerText.className =
+      "imageProvider";
+
+    providerText.textContent =
+      provider;
+
+    bubble.appendChild(
+      providerText
+    );
+
+  }
+
+
+  message.appendChild(
+    bubble
+  );
+
+  chatBox.appendChild(
+    message
+  );
+
+
+  scrollToBottom();
+}
+
+
+/* ============================================================
+   ⬇️ SCROLL
+   ============================================================ */
+
+function scrollToBottom() {
+
+  if (!chatBox) {
+    return;
+  }
+
+  requestAnimationFrame(
+    () => {
+
+      chatBox.scrollTop =
+        chatBox.scrollHeight;
+
+    }
+  );
+}
+
+
+/* ============================================================
+   🧠 THINKING
+   ============================================================ */
+
+function setThinking(active) {
+
+  if (!thinking) {
+    return;
+  }
+
+  thinking.classList.toggle(
+    "hidden",
+    !active
+  );
+
+  if (active) {
+    scrollToBottom();
+  }
+}
+
+
+/* ============================================================
+   🔒 BUTTON STATE
+   ============================================================ */
+
+function setSendingState(active) {
+
+  isSending =
+    active;
+
+
+  if (sendBtn) {
+
+    sendBtn.disabled =
+      active;
+
+    sendBtn.style.opacity =
+      active
+        ? "0.6"
+        : "";
+
+  }
+
+  if (userInput) {
+
+    userInput.disabled =
+      active;
+
+  }
+}
+
+
+/* ============================================================
+   📎 FILE VALIDATION
+   ============================================================ */
+
+function validateFile(file) {
+
+  if (!file) {
+    return false;
+  }
+
+
+  if (
+    file.size >
+    MAX_FILE_SIZE
+  ) {
+
+    alert(
+      "📎 File is too large. Maximum size is 10MB."
+    );
+
+    return false;
+  }
+
+
+  return true;
+}
+
+
+/* ============================================================
+   📎 FILE SELECTION
+   ============================================================ */
+
+if (uploadBtn && fileInput) {
+
+  uploadBtn.addEventListener(
+    "click",
+    () => {
+
+      fileInput.click();
+
+    }
+  );
+
+
+  fileInput.addEventListener(
+    "change",
+    () => {
+
+      const file =
+        fileInput.files?.[0];
+
+
+      if (!file) {
+        return;
+      }
+
+
+      if (!validateFile(file)) {
+
+        fileInput.value =
+          "";
+
+        selectedFile =
+          null;
 
         return;
 
+      }
+
+
+      selectedFile =
+        file;
+
+
+      addMessage(
+        "user",
+        "📎 File selected successfully.",
+        {
+          file:
+            file.name
+        }
+      );
+
+
+      console.log(
+        "📎 FILE READY:",
+        {
+          name:
+            file.name,
+
+          size:
+            file.size,
+
+          type:
+            file.type
+        }
+      );
+
     }
+  );
 
+}
 
-    const style =
-        document.createElement("style");
 
+/* ============================================================
+   📦 BUILD FORM DATA
+   IMPORTANT:
+   DO NOT SEND JSON WHEN A FILE IS PRESENT.
+   formidable EXPECTS multipart/form-data.
+   ============================================================ */
 
-    style.id =
-        "kirongShelvesRuntimeStyles";
+function buildFormData(message) {
 
+  const formData =
+    new FormData();
 
-    style.textContent = `
 
-        /* ================================================
-           🌑 OVERLAY
-        ================================================ */
+  formData.append(
+    "message",
+    message
+  );
 
-        #kirongShelvesOverlay {
 
-            position: fixed;
+  formData.append(
+    "language",
+    getLanguage()
+  );
 
-            inset: 0;
 
-            background:
-                rgba(0,0,0,.52);
+  formData.append(
+    "history",
+    JSON.stringify(
+      messages
+        .slice(-MAX_HISTORY_ITEMS)
+        .map(item => ({
+          role:
+            item.role,
 
-            opacity: 0;
+          content:
+            item.content
+        }))
+    )
+  );
 
-            visibility: hidden;
 
-            pointer-events: none;
+  if (selectedFile) {
 
-            z-index: 9998;
+    formData.append(
+      "file",
+      selectedFile,
+      selectedFile.name
+    );
 
-            transition:
-                opacity .28s ease;
+  }
 
-            backdrop-filter:
-                blur(4px);
 
-            -webkit-backdrop-filter:
-                blur(4px);
+  return formData;
+}
 
-        }
 
+/* ============================================================
+   🧠 HISTORY
+   ============================================================ */
 
-        #kirongShelvesOverlay.open {
+function addToHistory(
+  role,
+  content
+) {
 
-            opacity: 1;
+  if (!content) {
+    return;
+  }
 
-            visibility: visible;
 
-            pointer-events: auto;
+  messages.push({
 
-        }
+    role,
 
+    content:
+      String(content)
 
-        /* ================================================
-           🗂️ SHELF
-        ================================================ */
+  });
 
-        #kirongShelves {
 
-            position: fixed;
+  if (
+    messages.length >
+    MAX_HISTORY_ITEMS
+  ) {
 
-            top: 0;
+    messages =
+      messages.slice(
+        -MAX_HISTORY_ITEMS
+      );
 
-            left: 0;
+  }
 
-            bottom: 0;
 
-            width:
-                min(340px, 88vw);
+  saveCurrentChat();
+}
 
-            transform:
-                translateX(-105%);
 
-            transition:
-                transform .38s cubic-bezier(
-                    .16,
-                    1,
-                    .3,
-                    1
-                );
+/* ============================================================
+   💾 CHAT STORAGE
+   ============================================================ */
 
-            z-index: 9999;
+function saveCurrentChat() {
 
-            overflow-y: auto;
+  const chats =
+    loadJSON(
+      STORAGE_KEYS.chats,
+      []
+    );
 
-            overscroll-behavior:
-                contain;
 
-            background:
-                rgba(9,9,18,.96);
+  const activeId =
+    localStorage.getItem(
+      STORAGE_KEYS.activeChat
+    ) ||
+    `chat_${Date.now()}`;
 
-            border-right:
-                1px solid
-                rgba(255,255,255,.10);
 
-            box-shadow:
-                25px 0 80px
-                rgba(0,0,0,.55);
+  localStorage.setItem(
+    STORAGE_KEYS.activeChat,
+    activeId
+  );
 
-            backdrop-filter:
-                blur(30px);
 
-            -webkit-backdrop-filter:
-                blur(30px);
+  const existingIndex =
+    chats.findIndex(
+      chat =>
+        chat.id === activeId
+    );
 
-        }
 
+  const chatData = {
 
-        #kirongShelves.open {
+    id:
+      activeId,
 
-            transform:
-                translateX(0);
+    title:
+      messages[0]?.content
+        ?.slice(0, 40)
+        ||
+      "New Chat",
 
-        }
+    messages:
+      messages.slice(
+        -MAX_HISTORY_ITEMS
+      ),
 
+    updatedAt:
+      Date.now()
 
-        /* ================================================
-           HEADER
-        ================================================ */
+  };
 
-        .kirongShelvesHeader {
 
-            position: sticky;
+  if (
+    existingIndex >= 0
+  ) {
 
-            top: 0;
+    chats[existingIndex] =
+      chatData;
 
-            z-index: 5;
+  } else {
 
-            display: flex;
+    chats.unshift(
+      chatData
+    );
 
-            align-items: center;
+  }
 
-            justify-content:
-                space-between;
 
-            padding:
-                18px;
+  saveJSON(
+    STORAGE_KEYS.chats,
+    chats.slice(0, 30)
+  );
+}
 
-            background:
-                rgba(9,9,18,.90);
 
-            border-bottom:
-                1px solid
-                rgba(255,255,255,.07);
+/* ============================================================
+   📂 RESTORE CHAT
+   ============================================================ */
 
-            backdrop-filter:
-                blur(20px);
+function restoreChat() {
 
-        }
+  const chats =
+    loadJSON(
+      STORAGE_KEYS.chats,
+      []
+    );
 
 
-        .kirongShelvesHeader strong {
+  const activeId =
+    localStorage.getItem(
+      STORAGE_KEYS.activeChat
+    );
 
-            color:
-                #fff;
 
-            font-size:
-                16px;
+  if (!activeId) {
+    return;
+  }
 
-            letter-spacing:
-                -.2px;
 
-        }
+  const chat =
+    chats.find(
+      item =>
+        item.id === activeId
+    );
 
 
-        .kirongShelvesHeader button {
+  if (!chat) {
+    return;
+  }
 
-            width:
-                38px;
 
-            height:
-                38px;
+  if (
+    !Array.isArray(
+      chat.messages
+    )
+  ) {
+    return;
+  }
 
-            border:
-                1px solid
-                rgba(255,255,255,.08);
 
-            border-radius:
-                11px;
+  messages =
+    chat.messages
+      .filter(
+        item =>
+          item &&
+          (
+            item.role === "user" ||
+            item.role === "assistant"
+          ) &&
+          typeof item.content === "string"
+      )
+      .slice(
+        -MAX_HISTORY_ITEMS
+      );
 
-            background:
-                rgba(255,255,255,.05);
 
-            color:
-                #aaa;
+  if (
+    messages.length === 0
+  ) {
+    return;
+  }
 
-            cursor:
-                pointer;
 
-            font-size:
-                17px;
+  if (chatBox) {
 
-        }
+    chatBox.innerHTML =
+      "";
 
+  }
 
-        .kirongShelvesHeader button:hover {
 
-            background:
-                rgba(255,255,255,.10);
+  messages.forEach(
+    item => {
 
-            color:
-                #fff;
+      addMessage(
+        item.role,
+        item.content
+      );
 
-        }
+    }
+  );
 
+}
 
-        /* ================================================
-           NEW CHAT
-        ================================================ */
 
-        .kirongNewChatBtn {
+/* ============================================================
+   🆕 NEW CHAT
+   ============================================================ */
 
-            width:
-                calc(100% - 28px);
+function startNewChat() {
 
-            height:
-                46px;
+  messages =
+    [];
 
-            margin:
-                15px 14px;
+  selectedFile =
+    null;
 
-            border:
-                1px solid
-                rgba(139,92,246,.45);
 
-            border-radius:
-                14px;
+  if (fileInput) {
+    fileInput.value =
+      "";
+  }
 
-            background:
-                linear-gradient(
-                    135deg,
-                    rgba(139,92,246,.22),
-                    rgba(109,40,217,.12)
-                );
 
-            color:
-                #fff;
+  localStorage.removeItem(
+    STORAGE_KEYS.activeChat
+  );
 
-            font-size:
-                13px;
 
-            font-weight:
-                800;
+  if (chatBox) {
 
-            cursor:
-                pointer;
+    chatBox.innerHTML = `
 
-            transition:
-                transform .2s ease,
-                background .2s ease;
+      <div class="welcomeMessage">
 
-        }
+        <div class="welcomeIcon">
+          ⚡
+        </div>
 
+        <h2>
+          Hello 👋
+        </h2>
 
-        .kirongNewChatBtn:hover {
+        <h3>
+          I’m Kirong AI.
+        </h3>
 
-            background:
-                rgba(139,92,246,.30);
+        <p>
+          Your intelligent assistant for
+          <strong>
+            coding, learning, creativity,
+            business and everyday tasks.
+          </strong>
+        </p>
 
-        }
+        <span class="welcomeHint">
+          What can I help you with today?
+        </span>
 
-
-        .kirongNewChatBtn:active {
-
-            transform:
-                scale(.97);
-
-        }
-
-
-        /* ================================================
-           CHAT LIST
-        ================================================ */
-
-        .kirongChatList {
-
-            padding:
-                5px 12px 25px;
-
-        }
-
-
-        .kirongChatItem {
-
-            display:
-                flex;
-
-            align-items:
-                center;
-
-            gap:
-                10px;
-
-            min-height:
-                52px;
-
-            margin-bottom:
-                6px;
-
-            padding:
-                9px 10px;
-
-            border:
-                1px solid
-                transparent;
-
-            border-radius:
-                14px;
-
-            color:
-                #cbd5e1;
-
-            cursor:
-                pointer;
-
-            transition:
-                background .2s ease,
-                border-color .2s ease,
-                transform .15s ease;
-
-        }
-
-
-        .kirongChatItem:hover {
-
-            background:
-                rgba(139,92,246,.11);
-
-            border-color:
-                rgba(139,92,246,.14);
-
-        }
-
-
-        .kirongChatItem:active {
-
-            transform:
-                scale(.985);
-
-        }
-
-
-        .kirongChatItem.active {
-
-            background:
-                rgba(139,92,246,.18);
-
-            border-color:
-                rgba(139,92,246,.25);
-
-        }
-
-
-        .kirongChatIcon {
-
-            flex:
-                0 0 auto;
-
-            width:
-                31px;
-
-            height:
-                31px;
-
-            display:
-                grid;
-
-            place-items:
-                center;
-
-            border-radius:
-                10px;
-
-            background:
-                rgba(255,255,255,.06);
-
-            font-size:
-                14px;
-
-        }
-
-
-        .kirongChatTitle {
-
-            flex:
-                1;
-
-            min-width:
-                0;
-
-            overflow:
-                hidden;
-
-            text-overflow:
-                ellipsis;
-
-            white-space:
-                nowrap;
-
-            color:
-                #e5e7eb;
-
-            font-size:
-                13px;
-
-            font-weight:
-                650;
-
-        }
-
-
-        .kirongDeleteChat {
-
-            flex:
-                0 0 auto;
-
-            width:
-                32px;
-
-            height:
-                32px;
-
-            border:
-                0;
-
-            border-radius:
-                9px;
-
-            background:
-                transparent;
-
-            opacity:
-                .45;
-
-            cursor:
-                pointer;
-
-            transition:
-                opacity .2s ease,
-                background .2s ease;
-
-        }
-
-
-        .kirongDeleteChat:hover {
-
-            opacity:
-                1;
-
-            background:
-                rgba(239,68,68,.10);
-
-        }
-
-
-        .kirongEmptyChats {
-
-            padding:
-                30px 15px;
-
-            text-align:
-                center;
-
-            color:
-                #777;
-
-            font-size:
-                13px;
-
-        }
-
-
-        /* ================================================
-           IMAGE CONTROLS
-        ================================================ */
-
-        .imageControls {
-
-            display:
-                flex;
-
-            gap:
-                9px;
-
-            flex-wrap:
-                wrap;
-
-            margin-top:
-                12px;
-
-        }
-
-
-        .imageControls a,
-        .imageControls button {
-
-            padding:
-                8px 12px;
-
-            border:
-                1px solid
-                rgba(255,255,255,.10);
-
-            border-radius:
-                10px;
-
-            background:
-                rgba(255,255,255,.05);
-
-            color:
-                white;
-
-            cursor:
-                pointer;
-
-            text-decoration:
-                none;
-
-            font-size:
-                12px;
-
-        }
-
-
-        .imageControls a:hover,
-        .imageControls button:hover {
-
-            background:
-                rgba(255,255,255,.10);
-
-        }
-
-
-        /* ================================================
-           🎤 RECORDING
-        ================================================ */
-
-        #micBtn.recording {
-
-            animation:
-                kirongPulse 1s infinite;
-
-        }
-
-
-        @keyframes kirongPulse {
-
-            50% {
-
-                transform:
-                    scale(1.08);
-
-                box-shadow:
-                    0 0 0 8px
-                    rgba(239,68,68,.10);
-
-            }
-
-        }
-
-
-        /* ================================================
-           📱 MOBILE
-        ================================================ */
-
-        @media (max-width: 600px) {
-
-            #kirongShelves {
-
-                width:
-                    min(320px, 88vw);
-
-            }
-
-        }
+      </div>
 
     `;
 
-
-    document.head.appendChild(
-        style
-    );
+  }
 
 }
 
 
-// ============================================================
-// 🚫 REMOVE OLD FLOATING SHELF BUTTON
-// ============================================================
+/* ============================================================
+   🚀 SEND MESSAGE
+   ============================================================ */
 
-function removeOldShelvesButton() {
+async function sendMessage() {
 
-    const oldButton =
-        document.getElementById(
-            "kirongOpenShelvesBtn"
-        );
+  if (isSending) {
+    return;
+  }
 
 
-    if (oldButton) {
+  const message =
+    String(
+      userInput?.value ||
+      ""
+    ).trim();
 
-        oldButton.remove();
+
+  /*
+   * Allow file-only submission.
+   */
+
+  if (
+    !message &&
+    !selectedFile
+  ) {
+
+    return;
+
+  }
+
+
+  const visibleMessage =
+    message ||
+    `Please analyze the uploaded file: ${selectedFile?.name || "file"}`;
+
+
+  /*
+   * Save user message BEFORE sending.
+   */
+
+  addMessage(
+    "user",
+    message,
+    selectedFile
+      ? {
+          file:
+            selectedFile.name
+        }
+      : {}
+  );
+
+
+  addToHistory(
+    "user",
+    visibleMessage
+  );
+
+
+  if (userInput) {
+
+    userInput.value =
+      "";
+
+  }
+
+
+  setSendingState(
+    true
+  );
+
+  setThinking(
+    true
+  );
+
+
+  try {
+
+    /*
+     * IMPORTANT:
+     * FormData is used for every request.
+     * This makes file uploads work with formidable.
+     */
+
+    const formData =
+      buildFormData(
+        visibleMessage
+      );
+
+
+    console.log(
+      "🚀 Sending to:",
+      API_ENDPOINT
+    );
+
+
+    console.log(
+      "📦 FormData:",
+      {
+        message:
+          visibleMessage,
+
+        language:
+          getLanguage(),
+
+        file:
+          selectedFile
+            ? selectedFile.name
+            : null
+      }
+    );
+
+
+    const response =
+      await fetch(
+        API_ENDPOINT,
+        {
+          method:
+            "POST",
+
+          body:
+            formData,
+
+          headers: {
+            "Accept":
+              "application/json"
+          },
+
+          cache:
+            "no-store"
+        }
+      );
+
+
+    /*
+     * Read response safely.
+     */
+
+    const contentType =
+      response.headers.get(
+        "content-type"
+      ) || "";
+
+
+    let data;
+
+
+    if (
+      contentType.includes(
+        "application/json"
+      )
+    ) {
+
+      data =
+        await response.json();
+
+    } else {
+
+      const raw =
+        await response.text();
+
+      throw new Error(
+        raw ||
+        `Server returned HTTP ${response.status}`
+      );
 
     }
 
+
+    console.log(
+      "📥 Kirong AI response:",
+      data
+    );
+
+
+    /*
+     * Backend error.
+     */
+
+    if (
+      !response.ok ||
+      data?.type === "error"
+    ) {
+
+      throw new Error(
+        data?.text ||
+        `Server error ${response.status}`
+      );
+
+    }
+
+
+    /*
+     * IMAGE RESPONSE
+     */
+
+    if (
+      data?.type === "image" &&
+      data?.image
+    ) {
+
+      addImageMessage(
+        data.text ||
+          "🎨 Here is your image!",
+        data.image,
+        data.provider
+      );
+
+
+      /*
+       * Keep history textual.
+       */
+
+      addToHistory(
+        "assistant",
+        data.text ||
+          "Generated an image."
+      );
+
+
+    } else {
+
+      /*
+       * NORMAL TEXT RESPONSE
+       */
+
+      const answer =
+        String(
+          data?.text ||
+          data?.message ||
+          "I received your message, but no response text was returned."
+        );
+
+
+      addMessage(
+        "assistant",
+        answer
+      );
+
+
+      addToHistory(
+        "assistant",
+        answer
+      );
+
+    }
+
+
+    /*
+     * File has now been sent.
+     * Clear it so it is not accidentally
+     * uploaded again.
+     */
+
+    selectedFile =
+      null;
+
+
+    if (fileInput) {
+
+      fileInput.value =
+        "";
+
+    }
+
+
+  } catch (error) {
+
+    console.error(
+      "🔥 KIRONG AI REQUEST ERROR:",
+      error
+    );
+
+
+    const message =
+      getFriendlyError(
+        error
+      );
+
+
+    addMessage(
+      "assistant",
+      message
+    );
+
+
+    addToHistory(
+      "assistant",
+      message
+    );
+
+
+  } finally {
+
+    setThinking(
+      false
+    );
+
+    setSendingState(
+      false
+    );
+
+
+    if (userInput) {
+
+      userInput.focus();
+
+    }
+
+  }
+
 }
 
 
-// ============================================================
-// 🚀 STARTUP
-// ============================================================
+/* ============================================================
+   🛡️ FRIENDLY ERRORS
+   ============================================================ */
 
-function initKirongAI() {
+function getFriendlyError(error) {
 
-    console.log(
-        "⚡ Starting Kirong AI..."
-    );
-
-
-    loadChats();
-
-    createShelvesUI();
-
-    setupHeaderShelfButton();
-
-    enableSwipeShelves();
-
-    removeOldShelvesButton();
-
-    renderChat();
+  const text =
+    String(
+      error?.message ||
+      ""
+    ).trim();
 
 
-    console.log(
-        "⚡ Kirong AI frontend V6 loaded"
-    );
+  if (
+    text.includes(
+      "Failed to fetch"
+    )
+  ) {
 
-    console.log(
-        "🧠 Persistent Memory: ON"
-    );
+    return `
+⚠️ **Connection error**
 
-    console.log(
-        "🗂️ Chat Shelves: ON"
-    );
+Kirong AI could not reach the server.
 
-    console.log(
-        "➕ Header Plus → OPEN SHELF"
-    );
+Please check:
+- Vercel deployment
+- `/api/chat`
+- environment variables
+- internet connection
 
-    console.log(
-        "🆕 New Chat → SHELF ONLY"
-    );
+Then try again.
+`;
 
-    console.log(
-        "👆 Swipe Shelves: ON"
-    );
+  }
 
-    console.log(
-        "⚡ Quick Actions: ON"
-    );
 
-    console.log(
-        "📎 File Upload: ON"
-    );
+  if (
+    text.includes(
+      "413"
+    ) ||
+    text.toLowerCase().includes(
+      "too large"
+    )
+  ) {
 
-    console.log(
-        "🎤 Voice: ON"
-    );
+    return `
+📎 **File too large**
 
-    console.log(
-        "🌙 Theme: ON"
-    );
+Please upload a file smaller than 10MB.
+`;
+
+  }
+
+
+  if (
+    text.includes(
+      "405"
+    )
+  ) {
+
+    return `
+⚠️ **API method error**
+
+The `/api/chat` endpoint is not accepting this request method.
+`;
+
+  }
+
+
+  if (
+    text.includes(
+      "500"
+    )
+  ) {
+
+    return `
+🔥 **Kirong AI server error**
+
+The request reached the backend, but the AI engine returned an error.
+
+Check the Vercel Function logs for the exact provider error.
+`;
+
+  }
+
+
+  return `
+⚠️ **Kirong AI could not complete that request.**
+
+${text || "Please try again."}
+`;
 
 }
 
 
-// ============================================================
-// 🏁 RUN
-// ============================================================
+/* ============================================================
+   ⚡ FORM SUBMIT
+   ============================================================ */
+
+if (chatForm) {
+
+  chatForm.addEventListener(
+    "submit",
+    event => {
+
+      event.preventDefault();
+
+      sendMessage();
+
+    }
+  );
+
+}
+
+
+/* ============================================================
+   ⌨️ ENTER KEY
+   ============================================================ */
+
+if (userInput) {
+
+  userInput.addEventListener(
+    "keydown",
+    event => {
+
+      if (
+        event.key === "Enter" &&
+        !event.shiftKey
+      ) {
+
+        event.preventDefault();
+
+        sendMessage();
+
+      }
+
+    }
+  );
+
+}
+
+
+/* ============================================================
+   🧠 QUICK ACTIONS
+   ============================================================ */
+
+document
+  .querySelectorAll(
+    ".quickBtn"
+  )
+  .forEach(
+    button => {
+
+      button.addEventListener(
+        "click",
+        () => {
+
+          const action =
+            button.dataset.action ||
+            button.textContent.trim();
+
+
+          const prompts = {
+
+            Code:
+              "Help me with coding. What are you building?",
+
+            Explain:
+              "Explain something to me clearly and practically.",
+
+            Write:
+              "Help me write something. What should we create?",
+
+            Image:
+              "Generate an image of ",
+
+            Email:
+              "Help me write an email.",
+
+            Business:
+              "Help me with a business idea or strategy.",
+
+            Study:
+              "Help me study. What topic should we work on?",
+
+            Translate:
+              "Translate this text for me: ",
+
+            Analyze:
+              "Analyze this information for me.",
+
+            Developer:
+              "Help me diagnose a development problem.",
+
+            Ideas:
+              "Give me creative ideas for ",
+
+            Summarize:
+              "Summarize this for me: "
+
+          };
+
+
+          const prompt =
+            prompts[action] ||
+            "";
+
+
+          if (userInput) {
+
+            userInput.value =
+              prompt;
+
+            userInput.focus();
+
+          }
+
+        }
+      );
+
+    }
+  );
+
+
+/* ============================================================
+   🎤 VOICE INPUT
+   ============================================================ */
+
+function setupVoiceInput() {
+
+  const SpeechRecognition =
+    window.SpeechRecognition ||
+    window.webkitSpeechRecognition;
+
+
+  if (
+    !SpeechRecognition
+  ) {
+
+    if (micBtn) {
+
+      micBtn.addEventListener(
+        "click",
+        () => {
+
+          alert(
+            "🎤 Voice input is not supported by this browser."
+          );
+
+        }
+      );
+
+    }
+
+    return;
+
+  }
+
+
+  recognition =
+    new SpeechRecognition();
+
+
+  recognition.continuous =
+    false;
+
+  recognition.interimResults =
+    false;
+
+
+  recognition.lang =
+    voiceSelect?.value ||
+    "en-US";
+
+
+  recognition.onstart =
+    () => {
+
+      isListening =
+        true;
+
+      if (micBtn) {
+
+        micBtn.textContent =
+          "🔴";
+
+      }
+
+    };
+
+
+  recognition.onresult =
+    event => {
+
+      const transcript =
+        event
+          .results?.[0]?.[0]?.transcript
+          ?.trim();
+
+
+      if (
+        transcript &&
+        userInput
+      ) {
+
+        userInput.value =
+          transcript;
+
+        userInput.focus();
+
+      }
+
+    };
+
+
+  recognition.onerror =
+    error => {
+
+      console.warn(
+        "🎤 Speech recognition:",
+        error
+      );
+
+    };
+
+
+  recognition.onend =
+    () => {
+
+      isListening =
+        false;
+
+      if (micBtn) {
+
+        micBtn.textContent =
+          "🎤";
+
+      }
+
+    };
+
+
+  if (micBtn) {
+
+    micBtn.addEventListener(
+      "click",
+      () => {
+
+        if (isListening) {
+
+          recognition.stop();
+
+          return;
+
+        }
+
+
+        recognition.lang =
+          voiceSelect?.value ||
+          "en-US";
+
+
+        try {
+
+          recognition.start();
+
+        } catch (error) {
+
+          console.warn(
+            "🎤 Could not start microphone:",
+            error
+          );
+
+        }
+
+      }
+    );
+
+  }
+
+}
+
+
+setupVoiceInput();
+
+
+/* ============================================================
+   🎤 VOICE LANGUAGE CHANGE
+   ============================================================ */
+
+if (voiceSelect) {
+
+  voiceSelect.addEventListener(
+    "change",
+    () => {
+
+      if (recognition) {
+
+        recognition.lang =
+          voiceSelect.value ||
+          "en-US";
+
+      }
+
+    }
+  );
+
+}
+
+
+/* ============================================================
+   📍 LOCATION
+   ============================================================ */
+
+if (locationBtn) {
+
+  locationBtn.addEventListener(
+    "click",
+    () => {
+
+      if (
+        !navigator.geolocation
+      ) {
+
+        alert(
+          "📍 Location is not supported by this browser."
+        );
+
+        return;
+
+      }
+
+
+      locationBtn.disabled =
+        true;
+
+
+      locationBtn.textContent =
+        "⏳";
+
+
+      navigator.geolocation.getCurrentPosition(
+
+        position => {
+
+          const latitude =
+            position.coords.latitude;
+
+          const longitude =
+            position.coords.longitude;
+
+
+          if (userInput) {
+
+            userInput.value =
+              `My location is approximately latitude ${latitude}, longitude ${longitude}. Help me understand or use this location.`;
+
+            userInput.focus();
+
+          }
+
+
+          locationBtn.disabled =
+            false;
+
+          locationBtn.textContent =
+            "📍";
+
+        },
+
+        error => {
+
+          console.warn(
+            "📍 Location error:",
+            error
+          );
+
+
+          alert(
+            "📍 Could not access your location."
+          );
+
+
+          locationBtn.disabled =
+            false;
+
+          locationBtn.textContent =
+            "📍";
+
+        },
+
+        {
+          enableHighAccuracy:
+            false,
+
+          timeout:
+            10000,
+
+          maximumAge:
+            60000
+
+        }
+
+      );
+
+    }
+  );
+
+}
+
+
+/* ============================================================
+   🗑️ CLEAR CHAT
+   ============================================================ */
+
+if (clearBtn) {
+
+  clearBtn.addEventListener(
+    "click",
+    () => {
+
+      const confirmed =
+        window.confirm(
+          "Clear this conversation?"
+        );
+
+
+      if (!confirmed) {
+        return;
+      }
+
+
+      startNewChat();
+
+    }
+  );
+
+}
+
+
+/* ============================================================
+   💾 EXPORT CHAT
+   ============================================================ */
+
+if (exportBtn) {
+
+  exportBtn.addEventListener(
+    "click",
+    () => {
+
+      if (
+        messages.length === 0
+      ) {
+
+        alert(
+          "There is no conversation to export."
+        );
+
+        return;
+
+      }
+
+
+      const lines =
+        messages.map(
+          item => {
+
+            const role =
+              item.role === "user"
+                ? "You"
+                : "Kirong AI";
+
+
+            return `${role}:\n${item.content}`;
+
+          }
+        );
+
+
+      const content =
+        [
+          "KIRONG AI CHAT EXPORT",
+          "======================",
+          "",
+          ...lines
+        ].join(
+          "\n\n"
+        );
+
+
+      const blob =
+        new Blob(
+          [content],
+          {
+            type:
+              "text/plain;charset=utf-8"
+          }
+        );
+
+
+      const url =
+        URL.createObjectURL(
+          blob
+        );
+
+
+      const link =
+        document.createElement(
+          "a"
+        );
+
+
+      link.href =
+        url;
+
+      link.download =
+        `kirong-ai-chat-${Date.now()}.txt`;
+
+
+      document.body.appendChild(
+        link
+      );
+
+      link.click();
+
+      link.remove();
+
+
+      URL.revokeObjectURL(
+        url
+      );
+
+    }
+  );
+
+}
+
+
+/* ============================================================
+   🧠 INITIALIZATION
+   ============================================================ */
+
+function initializeKirongAI() {
+
+  restoreTheme();
+
+  restoreLanguage();
+
+  restoreChat();
+
+
+  console.log(
+    "⚡ KIRONG AI V7.0 FRONTEND READY"
+  );
+
+  console.log(
+    "🔗 API:",
+    API_ENDPOINT
+  );
+
+  console.log(
+    "📎 File upload:",
+    "FormData → formidable"
+  );
+
+  console.log(
+    "🌍 Language:",
+    getLanguage()
+  );
+
+}
+
+
+/* ============================================================
+   🚀 START
+   ============================================================ */
 
 if (
-    document.readyState === "loading"
+  document.readyState ===
+  "loading"
 ) {
 
-    document.addEventListener(
-        "DOMContentLoaded",
-        initKirongAI
-    );
+  document.addEventListener(
+    "DOMContentLoaded",
+    initializeKirongAI
+  );
 
 } else {
 
-    initKirongAI();
+  initializeKirongAI();
 
 }
+
