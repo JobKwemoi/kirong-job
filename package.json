@@ -1,11 +1,14 @@
 {
   "name": "kirong-job-ai",
-  "version": "5.2.0",
+  "version": "7.0.0",
   "type": "module",
-  "description": "Kirong AI - Intelligent Kenyan AI Assistant",
+  "description": "Kirong AI - Intelligent Kenyan AI Assistant with File Support",
   "dependencies": {
     "@huggingface/inference": "^4.13.0",
     "groq-sdk": "^0.27.0",
-    "openai": "^5.0.0"
+    "openai": "^5.0.0",
+    "formidable": "^3.5.1",
+    "pdf-parse": "^1.1.1",
+    "mammoth": "^1.6.0"
   }
 }
