@@ -1,14 +1,16 @@
 {
-  "name": "Kirong AI",
+  "name": "Kirong AI — Intelligent Assistant",
   "short_name": "Kirong AI",
-  "description": "Kirong AI is your intelligent purple-powered assistant",
-  "start_url": "/",
-  "display": "standalone",
-  "background_color": "#6D28D9",
-  "theme_color": "#6D28D9",
+  "description": "Kirong AI — an intelligent AI assistant built by Kirong Job Kwemoi for coding, learning, creativity and business.",
+  "start_url": "/?source=pwa",
   "scope": "/",
-  "orientation": "any",
   "id": "/",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#07060d",
+  "theme_color": "#6D28D9",
+  "lang": "en",
+  "categories": ["productivity", "utilities", "education"],
   "icons": [
     {
       "src": "/icon-192.png",
@@ -21,6 +23,22 @@
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any maskable"
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "form_factor": "wide",
+      "label": "Kirong AI Home"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Chat with Kirong AI",
+      "url": "/",
+      "description": "Start chatting"
     }
   ]
 }
