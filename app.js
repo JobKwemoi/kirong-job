@@ -1,25 +1,33 @@
-
+````javascript
 /* ============================================================
-   ⚡ KIRONG AI — FRONTEND ENGINE V7.0
+   ⚡ KIRONG AI — FRONTEND ENGINE V8.0
+   ------------------------------------------------------------
+   Features:
+   🧠 Persistent conversation memory
+   🎨 Persistent generated-image memory
+   🎤 Voice input
+   🔊 Voice output
+   📋 Copy buttons + toast notifications
+   ＋ Chat shelves / new chats
+   💬 WhatsApp Boss connection
+   🌍 Language persistence
+   🌙 Theme persistence
+   📎 File uploads
+   💾 LocalStorage persistence
+   🛡️ Safe rendering
+   🔄 Automatic chat restoration
    ------------------------------------------------------------
    Compatible with:
-   - index.html
    - /api/chat
-   - formidable file uploads
+   - FormData
    - Groq
    - OpenAI
    - Hugging Face
    - PDF / DOCX / TXT / JS / HTML / CSS / JSON / CSV / MD
-   - Image responses
-   - Chat history
-   - Language selection
-   - Voice input
-   - Theme
-   - Export
-   - Clear chat
    ============================================================ */
 
 "use strict";
+
 
 /* ============================================================
    ⚙️ CONFIGURATION
@@ -28,13 +36,58 @@
 const API_ENDPOINT = "/api/chat";
 
 const MAX_HISTORY_ITEMS = 20;
-const MAX_FILE_SIZE = 10 * 1024 * 1024;
+
+const MAX_FILE_SIZE =
+  10 * 1024 * 1024;
+
+const MAX_STORED_CHATS = 50;
+
+const MAX_STORED_MESSAGES = 50;
+
+
+/*
+ * IMPORTANT:
+ * Replace this with the REAL WhatsApp number
+ * you want users to contact.
+ *
+ * Format:
+ * country code + number
+ * without +
+ * without spaces.
+ *
+ * Example:
+ * 2547XXXXXXXX
+ */
+
+const WHATSAPP_NUMBER =
+  "2547XXXXXXXX";
+
+
+const WHATSAPP_MESSAGE =
+  "Hello Kirong Job Kwemoi 👑, I came from Kirong AI and I would like to talk to you directly.";
+
+
+/* ============================================================
+   💾 STORAGE KEYS
+   ============================================================ */
 
 const STORAGE_KEYS = {
-  chats: "kirong_ai_chats_v7",
-  activeChat: "kirong_ai_active_chat_v7",
-  theme: "kirong_ai_theme_v7",
-  language: "kirong_ai_language_v7"
+
+  chats:
+    "kirong_ai_chats_v8",
+
+  activeChat:
+    "kirong_ai_active_chat_v8",
+
+  theme:
+    "kirong_ai_theme_v8",
+
+  language:
+    "kirong_ai_language_v8",
+
+  voice:
+    "kirong_ai_voice_v8"
+
 };
 
 
@@ -42,35 +95,47 @@ const STORAGE_KEYS = {
    🧩 DOM
    ============================================================ */
 
-const chatBox = document.getElementById("chatBox");
-const chatForm = document.getElementById("chatForm");
-const userInput = document.getElementById("userInput");
+const chatBox =
+  document.getElementById("chatBox");
 
-const sendBtn = document.getElementById("sendBtn");
-const micBtn = document.getElementById("micBtn");
+const chatForm =
+  document.getElementById("chatForm");
 
-const uploadBtn = document.getElementById("uploadBtn");
-const fileInput = document.getElementById("fileInput");
+const userInput =
+  document.getElementById("userInput");
 
-const themeBtn = document.getElementById("themeBtn");
-const languageSelect = document.getElementById("languageSelect");
-const voiceSelect = document.getElementById("voiceSelect");
+const sendBtn =
+  document.getElementById("sendBtn");
 
-const thinking = document.getElementById("thinking");
+const micBtn =
+  document.getElementById("micBtn");
 
-const clearBtn = document.getElementById("clearBtn");
-const exportBtn = document.getElementById("exportBtn");
+const uploadBtn =
+  document.getElementById("uploadBtn");
 
-const locationBtn = document.getElementById("locationBtn");
+const fileInput =
+  document.getElementById("fileInput");
 
+const themeBtn =
+  document.getElementById("themeBtn");
 
-/* ============================================================
-   🛡️ SAFETY CHECK
-   ============================================================ */
+const languageSelect =
+  document.getElementById("languageSelect");
 
-if (!chatBox || !chatForm || !userInput) {
-  console.error("❌ Kirong AI: Required HTML elements are missing.");
-}
+const voiceSelect =
+  document.getElementById("voiceSelect");
+
+const thinking =
+  document.getElementById("thinking");
+
+const clearBtn =
+  document.getElementById("clearBtn");
+
+const exportBtn =
+  document.getElementById("exportBtn");
+
+const locationBtn =
+  document.getElementById("locationBtn");
 
 
 /* ============================================================
@@ -87,14 +152,41 @@ let recognition = null;
 
 let isListening = false;
 
+let speechVoices = [];
+
+let currentChatId = null;
+
+
+/* ============================================================
+   🛡️ SAFETY
+   ============================================================ */
+
+if (
+  !chatBox ||
+  !chatForm ||
+  !userInput
+) {
+
+  console.error(
+    "❌ Kirong AI V8: Required HTML elements are missing."
+  );
+
+}
+
 
 /* ============================================================
    💾 STORAGE HELPERS
    ============================================================ */
 
-function loadJSON(key, fallback) {
+function loadJSON(
+  key,
+  fallback
+) {
+
   try {
-    const raw = localStorage.getItem(key);
+
+    const raw =
+      localStorage.getItem(key);
 
     if (!raw) {
       return fallback;
@@ -102,23 +194,91 @@ function loadJSON(key, fallback) {
 
     return JSON.parse(raw);
 
-  } catch (error) {
-    console.warn(`⚠️ Could not read ${key}:`, error);
-    return fallback;
   }
+
+  catch (error) {
+
+    console.warn(
+      `⚠️ Storage read failed: ${key}`,
+      error
+    );
+
+    return fallback;
+
+  }
+
 }
 
 
-function saveJSON(key, value) {
+function saveJSON(
+  key,
+  value
+) {
+
   try {
+
     localStorage.setItem(
       key,
       JSON.stringify(value)
     );
 
-  } catch (error) {
-    console.warn(`⚠️ Could not save ${key}:`, error);
   }
+
+  catch (error) {
+
+    console.warn(
+      `⚠️ Storage save failed: ${key}`,
+      error
+    );
+
+  }
+
+}
+
+
+/* ============================================================
+   🆔 CHAT ID
+   ============================================================ */
+
+function createChatId() {
+
+  return (
+    "chat_" +
+    Date.now() +
+    "_" +
+    Math.random()
+      .toString(36)
+      .slice(2, 8)
+  );
+
+}
+
+
+/* ============================================================
+   📝 CHAT TITLE
+   ============================================================ */
+
+function createChatTitle(
+  text
+) {
+
+  const clean =
+    String(text || "")
+      .replace(/\s+/g, " ")
+      .trim();
+
+
+  if (!clean) {
+    return "New Chat";
+  }
+
+
+  return (
+    clean.length > 42
+      ? clean.slice(0, 42) + "..."
+      : clean
+  );
+
 }
 
 
@@ -128,14 +288,11 @@ function saveJSON(key, value) {
 
 function getLanguage() {
 
-  if (!languageSelect) {
-    return "English";
-  }
-
   return (
-    languageSelect.value ||
+    languageSelect?.value ||
     "English"
   ).trim();
+
 }
 
 
@@ -145,25 +302,35 @@ function restoreLanguage() {
     return;
   }
 
+
   const saved =
     localStorage.getItem(
       STORAGE_KEYS.language
     );
 
+
   if (!saved) {
     return;
   }
 
+
   const option =
     Array.from(
       languageSelect.options
-    ).find(
-      item => item.value === saved
+    )
+    .find(
+      item =>
+        item.value === saved
     );
 
+
   if (option) {
-    languageSelect.value = saved;
+
+    languageSelect.value =
+      saved;
+
   }
+
 }
 
 
@@ -188,34 +355,37 @@ if (languageSelect) {
    🎨 THEME
    ============================================================ */
 
-function applyTheme(theme) {
+function applyTheme(
+  theme
+) {
 
-  if (theme === "light") {
+  const isLight =
+    theme === "light";
 
-    document.body.classList.add(
-      "light-theme"
-    );
 
-    if (themeBtn) {
-      themeBtn.textContent = "☀️";
-    }
+  document.body.classList.toggle(
+    "light-theme",
+    isLight
+  );
 
-  } else {
 
-    document.body.classList.remove(
-      "light-theme"
-    );
+  if (themeBtn) {
 
-    if (themeBtn) {
-      themeBtn.textContent = "🌙";
-    }
+    themeBtn.textContent =
+      isLight
+        ? "☀️"
+        : "🌙";
 
   }
 
+
   localStorage.setItem(
     STORAGE_KEYS.theme,
-    theme
+    isLight
+      ? "light"
+      : "dark"
   );
+
 }
 
 
@@ -226,11 +396,13 @@ function restoreTheme() {
       STORAGE_KEYS.theme
     );
 
+
   applyTheme(
     saved === "light"
       ? "light"
       : "dark"
   );
+
 }
 
 
@@ -245,6 +417,7 @@ if (themeBtn) {
           "light-theme"
         );
 
+
       applyTheme(
         light
           ? "dark"
@@ -258,32 +431,41 @@ if (themeBtn) {
 
 
 /* ============================================================
-   🧹 TEXT ESCAPING
+   🧹 ESCAPE HTML
    ============================================================ */
 
-function escapeHTML(value) {
+function escapeHTML(
+  value
+) {
 
   const div =
     document.createElement("div");
 
+
   div.textContent =
     String(value ?? "");
 
+
   return div.innerHTML;
+
 }
 
 
 /* ============================================================
-   📝 SIMPLE MARKDOWN RENDERER
+   📝 MARKDOWN RENDERER
    ============================================================ */
 
-function renderMarkdown(text) {
+function renderMarkdown(
+  text
+) {
 
   let html =
     escapeHTML(text);
 
 
-  /* Code blocks */
+  /*
+   * Code blocks
+   */
 
   html =
     html.replace(
@@ -291,16 +473,26 @@ function renderMarkdown(text) {
       (_, code) => {
 
         return `
-          <pre class="codeBlock">
-            <code>${code.trim()}</code>
-          </pre>
+          <div class="codeWrapper">
+            <button
+              type="button"
+              class="copyCodeBtn"
+              data-copy="${encodeURIComponent(code.trim())}"
+            >
+              📋 Copy
+            </button>
+
+            <pre class="codeBlock"><code>${code.trim()}</code></pre>
+          </div>
         `;
 
       }
     );
 
 
-  /* Inline code */
+  /*
+   * Inline code
+   */
 
   html =
     html.replace(
@@ -309,7 +501,9 @@ function renderMarkdown(text) {
     );
 
 
-  /* Bold */
+  /*
+   * Bold
+   */
 
   html =
     html.replace(
@@ -318,7 +512,9 @@ function renderMarkdown(text) {
     );
 
 
-  /* Italic */
+  /*
+   * Italic
+   */
 
   html =
     html.replace(
@@ -327,7 +523,9 @@ function renderMarkdown(text) {
     );
 
 
-  /* Headings */
+  /*
+   * Headings
+   */
 
   html =
     html.replace(
@@ -335,11 +533,13 @@ function renderMarkdown(text) {
       "<h4>$1</h4>"
     );
 
+
   html =
     html.replace(
       /^## (.*)$/gm,
       "<h3>$1</h3>"
     );
+
 
   html =
     html.replace(
@@ -348,7 +548,9 @@ function renderMarkdown(text) {
     );
 
 
-  /* Lists */
+  /*
+   * Bullet lists
+   */
 
   html =
     html.replace(
@@ -357,7 +559,20 @@ function renderMarkdown(text) {
     );
 
 
-  /* New lines */
+  /*
+   * Links
+   */
+
+  html =
+    html.replace(
+      /(https?:\/\/[^\s<]+)/g,
+      '<a href="$1" target="_blank" rel="noopener noreferrer">$1</a>'
+    );
+
+
+  /*
+   * New lines
+   */
 
   html =
     html.replace(
@@ -367,6 +582,167 @@ function renderMarkdown(text) {
 
 
   return html;
+
+}
+
+
+/* ============================================================
+   🔔 TOAST
+   ============================================================ */
+
+function showToast(
+  message
+) {
+
+  let toast =
+    document.getElementById(
+      "kirongToast"
+    );
+
+
+  if (!toast) {
+
+    toast =
+      document.createElement(
+        "div"
+      );
+
+    toast.id =
+      "kirongToast";
+
+    toast.className =
+      "kirongToast";
+
+    document.body.appendChild(
+      toast
+    );
+
+  }
+
+
+  toast.textContent =
+    message;
+
+
+  toast.classList.add(
+    "show"
+  );
+
+
+  clearTimeout(
+    toast._timeout
+  );
+
+
+  toast._timeout =
+    setTimeout(
+      () => {
+
+        toast.classList.remove(
+          "show"
+        );
+
+      },
+      2200
+    );
+
+}
+
+
+/* ============================================================
+   📋 COPY TEXT
+   ============================================================ */
+
+async function copyText(
+  text
+) {
+
+  try {
+
+    await navigator.clipboard.writeText(
+      String(text || "")
+    );
+
+
+    showToast(
+      "📋 Copied!"
+    );
+
+
+    return true;
+
+  }
+
+  catch (error) {
+
+    console.warn(
+      "Clipboard API failed:",
+      error
+    );
+
+
+    try {
+
+      const textarea =
+        document.createElement(
+          "textarea"
+        );
+
+
+      textarea.value =
+        String(text || "");
+
+
+      textarea.style.position =
+        "fixed";
+
+      textarea.style.opacity =
+        "0";
+
+
+      document.body.appendChild(
+        textarea
+      );
+
+
+      textarea.select();
+
+      document.execCommand(
+        "copy"
+      );
+
+
+      textarea.remove();
+
+
+      showToast(
+        "📋 Copied!"
+      );
+
+
+      return true;
+
+    }
+
+    catch (fallbackError) {
+
+      console.error(
+        "Copy failed:",
+        fallbackError
+      );
+
+
+      showToast(
+        "⚠️ Copy failed"
+      );
+
+
+      return false;
+
+    }
+
+  }
+
 }
 
 
@@ -381,31 +757,45 @@ function addMessage(
 ) {
 
   if (!chatBox) {
-    return;
+    return null;
   }
 
 
   const message =
-    document.createElement("div");
+    document.createElement(
+      "div"
+    );
+
 
   message.className =
     `message ${role}-message`;
 
 
   const bubble =
-    document.createElement("div");
+    document.createElement(
+      "div"
+    );
+
 
   bubble.className =
     "messageBubble";
 
 
+  /*
+   * File card
+   */
+
   if (options.file) {
 
     const fileCard =
-      document.createElement("div");
+      document.createElement(
+        "div"
+      );
+
 
     fileCard.className =
       "attachedFile";
+
 
     fileCard.innerHTML = `
       <span class="fileIcon">📎</span>
@@ -414,6 +804,7 @@ function addMessage(
       </span>
     `;
 
+
     bubble.appendChild(
       fileCard
     );
@@ -421,21 +812,32 @@ function addMessage(
   }
 
 
+  /*
+   * Text
+   */
+
   if (text) {
 
     const content =
-      document.createElement("div");
+      document.createElement(
+        "div"
+      );
+
 
     content.className =
       "messageContent";
 
 
-    if (role === "assistant") {
+    if (
+      role === "assistant"
+    ) {
 
       content.innerHTML =
         renderMarkdown(text);
 
-    } else {
+    }
+
+    else {
 
       content.textContent =
         text;
@@ -446,6 +848,49 @@ function addMessage(
     bubble.appendChild(
       content
     );
+
+
+    /*
+     * Copy assistant response
+     */
+
+    if (
+      role === "assistant"
+    ) {
+
+      const copyBtn =
+        document.createElement(
+          "button"
+        );
+
+
+      copyBtn.type =
+        "button";
+
+
+      copyBtn.className =
+        "copyMessageBtn";
+
+
+      copyBtn.textContent =
+        "📋 Copy";
+
+
+      copyBtn.addEventListener(
+        "click",
+        () => {
+
+          copyText(text);
+
+        }
+      );
+
+
+      bubble.appendChild(
+        copyBtn
+      );
+
+    }
 
   }
 
@@ -464,48 +909,70 @@ function addMessage(
 
 
   return message;
+
 }
 
 
 /* ============================================================
-   🎨 IMAGE RESPONSE
+   🎨 IMAGE MESSAGE
    ============================================================ */
 
 function addImageMessage(
   text,
   image,
-  provider = ""
+  provider = "",
+  prompt = ""
 ) {
 
-  if (!chatBox || !image) {
-    return;
+  if (
+    !chatBox ||
+    !image
+  ) {
+
+    return null;
+
   }
 
 
   const message =
-    document.createElement("div");
+    document.createElement(
+      "div"
+    );
+
 
   message.className =
     "message assistant-message";
 
 
   const bubble =
-    document.createElement("div");
+    document.createElement(
+      "div"
+    );
+
 
   bubble.className =
     "messageBubble imageMessage";
 
 
+  /*
+   * Intro
+   */
+
   if (text) {
 
     const intro =
-      document.createElement("div");
+      document.createElement(
+        "div"
+      );
+
 
     intro.className =
       "messageContent";
 
+
     intro.innerHTML =
       renderMarkdown(text);
+
 
     bubble.appendChild(
       intro
@@ -514,17 +981,28 @@ function addImageMessage(
   }
 
 
+  /*
+   * Image
+   */
+
   const imageElement =
-    document.createElement("img");
+    document.createElement(
+      "img"
+    );
+
 
   imageElement.src =
     image;
 
+
   imageElement.alt =
+    prompt ||
     "Generated by Kirong AI";
+
 
   imageElement.loading =
     "lazy";
+
 
   imageElement.className =
     "generatedImage";
@@ -548,16 +1026,133 @@ function addImageMessage(
   );
 
 
+  /*
+   * Download
+   */
+
+  const actions =
+    document.createElement(
+      "div"
+    );
+
+
+  actions.className =
+    "imageActions";
+
+
+  const downloadBtn =
+    document.createElement(
+      "button"
+    );
+
+
+  downloadBtn.type =
+    "button";
+
+
+  downloadBtn.textContent =
+    "⬇️ Save Image";
+
+
+  downloadBtn.addEventListener(
+    "click",
+    () => {
+
+      const link =
+        document.createElement(
+          "a"
+        );
+
+
+      link.href =
+        image;
+
+
+      link.download =
+        `kirong-ai-image-${Date.now()}.png`;
+
+
+      document.body.appendChild(
+        link
+      );
+
+
+      link.click();
+
+
+      link.remove();
+
+
+      showToast(
+        "🖼️ Image saved"
+      );
+
+    }
+  );
+
+
+  actions.appendChild(
+    downloadBtn
+  );
+
+
+  /*
+   * Copy image reference
+   */
+
+  const copyImageBtn =
+    document.createElement(
+      "button"
+    );
+
+
+  copyImageBtn.type =
+    "button";
+
+
+  copyImageBtn.textContent =
+    "📋 Copy Image";
+
+
+  copyImageBtn.addEventListener(
+    "click",
+    () => {
+
+      copyText(image);
+
+    }
+  );
+
+
+  actions.appendChild(
+    copyImageBtn
+  );
+
+
+  bubble.appendChild(
+    actions
+  );
+
+
+  /*
+   * Provider
+   */
+
   if (provider) {
 
     const providerText =
-      document.createElement("small");
+      document.createElement(
+        "small"
+      );
+
 
     providerText.className =
       "imageProvider";
 
+
     providerText.textContent =
       provider;
+
 
     bubble.appendChild(
       providerText
@@ -570,12 +1165,17 @@ function addImageMessage(
     bubble
   );
 
+
   chatBox.appendChild(
     message
   );
 
 
   scrollToBottom();
+
+
+  return message;
+
 }
 
 
@@ -589,6 +1189,7 @@ function scrollToBottom() {
     return;
   }
 
+
   requestAnimationFrame(
     () => {
 
@@ -597,6 +1198,7 @@ function scrollToBottom() {
 
     }
   );
+
 }
 
 
@@ -604,28 +1206,35 @@ function scrollToBottom() {
    🧠 THINKING
    ============================================================ */
 
-function setThinking(active) {
+function setThinking(
+  active
+) {
 
   if (!thinking) {
     return;
   }
+
 
   thinking.classList.toggle(
     "hidden",
     !active
   );
 
+
   if (active) {
     scrollToBottom();
   }
+
 }
 
 
 /* ============================================================
-   🔒 BUTTON STATE
+   🔒 SENDING STATE
    ============================================================ */
 
-function setSendingState(active) {
+function setSendingState(
+  active
+) {
 
   isSending =
     active;
@@ -636,6 +1245,7 @@ function setSendingState(active) {
     sendBtn.disabled =
       active;
 
+
     sendBtn.style.opacity =
       active
         ? "0.6"
@@ -643,12 +1253,14 @@ function setSendingState(active) {
 
   }
 
+
   if (userInput) {
 
     userInput.disabled =
       active;
 
   }
+
 }
 
 
@@ -656,7 +1268,9 @@ function setSendingState(active) {
    📎 FILE VALIDATION
    ============================================================ */
 
-function validateFile(file) {
+function validateFile(
+  file
+) {
 
   if (!file) {
     return false;
@@ -668,15 +1282,18 @@ function validateFile(file) {
     MAX_FILE_SIZE
   ) {
 
-    alert(
-      "📎 File is too large. Maximum size is 10MB."
+    showToast(
+      "📎 File is larger than 10MB"
     );
 
+
     return false;
+
   }
 
 
   return true;
+
 }
 
 
@@ -684,7 +1301,10 @@ function validateFile(file) {
    📎 FILE SELECTION
    ============================================================ */
 
-if (uploadBtn && fileInput) {
+if (
+  uploadBtn &&
+  fileInput
+) {
 
   uploadBtn.addEventListener(
     "click",
@@ -709,7 +1329,9 @@ if (uploadBtn && fileInput) {
       }
 
 
-      if (!validateFile(file)) {
+      if (
+        !validateFile(file)
+      ) {
 
         fileInput.value =
           "";
@@ -736,6 +1358,11 @@ if (uploadBtn && fileInput) {
       );
 
 
+      showToast(
+        `📎 ${file.name} ready`
+      );
+
+
       console.log(
         "📎 FILE READY:",
         {
@@ -757,13 +1384,12 @@ if (uploadBtn && fileInput) {
 
 
 /* ============================================================
-   📦 BUILD FORM DATA
-   IMPORTANT:
-   DO NOT SEND JSON WHEN A FILE IS PRESENT.
-   formidable EXPECTS multipart/form-data.
+   📦 FORM DATA
    ============================================================ */
 
-function buildFormData(message) {
+function buildFormData(
+  message
+) {
 
   const formData =
     new FormData();
@@ -781,18 +1407,36 @@ function buildFormData(message) {
   );
 
 
+  /*
+   * Send only useful text history
+   * to backend.
+   */
+
   formData.append(
     "history",
     JSON.stringify(
       messages
-        .slice(-MAX_HISTORY_ITEMS)
-        .map(item => ({
-          role:
-            item.role,
+        .filter(
+          item =>
+            item &&
+            (
+              item.role === "user" ||
+              item.role === "assistant"
+            ) &&
+            typeof item.content === "string"
+        )
+        .slice(
+          -MAX_HISTORY_ITEMS
+        )
+        .map(
+          item => ({
+            role:
+              item.role,
 
-          content:
-            item.content
-        }))
+            content:
+              item.content
+          })
+        )
     )
   );
 
@@ -809,55 +1453,100 @@ function buildFormData(message) {
 
 
   return formData;
+
 }
 
 
 /* ============================================================
-   🧠 HISTORY
+   🧠 ADD HISTORY
    ============================================================ */
 
 function addToHistory(
   role,
-  content
+  content,
+  metadata = {}
 ) {
 
-  if (!content) {
+  if (
+    !content &&
+    !metadata.image
+  ) {
+
     return;
+
   }
 
 
   messages.push({
 
+    id:
+      createChatId(),
+
     role,
 
     content:
-      String(content)
+      String(content || ""),
+
+    image:
+      metadata.image ||
+      null,
+
+    imagePrompt:
+      metadata.imagePrompt ||
+      null,
+
+    provider:
+      metadata.provider ||
+      null,
+
+    file:
+      metadata.file ||
+      null,
+
+    timestamp:
+      Date.now()
 
   });
 
 
   if (
     messages.length >
-    MAX_HISTORY_ITEMS
+    MAX_STORED_MESSAGES
   ) {
 
     messages =
       messages.slice(
-        -MAX_HISTORY_ITEMS
+        -MAX_STORED_MESSAGES
       );
 
   }
 
 
   saveCurrentChat();
+
 }
 
 
 /* ============================================================
-   💾 CHAT STORAGE
+   💾 SAVE CURRENT CHAT
    ============================================================ */
 
 function saveCurrentChat() {
+
+  if (
+    !currentChatId
+  ) {
+
+    currentChatId =
+      createChatId();
+
+    localStorage.setItem(
+      STORAGE_KEYS.activeChat,
+      currentChatId
+    );
+
+  }
+
 
   const chats =
     loadJSON(
@@ -866,46 +1555,43 @@ function saveCurrentChat() {
     );
 
 
-  const activeId =
-    localStorage.getItem(
-      STORAGE_KEYS.activeChat
-    ) ||
-    `chat_${Date.now()}`;
+  const firstUserMessage =
+    messages.find(
+      item =>
+        item.role === "user" &&
+        item.content
+    );
 
 
-  localStorage.setItem(
-    STORAGE_KEYS.activeChat,
-    activeId
-  );
-
-
-  const existingIndex =
-    chats.findIndex(
-      chat =>
-        chat.id === activeId
+  const title =
+    createChatTitle(
+      firstUserMessage?.content
     );
 
 
   const chatData = {
 
     id:
-      activeId,
+      currentChatId,
 
-    title:
-      messages[0]?.content
-        ?.slice(0, 40)
-        ||
-      "New Chat",
+    title,
 
     messages:
       messages.slice(
-        -MAX_HISTORY_ITEMS
+        -MAX_STORED_MESSAGES
       ),
 
     updatedAt:
       Date.now()
 
   };
+
+
+  const existingIndex =
+    chats.findIndex(
+      chat =>
+        chat.id === currentChatId
+    );
 
 
   if (
@@ -915,7 +1601,9 @@ function saveCurrentChat() {
     chats[existingIndex] =
       chatData;
 
-  } else {
+  }
+
+  else {
 
     chats.unshift(
       chatData
@@ -924,10 +1612,24 @@ function saveCurrentChat() {
   }
 
 
+  chats.sort(
+    (a, b) =>
+      (b.updatedAt || 0) -
+      (a.updatedAt || 0)
+  );
+
+
   saveJSON(
     STORAGE_KEYS.chats,
-    chats.slice(0, 30)
+    chats.slice(
+      0,
+      MAX_STORED_CHATS
+    )
   );
+
+
+  renderChatShelves();
+
 }
 
 
@@ -950,8 +1652,15 @@ function restoreChat() {
     );
 
 
-  if (!activeId) {
+  if (
+    !activeId
+  ) {
+
+    currentChatId =
+      createChatId();
+
     return;
+
   }
 
 
@@ -963,86 +1672,132 @@ function restoreChat() {
 
 
   if (!chat) {
+
+    currentChatId =
+      createChatId();
+
     return;
+
   }
 
 
-  if (
-    !Array.isArray(
-      chat.messages
-    )
-  ) {
-    return;
-  }
+  currentChatId =
+    chat.id;
 
 
   messages =
-    chat.messages
-      .filter(
-        item =>
-          item &&
-          (
-            item.role === "user" ||
-            item.role === "assistant"
-          ) &&
-          typeof item.content === "string"
-      )
-      .slice(
-        -MAX_HISTORY_ITEMS
-      );
+    Array.isArray(
+      chat.messages
+    )
+      ? chat.messages
+          .filter(
+            item =>
+              item &&
+              (
+                item.role === "user" ||
+                item.role === "assistant"
+              )
+          )
+          .slice(
+            -MAX_STORED_MESSAGES
+          )
+      : [];
 
 
-  if (
-    messages.length === 0
-  ) {
+  if (!chatBox) {
     return;
   }
 
 
-  if (chatBox) {
-
-    chatBox.innerHTML =
-      "";
-
-  }
+  chatBox.innerHTML =
+    "";
 
 
   messages.forEach(
     item => {
 
+      if (
+        item.image
+      ) {
+
+        addImageMessage(
+          item.content ||
+            "🎨 Here is your image!",
+          item.image,
+          item.provider ||
+            "",
+          item.imagePrompt ||
+            ""
+        );
+
+        return;
+
+      }
+
+
       addMessage(
         item.role,
-        item.content
+        item.content,
+        item.file
+          ? {
+              file:
+                item.file
+            }
+          : {}
       );
 
     }
   );
 
+
+  renderChatShelves();
+
 }
 
 
 /* ============================================================
-   🆕 NEW CHAT
+   ＋ NEW CHAT
    ============================================================ */
 
 function startNewChat() {
 
+  /*
+   * Save current chat first.
+   */
+
+  if (
+    messages.length
+  ) {
+
+    saveCurrentChat();
+
+  }
+
+
   messages =
     [];
+
 
   selectedFile =
     null;
 
 
+  currentChatId =
+    createChatId();
+
+
+  localStorage.setItem(
+    STORAGE_KEYS.activeChat,
+    currentChatId
+  );
+
+
   if (fileInput) {
+
     fileInput.value =
       "";
+
   }
-
-
-  localStorage.removeItem(
-    STORAGE_KEYS.activeChat
-  );
 
 
   if (chatBox) {
@@ -1081,6 +1836,970 @@ function startNewChat() {
 
   }
 
+
+  renderChatShelves();
+
+  showToast(
+    "＋ New chat"
+  );
+
+}
+
+
+/* ============================================================
+   📚 CHAT SHELVES
+   ============================================================ */
+
+function getChatShelfContainer() {
+
+  return (
+    document.getElementById(
+      "chatShelves"
+    ) ||
+    document.querySelector(
+      ".chatShelves"
+    )
+  );
+
+}
+
+
+function renderChatShelves() {
+
+  const container =
+    getChatShelfContainer();
+
+
+  if (!container) {
+    return;
+  }
+
+
+  const chats =
+    loadJSON(
+      STORAGE_KEYS.chats,
+      []
+    );
+
+
+  container.innerHTML =
+    "";
+
+
+  /*
+   * New chat button
+   */
+
+  const newChat =
+    document.createElement(
+      "button"
+    );
+
+
+  newChat.type =
+    "button";
+
+
+  newChat.className =
+    "newChatShelf";
+
+
+  newChat.innerHTML =
+    "＋ New Chat";
+
+
+  newChat.addEventListener(
+    "click",
+    startNewChat
+  );
+
+
+  container.appendChild(
+    newChat
+  );
+
+
+  if (
+    chats.length === 0
+  ) {
+    return;
+  }
+
+
+  const heading =
+    document.createElement(
+      "div"
+    );
+
+
+  heading.className =
+    "chatShelfHeading";
+
+
+  heading.textContent =
+    "Recent Chats";
+
+
+  container.appendChild(
+    heading
+  );
+
+
+  chats
+    .slice(
+      0,
+      30
+    )
+    .forEach(
+      chat => {
+
+        const item =
+          document.createElement(
+            "button"
+          );
+
+
+        item.type =
+          "button";
+
+
+        item.className =
+          "chatShelfItem";
+
+
+        if (
+          chat.id === currentChatId
+        ) {
+
+          item.classList.add(
+            "active"
+          );
+
+        }
+
+
+        item.textContent =
+          chat.title ||
+          "New Chat";
+
+
+        item.title =
+          chat.title ||
+          "New Chat";
+
+
+        item.addEventListener(
+          "click",
+          () => {
+
+            openChat(
+              chat.id
+            );
+
+          }
+        );
+
+
+        container.appendChild(
+          item
+        );
+
+      }
+    );
+
+}
+
+
+/* ============================================================
+   📂 OPEN SAVED CHAT
+   ============================================================ */
+
+function openChat(
+  chatId
+) {
+
+  const chats =
+    loadJSON(
+      STORAGE_KEYS.chats,
+      []
+    );
+
+
+  const chat =
+    chats.find(
+      item =>
+        item.id === chatId
+    );
+
+
+  if (!chat) {
+    return;
+  }
+
+
+  currentChatId =
+    chat.id;
+
+
+  localStorage.setItem(
+    STORAGE_KEYS.activeChat,
+    chat.id
+  );
+
+
+  messages =
+    Array.isArray(
+      chat.messages
+    )
+      ? chat.messages.slice(
+          -MAX_STORED_MESSAGES
+        )
+      : [];
+
+
+  if (chatBox) {
+
+    chatBox.innerHTML =
+      "";
+
+  }
+
+
+  messages.forEach(
+    item => {
+
+      if (
+        item.image
+      ) {
+
+        addImageMessage(
+          item.content,
+          item.image,
+          item.provider ||
+            "",
+          item.imagePrompt ||
+            ""
+        );
+
+      }
+
+      else {
+
+        addMessage(
+          item.role,
+          item.content,
+          item.file
+            ? {
+                file:
+                  item.file
+              }
+            : {}
+        );
+
+      }
+
+    }
+  );
+
+
+  renderChatShelves();
+
+  scrollToBottom();
+
+  showToast(
+    "💬 Chat opened"
+  );
+
+}
+
+
+/* ============================================================
+   💬 WHATSAPP — TALK TO THE BOSS
+   ============================================================ */
+
+function openWhatsApp() {
+
+  if (
+    !WHATSAPP_NUMBER ||
+    WHATSAPP_NUMBER.includes(
+      "254792442670"
+    )
+  ) {
+
+    showToast(
+      "⚠️ Add the Boss WhatsApp number in app.js"
+    );
+
+    return;
+
+  }
+
+
+  const url =
+    `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(
+      WHATSAPP_MESSAGE
+    )}`;
+
+
+  window.open(
+    url,
+    "_blank",
+    "noopener,noreferrer"
+  );
+
+}
+
+
+/*
+ * Works if HTML has:
+ *
+ * id="whatsappBtn"
+ *
+ * OR:
+ *
+ * class="whatsappBtn"
+ */
+
+const whatsappBtn =
+  document.getElementById(
+    "whatsappBtn"
+  ) ||
+  document.querySelector(
+    ".whatsappBtn"
+  );
+
+
+if (whatsappBtn) {
+
+  whatsappBtn.addEventListener(
+    "click",
+    openWhatsApp
+  );
+
+}
+
+
+/* ============================================================
+   👑 BOSS CTA
+   ============================================================ */
+
+function showBossCTA() {
+
+  if (
+    document.getElementById(
+      "bossCTA"
+    )
+  ) {
+
+    return;
+
+  }
+
+
+  const wrapper =
+    document.createElement(
+      "div"
+    );
+
+
+  wrapper.id =
+    "bossCTA";
+
+
+  wrapper.className =
+    "bossCTA";
+
+
+  wrapper.innerHTML = `
+
+    <div class="bossCTAContent">
+
+      <strong>
+        👑 Want to work directly with the developer?
+      </strong>
+
+      <span>
+        You can talk to the boss directly on WhatsApp.
+      </span>
+
+      <button
+        type="button"
+        id="dynamicWhatsAppBtn"
+      >
+        💬 Talk to the Boss
+      </button>
+
+    </div>
+
+  `;
+
+
+  chatBox?.appendChild(
+    wrapper
+  );
+
+
+  document
+    .getElementById(
+      "dynamicWhatsAppBtn"
+    )
+    ?.addEventListener(
+      "click",
+      openWhatsApp
+    );
+
+
+  scrollToBottom();
+
+}
+
+
+/* ============================================================
+   🔊 TEXT TO SPEECH
+   ============================================================ */
+
+function loadSpeechVoices() {
+
+  if (
+    !("speechSynthesis" in window)
+  ) {
+
+    return;
+
+  }
+
+
+  speechVoices =
+    window.speechSynthesis.getVoices();
+
+}
+
+
+if (
+  "speechSynthesis" in window
+) {
+
+  loadSpeechVoices();
+
+
+  window.speechSynthesis
+    .addEventListener(
+      "voiceschanged",
+      loadSpeechVoices
+    );
+
+}
+
+
+function getSpeechLanguage() {
+
+  const language =
+    getLanguage()
+      .toLowerCase();
+
+
+  if (
+    language.includes(
+      "swahili"
+    ) ||
+    language.includes(
+      "kiswahili"
+    )
+  ) {
+
+    return "sw-KE";
+
+  }
+
+
+  if (
+    language.includes(
+      "french"
+    )
+  ) {
+
+    return "fr-FR";
+
+  }
+
+
+  if (
+    language.includes(
+      "spanish"
+    )
+  ) {
+
+    return "es-ES";
+
+  }
+
+
+  if (
+    language.includes(
+      "hindi"
+    )
+  ) {
+
+    return "hi-IN";
+
+  }
+
+
+  return "en-US";
+
+}
+
+
+function cleanSpeechText(
+  text
+) {
+
+  return String(
+    text || ""
+  )
+    .replace(
+      /```[\s\S]*?```/g,
+      "Code omitted."
+    )
+    .replace(
+      /[*_#`]/g,
+      ""
+    )
+    .replace(
+      /\s+/g,
+      " "
+    )
+    .trim();
+
+}
+
+
+function speakText(
+  text
+) {
+
+  if (
+    !("speechSynthesis" in window)
+  ) {
+
+    showToast(
+      "🔊 Voice output is not supported"
+    );
+
+    return;
+
+  }
+
+
+  const clean =
+    cleanSpeechText(
+      text
+    );
+
+
+  if (!clean) {
+    return;
+  }
+
+
+  window.speechSynthesis.cancel();
+
+
+  const utterance =
+    new SpeechSynthesisUtterance(
+      clean
+    );
+
+
+  utterance.lang =
+    getSpeechLanguage();
+
+
+  const selectedVoice =
+    voiceSelect?.value;
+
+
+  if (
+    selectedVoice &&
+    speechVoices.length
+  ) {
+
+    const voice =
+      speechVoices.find(
+        item =>
+          item.name ===
+          selectedVoice
+      );
+
+
+    if (voice) {
+
+      utterance.voice =
+        voice;
+
+    }
+
+  }
+
+
+  utterance.rate =
+    1;
+
+
+  utterance.pitch =
+    1;
+
+
+  window.speechSynthesis.speak(
+    utterance
+  );
+
+}
+
+
+/* ============================================================
+   🎤 VOICE INPUT
+   ============================================================ */
+
+function setupVoiceInput() {
+
+  const SpeechRecognition =
+    window.SpeechRecognition ||
+    window.webkitSpeechRecognition;
+
+
+  if (
+    !SpeechRecognition
+  ) {
+
+    if (micBtn) {
+
+      micBtn.addEventListener(
+        "click",
+        () => {
+
+          showToast(
+            "🎤 Voice input is not supported by this browser."
+          );
+
+        }
+      );
+
+    }
+
+
+    return;
+
+  }
+
+
+  recognition =
+    new SpeechRecognition();
+
+
+  recognition.continuous =
+    false;
+
+
+  recognition.interimResults =
+    false;
+
+
+  recognition.lang =
+    getSpeechLanguage();
+
+
+  recognition.onstart =
+    () => {
+
+      isListening =
+        true;
+
+
+      if (micBtn) {
+
+        micBtn.textContent =
+          "🔴";
+
+      }
+
+
+      showToast(
+        "🎤 I'm listening..."
+      );
+
+    };
+
+
+  recognition.onresult =
+    event => {
+
+      const transcript =
+        event
+          .results?.[0]?.[0]
+          ?.transcript
+          ?.trim();
+
+
+      if (
+        transcript &&
+        userInput
+      ) {
+
+        userInput.value =
+          transcript;
+
+
+        userInput.focus();
+
+      }
+
+    };
+
+
+  recognition.onerror =
+    error => {
+
+      console.warn(
+        "🎤 Speech recognition:",
+        error
+      );
+
+
+      showToast(
+        "🎤 I didn't catch that. Try again."
+      );
+
+    };
+
+
+  recognition.onend =
+    () => {
+
+      isListening =
+        false;
+
+
+      if (micBtn) {
+
+        micBtn.textContent =
+          "🎤";
+
+      }
+
+    };
+
+
+  if (micBtn) {
+
+    micBtn.addEventListener(
+      "click",
+      () => {
+
+        if (
+          isListening
+        ) {
+
+          recognition.stop();
+
+          return;
+
+        }
+
+
+        recognition.lang =
+          getSpeechLanguage();
+
+
+        try {
+
+          recognition.start();
+
+        }
+
+        catch (error) {
+
+          console.warn(
+            "🎤 Recognition start failed:",
+            error
+          );
+
+        }
+
+      }
+    );
+
+  }
+
+}
+
+
+setupVoiceInput();
+
+
+/* ============================================================
+   🎤 VOICE SELECT
+   ============================================================ */
+
+if (voiceSelect) {
+
+  const savedVoice =
+    localStorage.getItem(
+      STORAGE_KEYS.voice
+    );
+
+
+  if (savedVoice) {
+
+    const option =
+      Array.from(
+        voiceSelect.options
+      )
+      .find(
+        item =>
+          item.value ===
+          savedVoice
+      );
+
+
+    if (option) {
+
+      voiceSelect.value =
+        savedVoice;
+
+    }
+
+  }
+
+
+  voiceSelect.addEventListener(
+    "change",
+    () => {
+
+      localStorage.setItem(
+        STORAGE_KEYS.voice,
+        voiceSelect.value
+      );
+
+
+      if (recognition) {
+
+        recognition.lang =
+          getSpeechLanguage();
+
+      }
+
+    }
+  );
+
+}
+
+
+/* ============================================================
+   📍 LOCATION
+   ============================================================ */
+
+if (locationBtn) {
+
+  locationBtn.addEventListener(
+    "click",
+    () => {
+
+      if (
+        !navigator.geolocation
+      ) {
+
+        showToast(
+          "📍 Location is not supported"
+        );
+
+        return;
+
+      }
+
+
+      locationBtn.disabled =
+        true;
+
+
+      locationBtn.textContent =
+        "⏳";
+
+
+      navigator.geolocation.getCurrentPosition(
+
+        position => {
+
+          const latitude =
+            position.coords.latitude;
+
+
+          const longitude =
+            position.coords.longitude;
+
+
+          if (userInput) {
+
+            userInput.value =
+              `My location is approximately latitude ${latitude}, longitude ${longitude}. Help me understand or use this location.`;
+
+
+            userInput.focus();
+
+          }
+
+
+          locationBtn.disabled =
+            false;
+
+
+          locationBtn.textContent =
+            "📍";
+
+        },
+
+
+        error => {
+
+          console.warn(
+            "📍 Location error:",
+            error
+          );
+
+
+          showToast(
+            "📍 Could not access your location"
+          );
+
+
+          locationBtn.disabled =
+            false;
+
+
+          locationBtn.textContent =
+            "📍";
+
+        },
+
+
+        {
+
+          enableHighAccuracy:
+            false,
+
+          timeout:
+            10000,
+
+          maximumAge:
+            60000
+
+        }
+
+      );
+
+    }
+  );
+
 }
 
 
@@ -1103,7 +2822,7 @@ async function sendMessage() {
 
 
   /*
-   * Allow file-only submission.
+   * Allow file-only requests.
    */
 
   if (
@@ -1122,7 +2841,25 @@ async function sendMessage() {
 
 
   /*
-   * Save user message BEFORE sending.
+   * Make sure a chat exists.
+   */
+
+  if (!currentChatId) {
+
+    currentChatId =
+      createChatId();
+
+
+    localStorage.setItem(
+      STORAGE_KEYS.activeChat,
+      currentChatId
+    );
+
+  }
+
+
+  /*
+   * User UI
    */
 
   addMessage(
@@ -1137,9 +2874,19 @@ async function sendMessage() {
   );
 
 
+  /*
+   * User history
+   */
+
   addToHistory(
     "user",
-    visibleMessage
+    visibleMessage,
+    selectedFile
+      ? {
+          file:
+            selectedFile.name
+        }
+      : {}
   );
 
 
@@ -1155,18 +2902,13 @@ async function sendMessage() {
     true
   );
 
+
   setThinking(
     true
   );
 
 
   try {
-
-    /*
-     * IMPORTANT:
-     * FormData is used for every request.
-     * This makes file uploads work with formidable.
-     */
 
     const formData =
       buildFormData(
@@ -1175,24 +2917,17 @@ async function sendMessage() {
 
 
     console.log(
-      "🚀 Sending to:",
-      API_ENDPOINT
-    );
-
-
-    console.log(
-      "📦 FormData:",
+      "🚀 KIRONG AI V8 REQUEST:",
       {
-        message:
-          visibleMessage,
+        endpoint:
+          API_ENDPOINT,
 
         language:
           getLanguage(),
 
         file:
-          selectedFile
-            ? selectedFile.name
-            : null
+          selectedFile?.name ||
+          null
       }
     );
 
@@ -1201,6 +2936,7 @@ async function sendMessage() {
       await fetch(
         API_ENDPOINT,
         {
+
           method:
             "POST",
 
@@ -1208,19 +2944,18 @@ async function sendMessage() {
             formData,
 
           headers: {
-            "Accept":
+
+            Accept:
               "application/json"
+
           },
 
           cache:
             "no-store"
+
         }
       );
 
-
-    /*
-     * Read response safely.
-     */
 
     const contentType =
       response.headers.get(
@@ -1240,10 +2975,13 @@ async function sendMessage() {
       data =
         await response.json();
 
-    } else {
+    }
+
+    else {
 
       const raw =
         await response.text();
+
 
       throw new Error(
         raw ||
@@ -1254,14 +2992,10 @@ async function sendMessage() {
 
 
     console.log(
-      "📥 Kirong AI response:",
+      "📥 KIRONG AI V8 RESPONSE:",
       data
     );
 
-
-    /*
-     * Backend error.
-     */
 
     if (
       !response.ok ||
@@ -1276,9 +3010,9 @@ async function sendMessage() {
     }
 
 
-    /*
-     * IMAGE RESPONSE
-     */
+    /* ========================================================
+       🎨 IMAGE
+       ======================================================== */
 
     if (
       data?.type === "image" &&
@@ -1289,26 +3023,58 @@ async function sendMessage() {
         data.text ||
           "🎨 Here is your image!",
         data.image,
-        data.provider
+        data.provider ||
+          "",
+        data.prompt ||
+          visibleMessage
       );
 
 
       /*
-       * Keep history textual.
+       * Save image in persistent history.
        */
 
       addToHistory(
         "assistant",
         data.text ||
-          "Generated an image."
+          "Generated an image.",
+        {
+
+          image:
+            data.image,
+
+          imagePrompt:
+            data.prompt ||
+            visibleMessage,
+
+          provider:
+            data.provider ||
+            "Hugging Face"
+
+        }
       );
 
 
-    } else {
-
       /*
-       * NORMAL TEXT RESPONSE
+       * Optional voice.
        */
+
+      if (data.text) {
+
+        speakText(
+          data.text
+        );
+
+      }
+
+    }
+
+
+    /* ========================================================
+       💬 TEXT
+       ======================================================== */
+
+    else {
 
       const answer =
         String(
@@ -1329,13 +3095,51 @@ async function sendMessage() {
         answer
       );
 
+
+      /*
+       * Voice output
+       */
+
+      speakText(
+        answer
+      );
+
+
+      /*
+       * Detect strong hiring/contact intent.
+       */
+
+      const lower =
+        answer.toLowerCase();
+
+
+      if (
+        lower.includes(
+          "whatsapp"
+        ) ||
+        lower.includes(
+          "contact the developer"
+        ) ||
+        lower.includes(
+          "talk to the developer"
+        ) ||
+        lower.includes(
+          "work with kirong"
+        ) ||
+        lower.includes(
+          "hire kirong"
+        )
+      ) {
+
+        showBossCTA();
+
+      }
+
     }
 
 
     /*
-     * File has now been sent.
-     * Clear it so it is not accidentally
-     * uploaded again.
+     * File already sent.
      */
 
     selectedFile =
@@ -1350,15 +3154,24 @@ async function sendMessage() {
     }
 
 
-  } catch (error) {
+    /*
+     * Save after response.
+     */
+
+    saveCurrentChat();
+
+
+  }
+
+  catch (error) {
 
     console.error(
-      "🔥 KIRONG AI REQUEST ERROR:",
+      "🔥 KIRONG AI V8 REQUEST ERROR:",
       error
     );
 
 
-    const message =
+    const friendly =
       getFriendlyError(
         error
       );
@@ -1366,21 +3179,24 @@ async function sendMessage() {
 
     addMessage(
       "assistant",
-      message
+      friendly
     );
 
 
     addToHistory(
       "assistant",
-      message
+      friendly
     );
 
 
-  } finally {
+  }
+
+  finally {
 
     setThinking(
       false
     );
+
 
     setSendingState(
       false
@@ -1402,7 +3218,9 @@ async function sendMessage() {
    🛡️ FRIENDLY ERRORS
    ============================================================ */
 
-function getFriendlyError(error) {
+function getFriendlyError(
+  error
+) {
 
   const text =
     String(
@@ -1423,8 +3241,9 @@ function getFriendlyError(error) {
 Kirong AI could not reach the server.
 
 Please check:
+
 - Vercel deployment
-- `/api/chat`
+- /api/chat
 - environment variables
 - internet connection
 
@@ -1435,12 +3254,9 @@ Then try again.
 
 
   if (
-    text.includes(
-      "413"
-    ) ||
-    text.toLowerCase().includes(
-      "too large"
-    )
+    text.includes("413") ||
+    text.toLowerCase()
+      .includes("too large")
   ) {
 
     return `
@@ -1453,24 +3269,20 @@ Please upload a file smaller than 10MB.
 
 
   if (
-    text.includes(
-      "405"
-    )
+    text.includes("405")
   ) {
 
     return `
 ⚠️ **API method error**
 
-The `/api/chat` endpoint is not accepting this request method.
+The /api/chat endpoint is not accepting this request method.
 `;
 
   }
 
 
   if (
-    text.includes(
-      "500"
-    )
+    text.includes("500")
   ) {
 
     return `
@@ -1494,7 +3306,7 @@ ${text || "Please try again."}
 
 
 /* ============================================================
-   ⚡ FORM SUBMIT
+   ⚡ FORM
    ============================================================ */
 
 if (chatForm) {
@@ -1514,7 +3326,7 @@ if (chatForm) {
 
 
 /* ============================================================
-   ⌨️ ENTER KEY
+   ⌨️ ENTER
    ============================================================ */
 
 if (userInput) {
@@ -1611,6 +3423,7 @@ document
             userInput.value =
               prompt;
 
+
             userInput.focus();
 
           }
@@ -1620,293 +3433,6 @@ document
 
     }
   );
-
-
-/* ============================================================
-   🎤 VOICE INPUT
-   ============================================================ */
-
-function setupVoiceInput() {
-
-  const SpeechRecognition =
-    window.SpeechRecognition ||
-    window.webkitSpeechRecognition;
-
-
-  if (
-    !SpeechRecognition
-  ) {
-
-    if (micBtn) {
-
-      micBtn.addEventListener(
-        "click",
-        () => {
-
-          alert(
-            "🎤 Voice input is not supported by this browser."
-          );
-
-        }
-      );
-
-    }
-
-    return;
-
-  }
-
-
-  recognition =
-    new SpeechRecognition();
-
-
-  recognition.continuous =
-    false;
-
-  recognition.interimResults =
-    false;
-
-
-  recognition.lang =
-    voiceSelect?.value ||
-    "en-US";
-
-
-  recognition.onstart =
-    () => {
-
-      isListening =
-        true;
-
-      if (micBtn) {
-
-        micBtn.textContent =
-          "🔴";
-
-      }
-
-    };
-
-
-  recognition.onresult =
-    event => {
-
-      const transcript =
-        event
-          .results?.[0]?.[0]?.transcript
-          ?.trim();
-
-
-      if (
-        transcript &&
-        userInput
-      ) {
-
-        userInput.value =
-          transcript;
-
-        userInput.focus();
-
-      }
-
-    };
-
-
-  recognition.onerror =
-    error => {
-
-      console.warn(
-        "🎤 Speech recognition:",
-        error
-      );
-
-    };
-
-
-  recognition.onend =
-    () => {
-
-      isListening =
-        false;
-
-      if (micBtn) {
-
-        micBtn.textContent =
-          "🎤";
-
-      }
-
-    };
-
-
-  if (micBtn) {
-
-    micBtn.addEventListener(
-      "click",
-      () => {
-
-        if (isListening) {
-
-          recognition.stop();
-
-          return;
-
-        }
-
-
-        recognition.lang =
-          voiceSelect?.value ||
-          "en-US";
-
-
-        try {
-
-          recognition.start();
-
-        } catch (error) {
-
-          console.warn(
-            "🎤 Could not start microphone:",
-            error
-          );
-
-        }
-
-      }
-    );
-
-  }
-
-}
-
-
-setupVoiceInput();
-
-
-/* ============================================================
-   🎤 VOICE LANGUAGE CHANGE
-   ============================================================ */
-
-if (voiceSelect) {
-
-  voiceSelect.addEventListener(
-    "change",
-    () => {
-
-      if (recognition) {
-
-        recognition.lang =
-          voiceSelect.value ||
-          "en-US";
-
-      }
-
-    }
-  );
-
-}
-
-
-/* ============================================================
-   📍 LOCATION
-   ============================================================ */
-
-if (locationBtn) {
-
-  locationBtn.addEventListener(
-    "click",
-    () => {
-
-      if (
-        !navigator.geolocation
-      ) {
-
-        alert(
-          "📍 Location is not supported by this browser."
-        );
-
-        return;
-
-      }
-
-
-      locationBtn.disabled =
-        true;
-
-
-      locationBtn.textContent =
-        "⏳";
-
-
-      navigator.geolocation.getCurrentPosition(
-
-        position => {
-
-          const latitude =
-            position.coords.latitude;
-
-          const longitude =
-            position.coords.longitude;
-
-
-          if (userInput) {
-
-            userInput.value =
-              `My location is approximately latitude ${latitude}, longitude ${longitude}. Help me understand or use this location.`;
-
-            userInput.focus();
-
-          }
-
-
-          locationBtn.disabled =
-            false;
-
-          locationBtn.textContent =
-            "📍";
-
-        },
-
-        error => {
-
-          console.warn(
-            "📍 Location error:",
-            error
-          );
-
-
-          alert(
-            "📍 Could not access your location."
-          );
-
-
-          locationBtn.disabled =
-            false;
-
-          locationBtn.textContent =
-            "📍";
-
-        },
-
-        {
-          enableHighAccuracy:
-            false,
-
-          timeout:
-            10000,
-
-          maximumAge:
-            60000
-
-        }
-
-      );
-
-    }
-  );
-
-}
 
 
 /* ============================================================
@@ -1939,7 +3465,7 @@ if (clearBtn) {
 
 
 /* ============================================================
-   💾 EXPORT CHAT
+   💾 EXPORT
    ============================================================ */
 
 if (exportBtn) {
@@ -1952,9 +3478,10 @@ if (exportBtn) {
         messages.length === 0
       ) {
 
-        alert(
+        showToast(
           "There is no conversation to export."
         );
+
 
         return;
 
@@ -1971,7 +3498,21 @@ if (exportBtn) {
                 : "Kirong AI";
 
 
-            return `${role}:\n${item.content}`;
+            let output =
+              `${role}:\n${item.content}`;
+
+
+            if (
+              item.image
+            ) {
+
+              output +=
+                `\n[Generated image: ${item.imagePrompt || "image"}]`;
+
+            }
+
+
+            return output;
 
           }
         );
@@ -1979,10 +3520,15 @@ if (exportBtn) {
 
       const content =
         [
-          "KIRONG AI CHAT EXPORT",
-          "======================",
+
+          "KIRONG AI V8 CHAT EXPORT",
+
+          "========================",
+
           "",
+
           ...lines
+
         ].join(
           "\n\n"
         );
@@ -2013,21 +3559,29 @@ if (exportBtn) {
       link.href =
         url;
 
+
       link.download =
-        `kirong-ai-chat-${Date.now()}.txt`;
+        `kirong-ai-v8-chat-${Date.now()}.txt`;
 
 
       document.body.appendChild(
         link
       );
 
+
       link.click();
+
 
       link.remove();
 
 
       URL.revokeObjectURL(
         url
+      );
+
+
+      showToast(
+        "💾 Chat exported"
       );
 
     }
@@ -2037,10 +3591,199 @@ if (exportBtn) {
 
 
 /* ============================================================
-   🧠 INITIALIZATION
+   📋 GLOBAL COPY BUTTONS
+   ============================================================ */
+
+document.addEventListener(
+  "click",
+  event => {
+
+    const button =
+      event.target.closest(
+        ".copyCodeBtn"
+      );
+
+
+    if (!button) {
+      return;
+    }
+
+
+    const encoded =
+      button.dataset.copy ||
+      "";
+
+
+    let text;
+
+
+    try {
+
+      text =
+        decodeURIComponent(
+          encoded
+        );
+
+    }
+
+    catch {
+
+      text =
+        encoded;
+
+    }
+
+
+    copyText(
+      text
+    );
+
+  }
+);
+
+
+/* ============================================================
+   🧹 CLEAN OLD V7 STORAGE
+   ============================================================ */
+
+function migrateOldStorage() {
+
+  /*
+   * We intentionally do NOT delete V7 chats.
+   *
+   * Instead, if V8 has no chats,
+   * attempt to migrate text history.
+   */
+
+  const v8Chats =
+    loadJSON(
+      STORAGE_KEYS.chats,
+      []
+    );
+
+
+  if (
+    v8Chats.length > 0
+  ) {
+
+    return;
+
+  }
+
+
+  const oldChats =
+    loadJSON(
+      "kirong_ai_chats_v7",
+      []
+    );
+
+
+  if (
+    !Array.isArray(oldChats) ||
+    oldChats.length === 0
+  ) {
+
+    return;
+
+  }
+
+
+  const migrated =
+    oldChats
+      .filter(
+        chat =>
+          chat &&
+          chat.id
+      )
+      .map(
+        chat => ({
+
+          id:
+            chat.id,
+
+          title:
+            chat.title ||
+            "Previous Chat",
+
+          messages:
+            Array.isArray(
+              chat.messages
+            )
+              ? chat.messages
+                  .filter(
+                    item =>
+                      item &&
+                      (
+                        item.role === "user" ||
+                        item.role === "assistant"
+                      ) &&
+                      typeof item.content === "string"
+                  )
+                  .map(
+                    item => ({
+
+                      id:
+                        createChatId(),
+
+                      role:
+                        item.role,
+
+                      content:
+                        item.content,
+
+                      image:
+                        null,
+
+                      imagePrompt:
+                        null,
+
+                      provider:
+                        null,
+
+                      file:
+                        null,
+
+                      timestamp:
+                        Date.now()
+
+                    })
+                  )
+              : [],
+
+          updatedAt:
+            chat.updatedAt ||
+            Date.now()
+
+        })
+      );
+
+
+  if (
+    migrated.length
+  ) {
+
+    saveJSON(
+      STORAGE_KEYS.chats,
+      migrated
+    );
+
+
+    showToast(
+      "🧠 Previous chats restored"
+    );
+
+  }
+
+}
+
+
+/* ============================================================
+   🚀 INITIALIZATION
    ============================================================ */
 
 function initializeKirongAI() {
+
+  migrateOldStorage();
 
   restoreTheme();
 
@@ -2048,24 +3791,57 @@ function initializeKirongAI() {
 
   restoreChat();
 
+  renderChatShelves();
+
 
   console.log(
-    "⚡ KIRONG AI V7.0 FRONTEND READY"
+    "⚡ KIRONG AI V8.0 FRONTEND READY"
   );
+
 
   console.log(
     "🔗 API:",
     API_ENDPOINT
   );
 
-  console.log(
-    "📎 File upload:",
-    "FormData → formidable"
-  );
 
   console.log(
-    "🌍 Language:",
-    getLanguage()
+    "🧠 Persistent memory:",
+    "ON"
+  );
+
+
+  console.log(
+    "🎨 Image memory:",
+    "ON"
+  );
+
+
+  console.log(
+    "🎤 Voice input:",
+    recognition
+      ? "ON"
+      : "Browser dependent"
+  );
+
+
+  console.log(
+    "🔊 Voice output:",
+    "ON"
+  );
+
+
+  console.log(
+    "📋 Copy system:",
+    "ON"
+  );
+
+
+  console.log(
+    "💬 WhatsApp CTA:",
+    whatsappBtn
+      ? "ON"
+      : "HTML button not found"
   );
 
 }
@@ -2085,7 +3861,9 @@ if (
     initializeKirongAI
   );
 
-} else {
+}
+
+else {
 
   initializeKirongAI();
 
