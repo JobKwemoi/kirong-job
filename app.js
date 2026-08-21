@@ -2118,15 +2118,27 @@ function openChat(
 
 function openWhatsApp() {
 
+  const number =
+    String(WHATSAPP_NUMBER || "")
+      .replace(/\D/g, "");
+
+  /*
+   * Reject placeholder / invalid numbers.
+   */
+
   if (
-    !WHATSAPP_NUMBER ||
-    WHATSAPP_NUMBER.includes(
-      "254792442670"
-    )
+    !number ||
+    number.includes("254792442670") ||
+    !/^2547\d{8}$/.test(number)
   ) {
 
     showToast(
-      "⚠️ Add the Boss WhatsApp number in app.js"
+      "⚠️ Add a valid Boss WhatsApp number in app.js"
+    );
+
+    console.warn(
+      "⚠️ Invalid WHATSAPP_NUMBER:",
+      WHATSAPP_NUMBER
     );
 
     return;
@@ -2135,7 +2147,7 @@ function openWhatsApp() {
 
 
   const url =
-    `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(
+    `https://wa.me/${number}?text=${encodeURIComponent(
       WHATSAPP_MESSAGE
     )}`;
 
@@ -2147,36 +2159,6 @@ function openWhatsApp() {
   );
 
 }
-
-
-/*
- * Works if HTML has:
- *
- * id="whatsappBtn"
- *
- * OR:
- *
- * class="whatsappBtn"
- */
-
-const whatsappBtn =
-  document.getElementById(
-    "whatsappBtn"
-  ) ||
-  document.querySelector(
-    ".whatsappBtn"
-  );
-
-
-if (whatsappBtn) {
-
-  whatsappBtn.addEventListener(
-    "click",
-    openWhatsApp
-  );
-
-}
-
 
 /* ============================================================
    👑 BOSS CTA
