@@ -1,21 +1,25 @@
 {
   "name": "Kirong AI - Intelligent Assistant",
   "short_name": "Kirong AI",
+  "description": "Kirong AI is your intelligent purple-powered assistant",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#07060d",
-  "theme_color": "#ff3b30",
-  "description": "Intelligent Kenyan AI Assistant by Kirong Job Kwemoi",
+  "background_color": "#000000",
+  "theme_color": "#A855F7",
+  "orientation": "any",
+  "scope": "/",
   "icons": [
     {
-      "src": "https://cdn-icons-png.flaticon.com/512/4712/4712109.png",
+      "src": "/icon-512.png",
       "sizes": "192x192",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "any maskable"
     },
     {
-      "src": "https://cdn-icons-png.flaticon.com/512/4712/4712109.png",
+      "src": "/icon-512.png",
       "sizes": "512x512",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "any maskable"
     }
   ]
 }
