@@ -27,6 +27,9 @@
 
   <title>Kirong AI — Intelligent Assistant</title>
 
+  <link rel="manifest" href="/manifest.json">
+<meta name="theme-color" content="#ff3b30">
+
   <link
     rel="stylesheet"
     href="style.css"
@@ -516,11 +519,16 @@
   </main>
 
 
-  <script
-    src="app.js"
-    defer
-  ></script>
+<script src="app.js" defer></script>
+<script>
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('/sw.js')
+        .then(() => console.log('Kirong AI PWA Ready!'))
+        .catch((err) => console.log('SW failed', err));
+    });
+  }
+</script>
 
 </body>
-
-</html>
+</html>  
