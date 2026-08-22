@@ -2944,7 +2944,7 @@ button:disabled {
 ============================================================ */
 
 .bossCTA {
-width: min(650px, 25%);
+width: min(650px, 15%);
 
 margin: 12px auto;
 
@@ -2984,7 +2984,7 @@ font-size: 11px;
 
 .bossCTA button,
 #whatsappBtn {
-width: 50%;
+width: 40%;
 
 margin-top: 5px;
 
