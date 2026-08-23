@@ -1,118 +1,122 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-  <meta name="theme-color" content="#6D28D9">
-  <meta name="description" content="Kirong AI — an intelligent AI assistant built by Kirong Job Kwemoi.">
-  <meta name="author" content="Kirong Job Kwemoi">
-  <title>Kirong AI — Intelligent Assistant</title>
-  <link rel="manifest" href="/manifest.json">
-  <link rel="icon" type="image/png" sizes="192x192" href="/icon-192.png">
-  <link rel="apple-touch-icon" href="/icon-192.png">
-  <link rel="stylesheet" href="style.css">
-  <style>
-    #kirong-splash{position:fixed;inset:0;z-index:999999;background:radial-gradient(ellipse at center,#2d1b69 0%,#1a0b2e 50%,#0f0518 100%);display:flex;align-items:center;justify-content:center;flex-direction:column;transition:opacity .8s ease}
-    .splash-stage{text-align:center;display:flex;flex-direction:column;align-items:center}
-    .splash-logo{width:180px;height:180px;border-radius:30px;background:linear-gradient(135deg,#6D28D9,#a855f7);display:flex;align-items:center;justify-content:center;font-size:80px;box-shadow:0 0 60px #a855f7aa,0 0 100px #6D28D9aa;animation:pulse 2s infinite}
-    .splash-stage h1{color:white;font-size:38px;margin:25px 0 8px;font-weight:800;letter-spacing:-1px}
-    .splash-stage .sub{color:#d8b4fe;font-size:16px;letter-spacing:1px}
-    .stage2{display:none}.stage2 .splash-logo{font-size:60px;width:140px;height:140px}
-    .loader-wrap{margin-top:50px}.loader-text{color:#c4b5fd;font-size:14px;letter-spacing:2px;animation:blink 1.5s infinite}
-    .bar{width:220px;height:5px;background:#ffffff1a;border-radius:10px;overflow:hidden;margin:12px auto}
-    .fill{height:100%;width:0%;background:linear-gradient(90deg,#6D28D9,#a855f7,#e9d5ff);animation:load 2.2s ease-in-out forwards;box-shadow:0 0 15px #a855f7}
-    @keyframes load{0%{width:0%}20%{width:30%}60%{width:75%}100%{width:100%}}@keyframes pulse{0%,100%{transform:scale(1);box-shadow:0 0 60px #a855f7aa}50%{transform:scale(1.05);box-shadow:0 0 80px #a855f7ff}}@keyframes blink{0%,100%{opacity:1}50%{opacity:.5}}@keyframes fadeUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
-    /* 🔥 NEW REDESIGN */
-    .quickActions{display:flex;gap:8px;overflow-x:auto;padding:10px 0;scrollbar-width:none}
-    .quickActions::-webkit-scrollbar{display:none}
-    .quickBtn{flex-shrink:0}
-    .bossBtn{background:linear-gradient(135deg,#00c853,#00e676)!important;color:white!important;border:none!important;font-weight:800!important;box-shadow:0 0 20px #00c85366;animation:bossPulse 2s infinite}
-    @keyframes bossPulse{0%,100%{box-shadow:0 0 20px #00c85366}50%{box-shadow:0 0 30px #00e676aa}}
-    .chatBox{flex:1;min-height:50vh}
-  </style>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+<title>Kirong AI - Royal Intelligence</title>
+<link rel="manifest" href="/manifest.json">
+<meta name="theme-color" content="#8b5cf6">
+<link rel="icon" href="/icon-192.png">
+<link rel="stylesheet" href="style.css">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;700;800&display=swap" rel="stylesheet">
 </head>
 <body>
 
-  <div id="kirong-splash">
-    <div class="splash-stage stage1" id="stage1"><div class="splash-logo">🧠</div><h1>Kirong AI</h1><span class="sub">INTELLIGENT ASSISTANT</span></div>
-    <div class="splash-stage stage2" id="stage2"><div class="splash-logo">⚡</div><h1>Kirong AI</h1><span class="sub">Intelligent Assistant</span><div class="loader-wrap"><div class="loader-text">Loading...</div><div class="bar"><div class="fill"></div></div></div></div>
+<div class="appShell">
+
+  <!-- HEADER - ROYAL -->
+  <header class="topBar">
+    <div class="brand">
+      <div class="logo">K</div>
+      <div>
+        <h1>Kirong AI</h1>
+        <span id="statusText"><span class="dot"></span> Online • Royal Mode</span>
+      </div>
+    </div>
+    <div class="headerActions">
+      <button id="newChatBtn" class="iconBtn">➕</button>
+      <button id="bossBtn" class="iconBtn">👑</button>
+    </div>
+  </header>
+
+  <!-- 👑 MANSION TABS -->
+  <nav class="kirongTabs">
+    <button class="tabBtn active" data-tab="chat">💬 Chat</button>
+    <button class="tabBtn" data-tab="projects">📁 Projects</button>
+    <button class="tabBtn" data-tab="tools">🛠️ Tools</button>
+    <button class="tabBtn" data-tab="history">🕓 History</button>
+  </nav>
+
+  <!-- TAB 1: CHAT (Bedsitter ya zamani) -->
+  <div id="tab-chat" class="tabContent active">
+    <div id="chatBox">
+      <div class="kirongWelcome">
+        <div class="welcomeLogo">👑</div>
+        <h2>Karibu Mfalme!</h2>
+        <p>Mimi ni Kirong AI. Niko tayari kukusaidia na Code, Biashara, au Sheng!</p>
+        <div class="quickGrid">
+          <button class="qBtn" data-prompt="Nisaidie kuandika CV ya kazi">📄 CV</button>
+          <button class="qBtn" data-prompt="Nipe idea ya biashara na 10k">💡 Biz 10k</button>
+          <button class="qBtn" data-prompt="Andika code ya website ya portfolio">💻 Code</button>
+          <button class="qBtn" data-prompt="Nifunze Python kama beginner">📚 Learn</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- INPUT AREA -->
+    <div class="inputWrap">
+      <div class="inputBar">
+        <button id="uploadBtn" class="iconBtn">📎</button>
+        <input type="file" id="fileInput" hidden />
+        <textarea id="userInput" placeholder="Uliza Kirong kitu..." rows="1"></textarea>
+        <button id="micBtn" class="iconBtn">🎤</button>
+        <button id="sendBtn" class="sendBtn">➤</button>
+      </div>
+      <div class="quickActions">
+        <button class="qa" data-action="code">💻 Code</button>
+        <button class="qa" data-action="write">✍️ Write</button>
+        <button class="qa" data-action="business">💼 Business</button>
+        <button class="qa" id="whatsappBtn">🟢 WhatsApp</button>
+      </div>
+    </div>
   </div>
 
-  <div class="ambient ambientOne" aria-hidden="true"></div>
-  <div class="ambient ambientTwo" aria-hidden="true"></div>
-  <div class="ambient ambientThree" aria-hidden="true"></div>
-
-  <main class="container">
-    <header class="header">
-      <div class="headerLeft">
-        <div class="brandArea">
-          <div class="brandLogo" aria-hidden="true">⚡</div>
-          <div class="brandInfo"><h1>Kirong AI</h1><span class="brandStatus"><span class="statusDot" aria-hidden="true"></span>Online</span></div>
-        </div>
-        <select id="languageSelect" aria-label="Select language" title="Select language">
-          <option value="English">🌍 English</option>
-          <option value="Swahili">Kiswahili</option>
-          <option value="French">Français</option>
-          <option value="Spanish">Español</option>
-          <option value="Hindi">हिन्दी</option>
-        </select>
+  <!-- TAB 2: PROJECTS (Mansion Room 1) -->
+  <div id="tab-projects" class="tabContent">
+    <div class="tabHeader">
+      <h2>📁 My Projects</h2>
+      <button class="primaryBtn" onclick="newProject()">+ New Project</button>
+    </div>
+    <div class="projectsGrid" id="projectsGrid">
+      <div class="projectCard" data-project="CV Yangu">
+        <span>📄</span><h3>CV Yangu</h3><p>2 chats • Leo</p>
       </div>
-      <div class="headerActions">
-        <button id="newChatBtn" type="button" aria-label="Open chats" title="Open chats">＋</button>
-        <button id="themeBtn" type="button" aria-label="Toggle theme" title="Toggle theme">🌙</button>
+      <div class="projectCard" data-project="Biashara Plan">
+        <span>💼</span><h3>Biashara Plan</h3><p>5 chats • Jana</p>
       </div>
-    </header>
-
-    <section id="chatBox" class="chatBox" aria-live="polite" aria-label="Kirong AI conversation">
-      <div class="kirongWelcome" id="kirongWelcome">
-      <div class="kirongWelcomeLogo" aria-hidden="true"><img src="/icon-192.png" alt="Kirong AI"></div>
-        <div class="welcomeEyebrow"><span></span>KIRONG AI CORE<span></span></div>
-        <h2>Hello, I'm <span>Kirong AI</span> 👋</h2>
-        <p>Your intelligent AI assistant for <strong>coding</strong>, <strong>learning</strong>, <strong>creativity</strong>, <strong>business</strong> and everyday tasks.</p>
-        <div class="welcomeHint"><span class="hintIcon" aria-hidden="true">✨</span><span>What can I help you with today?</span></div>
+      <div class="projectCard new" onclick="newProject()">
+        <span>➕</span><h3>New Project</h3><p>Anza kitu mpya</p>
       </div>
-      <div id="thinking" class="thinking hidden" aria-live="polite"><div class="thinkingOrb">⚡</div><div class="thinkingContent"><span>Kirong AI is thinking</span><div class="thinkingDots"><i></i><i></i><i></i></div></div></div>
-    </section>
+    </div>
+  </div>
 
-    <!-- 👑 BOSS BUTTON MOVED TO QUICK ACTIONS - SPACE SAVED! -->
-    <nav class="quickActions" aria-label="Quick actions">
-      <button class="quickBtn" data-action="Code" type="button"><span>💻</span>Code</button>
-      <button class="quickBtn" data-action="Explain" type="button"><span>🧠</span>Explain</button>
-      <button class="quickBtn" data-action="Write" type="button"><span>✍️</span>Write</button>
-      <button class="quickBtn" data-action="Image" type="button"><span>🎨</span>Image</button>
-      <button class="quickBtn" data-action="Email" type="button"><span>📧</span>Email</button>
-      <button class="quickBtn" data-action="Business" type="button"><span>💼</span>Business</button>
-      <button class="quickBtn" data-action="Study" type="button"><span>📚</span>Study</button>
-      <button class="quickBtn" data-action="Translate" type="button"><span>🌍</span>Translate</button>
-      <button class="quickBtn" data-action="Analyze" type="button"><span>📊</span>Analyze</button>
-      <button class="quickBtn" data-action="Developer" type="button"><span>🧑🏽‍💻</span>Developer</button>
-      <button class="quickBtn" data-action="Ideas" type="button"><span>💡</span>Ideas</button>
-      <button class="quickBtn" data-action="Summarize" type="button"><span>📝</span>Summarize</button>
-      <button id="locationBtn" class="quickBtn" type="button" aria-label="Share location" title="Share location">📍</button>
-      <button id="whatsappBtn" class="quickBtn bossBtn" type="button" title="Talk to the Boss"><span>👑</span>Boss</button>
-    </nav>
+  <!-- TAB 3: TOOLS (Mansion Room 2) -->
+  <div id="tab-tools" class="tabContent">
+    <div class="tabHeader">
+      <h2>🛠️ Royal Tools</h2>
+      <p>Tools zinaku-save time</p>
+    </div>
+    <div class="toolsGrid">
+      <button class="toolCard" data-tool="cv"><span>📄</span><b>CV Builder</b><small>Tengeneza CV in 2min</small></button>
+      <button class="toolCard" data-tool="invoice"><span>🧾</span><b>Invoice Maker</b><small>Lipa na M-Pesa</small></button>
+      <button class="toolCard" data-tool="biz"><span>💡</span><b>Biz Ideas</b><small>Na 1k hadi 100k</small></button>
+      <button class="toolCard" data-tool="image"><span>🎨</span><b>Image Studio</b><small>Logo & Posters</small></button>
+    </div>
+  </div>
 
-    <form class="inputArea" id="chatForm" autocomplete="off">
-      <select id="voiceSelect" aria-label="Voice language"><option value="en-US">EN</option><option value="sw-KE">SW</option></select>
-      <button id="uploadBtn" type="button" aria-label="Upload file" title="Upload file">📎</button>
-      <input type="file" id="fileInput" hidden accept=".txt,.pdf,.doc,.docx,.csv,.json,.js,.html,.css,.py,.md,image/*">
-      <input type="text" id="userInput" placeholder="Ask Kirong anything..." autocomplete="off" maxlength="4000" aria-label="Message Kirong AI">
-      <button id="micBtn" type="button" aria-label="Voice input" title="Voice input">🎤</button>
-      <button id="sendBtn" type="submit" aria-label="Send message" title="Send message">➤</button>
-    </form>
+  <!-- TAB 4: HISTORY -->
+  <div id="tab-history" class="tabContent">
+    <div class="tabHeader">
+      <h2>🕓 History</h2>
+      <button class="ghostBtn" id="clearHistoryBtn">Clear All</button>
+    </div>
+    <div id="historyList" class="historyList">
+      <p class="emptyText">Hakuna history bado. Anza ku-chat!</p>
+    </div>
+  </div>
 
-    <footer class="footerButtons">
-      <button id="exportBtn" type="button"><span>💾</span>Export</button>
-      <button id="clearBtn" type="button"><span>🗑️</span>Clear</button>
-    </footer>
-  </main>
+</div>
 
-  <script src="app.js" defer></script>
-  <script>
-    const splash=document.getElementById('kirong-splash'),s1=document.getElementById('stage1'),s2=document.getElementById('stage2');
-    setTimeout(()=>{s1.style.display='none';s2.style.display='flex';s2.style.animation='fadeUp .6s ease'},1800);
-    setTimeout(()=>{splash.style.opacity='0';setTimeout(()=>splash.remove(),800)},4200);
-    if("serviceWorker" in navigator){window.addEventListener("load",()=>{navigator.serviceWorker.register("/sw.js").then(()=>console.log("📱 Kirong AI PWA Ready!")).catch(e=>console.error("❌ SW failed:",e))})}
-  </script>
+<script src="app.js"></script>
 </body>
 </html>
