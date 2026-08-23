@@ -22,8 +22,9 @@
         </div>
       </div>
       <div class="headerActions">
+        <button class="iconBtn" id="exportChatBtn" title="Export Chat">📤</button>
+        <button class="iconBtn" id="clearChatBtn" title="Clear Chat">🗑️</button>
         <button class="iconBtn" id="newChatBtn" title="New Chat">✨</button>
-        <button class="iconBtn" id="settingsBtn" title="Settings">⚙️</button>
       </div>
     </header>
 
@@ -53,7 +54,6 @@
         </div>
       </div>
 
-      <!-- INPUT -->
       <div class="inputWrap">
         <div class="inputBar">
           <textarea id="userInput" rows="1" placeholder="Ask Kirong anything..."></textarea>
@@ -78,30 +78,19 @@
         <button class="primaryBtn" id="newProjectBtn">+ New</button>
       </div>
       <div class="projectsGrid">
-        <div class="projectCard new">
-          <span>＋</span>
-          <h3>New Project</h3>
-          <p>Start something royal</p>
-        </div>
-        <div class="projectCard">
-          <span>🌐</span>
-          <h3>Portfolio Site</h3>
-          <p>Updated 2h ago</p>
-        </div>
-        <div class="projectCard">
-          <span>💼</span>
-          <h3>Business Plan</h3>
-          <p>Updated yesterday</p>
-        </div>
+        <div class="projectCard new"><span>＋</span><h3>New Project</h3><p>Start something royal</p></div>
+        <div class="projectCard"><span>🌐</span><h3>Portfolio Site</h3><p>Updated 2h ago</p></div>
+        <div class="projectCard"><span>💼</span><h3>Business Plan</h3><p>Updated yesterday</p></div>
       </div>
     </section>
 
     <!-- TAB: TOOLS -->
     <section class="tabContent" id="toolsTab">
       <div class="tabHeader">
-        <div>
-          <h2>Royal Tools</h2>
-          <p>Superpowers for Kings & Queens</p>
+        <div><h2>Royal Tools</h2><p>Superpowers for Kings & Queens</p></div>
+        <div style="display:flex;gap:8px">
+          <button class="ghostBtn" id="clearToolsBtn">🗑️ Clear</button>
+          <button class="primaryBtn" id="exportToolsBtn">📤 Export</button>
         </div>
       </div>
       <div class="toolsGrid">
@@ -115,11 +104,11 @@
     <!-- TAB: HISTORY -->
     <section class="tabContent" id="historyTab">
       <div class="tabHeader">
-        <div>
-          <h2>Chat History</h2>
-          <p>Your conversations with Kirong</p>
+        <div><h2>Chat History</h2><p>Your conversations with Kirong</p></div>
+        <div style="display:flex;gap:8px">
+          <button class="ghostBtn" id="clearHistoryBtn">🗑️ Clear All</button>
+          <button class="primaryBtn" id="exportHistoryBtn">📤 Export</button>
         </div>
-        <button class="ghostBtn" id="clearHistoryBtn">Clear All</button>
       </div>
       <div class="historyList" id="historyList">
         <p class="emptyText">No conversations yet. Start chatting!</p>
@@ -127,7 +116,6 @@
     </section>
 
   </div>
-
   <script src="/app.js"></script>
 </body>
 </html>
