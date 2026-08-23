@@ -144,3 +144,8 @@ body{
   .projectsGrid{grid-template-columns:1fr 1fr}
   .toolsGrid{grid-template-columns:1fr}
 }
+
+/* 👑 SMART GUIDELINE PROMPTS */
+.quickGrid{transition:all .5s cubic-bezier(.4,0,.2,1);overflow:hidden}
+.quickGrid.hide{opacity:0;transform:translateY(16px) scale(.95);max-height:0;margin-top:0;pointer-events:none}
+.quickGrid.show{opacity:1;transform:translateY(0) scale(1);max-height:200px}
