@@ -149,3 +149,7 @@ body{
 .quickGrid{transition:all .5s cubic-bezier(.4,0,.2,1);overflow:hidden}
 .quickGrid.hide{opacity:0;transform:translateY(16px) scale(.95);max-height:0;margin-top:0;pointer-events:none}
 .quickGrid.show{opacity:1;transform:translateY(0) scale(1);max-height:200px}
+
+.quickGrid{transition:all .5s ease; overflow:hidden; max-height:200px}
+.quickGrid.hide{opacity:0; transform:translateY(12px); max-height:0; pointer-events:none}
+#kirongWelcome.hideWelcome{opacity:0.3; transform:scale(0.95); transition:all .4s}
