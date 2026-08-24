@@ -1,15 +1,16 @@
 {
   "name": "kirong-job-ai",
-  "version": "7.0.0",
+  "version": "11.0.0",
   "type": "module",
-  "description": "Kirong AI - Intelligent Kenyan AI Assistant with File Support",
+  "description": "Kirong AI - Multi-Engine AI Platform with Chat, Study, Business, Content, Blog, WhatsApp and Image Intelligence",
+  "private": true,
   "dependencies": {
     "@huggingface/inference": "^4.13.0",
     "@vercel/blob": "^2.0.0",
-    "groq-sdk": "^0.27.0",
-    "openai": "^5.0.0",
     "formidable": "^3.5.1",
-    "pdf-parse": "^1.1.1",
-    "mammoth": "^1.6.0"
+    "groq-sdk": "^0.27.0",
+    "mammoth": "^1.6.0",
+    "openai": "^5.0.0",
+    "pdf-parse": "^1.1.1"
   }
 }
