@@ -1,7 +1,6 @@
 // ============================================================
-// 👑 KIRONG AI — USER STORAGE V12
+// 👑 KIRONG AI — USER STORAGE V13
 // Vercel Blob backed user records
-// Root architecture
 // ============================================================
 
 "use strict";
@@ -13,19 +12,16 @@ import {
 
 import {
   createDefaultUser,
-  resetDailyUsageIfNeeded
+  resetDailyUsageIfNeeded,
+  normalizePlan
 } from "./plans.js";
 
 // ============================================================
-// 🔐 ENVIRONMENT
+// 🔐 BLOB CONFIGURATION
 // ============================================================
 
 const TOKEN =
   process.env.BLOB_READ_WRITE_TOKEN;
-
-// ============================================================
-// 📁 USER STORAGE
-// ============================================================
 
 const USER_PREFIX =
   "kirong-ai/users/";
@@ -36,12 +32,13 @@ const USER_PREFIX =
 
 function safeId(id) {
   return String(id || "anonymous")
+    .trim()
     .replace(/[^a-zA-Z0-9_-]/g, "_")
     .slice(0, 100);
 }
 
 // ============================================================
-// 📍 USER PATH
+// 📁 USER PATH
 // ============================================================
 
 function userPath(userId) {
@@ -49,10 +46,23 @@ function userPath(userId) {
 }
 
 // ============================================================
+// 🔐 REQUIRE BLOB TOKEN
+// ============================================================
+
+function requireToken() {
+  if (!TOKEN) {
+    throw new Error(
+      "BLOB_READ_WRITE_TOKEN is missing."
+    );
+  }
+}
+
+// ============================================================
 // 📥 GET USER
 // ============================================================
 
 export async function getUser(userId) {
+  requireToken();
 
   const id =
     safeId(userId);
@@ -60,14 +70,7 @@ export async function getUser(userId) {
   const path =
     userPath(id);
 
-  if (!TOKEN) {
-    throw new Error(
-      "BLOB_READ_WRITE_TOKEN is missing."
-    );
-  }
-
   try {
-
     const result =
       await head(
         path,
@@ -89,35 +92,68 @@ export async function getUser(userId) {
       );
 
     if (!response.ok) {
-      return null;
+      if (response.status === 404) {
+        return null;
+      }
+
+      throw new Error(
+        `User storage returned ${response.status}.`
+      );
     }
 
     const user =
       await response.json();
 
-    if (!user?.userId) {
+    if (!user || typeof user !== "object") {
       return null;
     }
 
-    // ========================================================
-    // 🔄 DAILY RESET
-    // ========================================================
+    // --------------------------------------------------------
+    // Ensure user ID is valid
+    // --------------------------------------------------------
+
+    user.userId =
+      safeId(
+        user.userId || id
+      );
+
+    // --------------------------------------------------------
+    // Reset daily usage if needed
+    // --------------------------------------------------------
 
     resetDailyUsageIfNeeded(user);
 
-    return user;
+    // --------------------------------------------------------
+    // Normalize expired subscriptions
+    // --------------------------------------------------------
 
+    normalizePlan(user);
+
+    return user;
   }
 
   catch (error) {
+    const message =
+      String(
+        error?.message || ""
+      ).toLowerCase();
 
-    console.error(
-      "⚠️ GET USER ERROR:",
-      error?.message ||
-        error
-    );
+    // --------------------------------------------------------
+    // Missing user = normal condition
+    // --------------------------------------------------------
 
-    return null;
+    if (
+      message.includes("not found") ||
+      message.includes("404")
+    ) {
+      return null;
+    }
+
+    // --------------------------------------------------------
+    // Do NOT silently hide real storage failures
+    // --------------------------------------------------------
+
+    throw error;
   }
 }
 
@@ -126,67 +162,80 @@ export async function getUser(userId) {
 // ============================================================
 
 export async function saveUser(user) {
+  requireToken();
 
-  if (!TOKEN) {
+  if (!user || typeof user !== "object") {
     throw new Error(
-      "BLOB_READ_WRITE_TOKEN is missing."
+      "Invalid user object."
     );
   }
 
-  if (!user?.userId) {
+  if (!user.userId) {
     throw new Error(
       "Cannot save user without userId."
     );
   }
 
-  const cleanUser = {
-    ...user,
+  const id =
+    safeId(
+      user.userId
+    );
 
-    userId:
-      safeId(user.userId),
+  user.userId = id;
 
-    updatedAt:
-      new Date().toISOString()
-  };
+  // ----------------------------------------------------------
+  // Reset usage if a new day started
+  // ----------------------------------------------------------
+
+  resetDailyUsageIfNeeded(user);
+
+  // ----------------------------------------------------------
+  // Normalize subscription status
+  // ----------------------------------------------------------
+
+  normalizePlan(user);
+
+  // ----------------------------------------------------------
+  // Update timestamp
+  // ----------------------------------------------------------
+
+  user.updatedAt =
+    new Date().toISOString();
 
   const path =
-    userPath(
-      cleanUser.userId
-    );
+    userPath(id);
+
+  // ----------------------------------------------------------
+  // Store JSON
+  // ----------------------------------------------------------
 
   const blob =
     await put(
       path,
-
       JSON.stringify(
-        cleanUser,
+        user,
         null,
         2
       ),
-
       {
-        access:
-          "public",
+        token: TOKEN,
+
+        access: "public",
 
         contentType:
           "application/json",
 
-        token:
-          TOKEN,
+        addRandomSuffix: false,
 
-        addRandomSuffix:
-          false,
-
-        overwrite:
-          true
+        overwrite: true
       }
     );
 
   return {
-    ...cleanUser,
+    ...user,
 
     storageUrl:
-      blob.url
+      blob?.url || null
   };
 }
 
@@ -197,51 +246,152 @@ export async function saveUser(user) {
 export async function getOrCreateUser(
   userId
 ) {
-
   const id =
     safeId(userId);
 
   let user =
     await getUser(id);
 
-  // ==========================================================
-  // 🆕 NEW USER
-  // ==========================================================
+  // ----------------------------------------------------------
+  // Existing user
+  // ----------------------------------------------------------
 
-  if (!user) {
+  if (user) {
+    resetDailyUsageIfNeeded(user);
 
-    user =
-      createDefaultUser(id);
+    normalizePlan(user);
 
-    user =
-      await saveUser(user);
+    return user;
   }
 
-  // ==========================================================
-  // 🔄 DAILY RESET
-  // ==========================================================
+  // ----------------------------------------------------------
+  // New user
+  // ----------------------------------------------------------
 
-  const before =
-    JSON.stringify(user);
+  user =
+    createDefaultUser(id);
 
-  resetDailyUsageIfNeeded(user);
-
-  const after =
-    JSON.stringify(user);
-
-  // Save only if reset changed something
-  if (before !== after) {
-    user =
-      await saveUser(user);
-  }
+  user =
+    await saveUser(user);
 
   return user;
 }
 
 // ============================================================
-// 🗑️ RESET / UTILITY EXPORT
+// 🔄 UPDATE USER
 // ============================================================
 
-export function normalizeUserId(userId) {
-  return safeId(userId);
+export async function updateUser(
+  userId,
+  updates = {}
+) {
+  const user =
+    await getOrCreateUser(
+      userId
+    );
+
+  if (
+    !updates ||
+    typeof updates !== "object"
+  ) {
+    throw new Error(
+      "Invalid user updates."
+    );
+  }
+
+  // ----------------------------------------------------------
+  // Prevent changing identity accidentally
+  // ----------------------------------------------------------
+
+  const {
+    userId: ignoredUserId,
+    createdAt: ignoredCreatedAt,
+    usage: ignoredUsage,
+    ...safeUpdates
+  } = updates;
+
+  Object.assign(
+    user,
+    safeUpdates
+  );
+
+  // ----------------------------------------------------------
+  // Keep user ID stable
+  // ----------------------------------------------------------
+
+  user.userId =
+    safeId(userId);
+
+  // ----------------------------------------------------------
+  // Save
+  // ----------------------------------------------------------
+
+  return await saveUser(
+    user
+  );
+}
+
+// ============================================================
+// 📊 GET USER USAGE
+// ============================================================
+
+export async function getUserUsage(
+  userId
+) {
+  const user =
+    await getOrCreateUser(
+      userId
+    );
+
+  return {
+    userId:
+      user.userId,
+
+    plan:
+      user.plan,
+
+    usage:
+      user.usage,
+
+    subscription:
+      user.subscription || null
+  };
+}
+
+// ============================================================
+// 👑 CHECK IF USER IS PRO
+// ============================================================
+
+export async function isProUser(
+  userId
+) {
+  const user =
+    await getOrCreateUser(
+      userId
+    );
+
+  return (
+    normalizePlan(user) ===
+    "pro"
+  );
+}
+
+// ============================================================
+// 🗑️ DELETE USER RECORD
+// ============================================================
+// Intentionally NOT implemented here.
+// User deletion should use a separate authenticated
+// admin/account-deletion flow.
+// ============================================================
+
+// ============================================================
+// 📦 STORAGE INFORMATION
+// ============================================================
+
+export function getUserStoragePath(
+  userId
+) {
+  return userPath(
+    safeId(userId)
+  );
 }
