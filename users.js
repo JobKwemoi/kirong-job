@@ -1,32 +1,48 @@
 // ============================================================
 // 👑 KIRONG AI — USER STORAGE V12
 // Vercel Blob backed user records
+// Root architecture
 // ============================================================
 
 "use strict";
 
 import {
   put,
-  list,
   head
 } from "@vercel/blob";
 
 import {
   createDefaultUser,
   resetDailyUsageIfNeeded
-} from "../billing/plans.js";
+} from "./plans.js";
+
+// ============================================================
+// 🔐 ENVIRONMENT
+// ============================================================
 
 const TOKEN =
   process.env.BLOB_READ_WRITE_TOKEN;
 
+// ============================================================
+// 📁 USER STORAGE
+// ============================================================
+
 const USER_PREFIX =
   "kirong-ai/users/";
+
+// ============================================================
+// 🛡️ SAFE USER ID
+// ============================================================
 
 function safeId(id) {
   return String(id || "anonymous")
     .replace(/[^a-zA-Z0-9_-]/g, "_")
     .slice(0, 100);
 }
+
+// ============================================================
+// 📍 USER PATH
+// ============================================================
 
 function userPath(userId) {
   return `${USER_PREFIX}${safeId(userId)}.json`;
@@ -37,6 +53,7 @@ function userPath(userId) {
 // ============================================================
 
 export async function getUser(userId) {
+
   const id =
     safeId(userId);
 
@@ -50,6 +67,7 @@ export async function getUser(userId) {
   }
 
   try {
+
     const result =
       await head(
         path,
@@ -59,9 +77,7 @@ export async function getUser(userId) {
       );
 
     if (!result?.url) {
-      throw new Error(
-        "User record not found."
-      );
+      return null;
     }
 
     const response =
@@ -73,28 +89,33 @@ export async function getUser(userId) {
       );
 
     if (!response.ok) {
-      throw new Error(
-        `User storage returned ${response.status}.`
-      );
+      return null;
     }
 
     const user =
       await response.json();
 
+    if (!user?.userId) {
+      return null;
+    }
+
+    // ========================================================
+    // 🔄 DAILY RESET
+    // ========================================================
+
     resetDailyUsageIfNeeded(user);
 
     return user;
+
   }
 
   catch (error) {
-    // New user
-    if (
-      String(error?.message || "")
-        .toLowerCase()
-        .includes("not found")
-    ) {
-      return null;
-    }
+
+    console.error(
+      "⚠️ GET USER ERROR:",
+      error?.message ||
+        error
+    );
 
     return null;
   }
@@ -105,6 +126,7 @@ export async function getUser(userId) {
 // ============================================================
 
 export async function saveUser(user) {
+
   if (!TOKEN) {
     throw new Error(
       "BLOB_READ_WRITE_TOKEN is missing."
@@ -117,38 +139,52 @@ export async function saveUser(user) {
     );
   }
 
-  const path =
-    userPath(user.userId);
+  const cleanUser = {
+    ...user,
 
-  user.updatedAt =
-    new Date().toISOString();
+    userId:
+      safeId(user.userId),
+
+    updatedAt:
+      new Date().toISOString()
+  };
+
+  const path =
+    userPath(
+      cleanUser.userId
+    );
 
   const blob =
     await put(
       path,
+
       JSON.stringify(
-        user,
+        cleanUser,
         null,
         2
       ),
+
       {
-        access: "public",
+        access:
+          "public",
 
         contentType:
           "application/json",
 
-        token: TOKEN,
+        token:
+          TOKEN,
 
-        // Current Blob SDK supports overriding
-        // an existing pathname.
-        addRandomSuffix: false,
+        addRandomSuffix:
+          false,
 
-        overwrite: true
+        overwrite:
+          true
       }
     );
 
   return {
-    ...user,
+    ...cleanUser,
+
     storageUrl:
       blob.url
   };
@@ -158,14 +194,22 @@ export async function saveUser(user) {
 // 👤 GET OR CREATE USER
 // ============================================================
 
-export async function getOrCreateUser(userId) {
+export async function getOrCreateUser(
+  userId
+) {
+
   const id =
     safeId(userId);
 
   let user =
     await getUser(id);
 
+  // ==========================================================
+  // 🆕 NEW USER
+  // ==========================================================
+
   if (!user) {
+
     user =
       createDefaultUser(id);
 
@@ -173,7 +217,31 @@ export async function getOrCreateUser(userId) {
       await saveUser(user);
   }
 
+  // ==========================================================
+  // 🔄 DAILY RESET
+  // ==========================================================
+
+  const before =
+    JSON.stringify(user);
+
   resetDailyUsageIfNeeded(user);
 
+  const after =
+    JSON.stringify(user);
+
+  // Save only if reset changed something
+  if (before !== after) {
+    user =
+      await saveUser(user);
+  }
+
   return user;
+}
+
+// ============================================================
+// 🗑️ RESET / UTILITY EXPORT
+// ============================================================
+
+export function normalizeUserId(userId) {
+  return safeId(userId);
 }
