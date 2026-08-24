@@ -2,8 +2,11 @@
   "name": "kirong-job-ai",
   "version": "11.0.0",
   "type": "module",
-  "description": "Kirong AI - Multi-Engine AI Platform with Chat, Study, Business, Content, Blog, WhatsApp and Image Intelligence",
   "private": true,
+  "description": "Kirong AI — Intelligent Kenyan AI Platform, Content Factory, Student Assistant, WhatsApp Business and AI Creative Engine",
+  "scripts": {
+    "start": "node api/chat.js"
+  },
   "dependencies": {
     "@huggingface/inference": "^4.13.0",
     "@vercel/blob": "^2.0.0",
