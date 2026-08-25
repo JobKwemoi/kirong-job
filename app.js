@@ -1,10 +1,10 @@
 /* ============================================================
-   👑 KIRONG AI — FRONTEND ENGINE V10.0 MANSION (POLISHED)
+   👑 KIRONG AI — FRONTEND ENGINE V9.1 MANSION (polished)
    - Royal Tabs (Chat/Projects/Tools/History)
    - 4-Second Smart Guidelines
    - Clear + Export System
    - Persistent Memory
-   - File Upload + Typing Indicator + Copy-Code (fixed)
+   - File attach UI + copy-code wiring (fixed)
 ============================================================ */
 "use strict";
 
@@ -27,7 +27,7 @@ const STORAGE_KEYS = {
   visited: "kirong_visited"
 };
 
-/* DOM - MANSION IDS */
+/* DOM - NEW MANSION IDS */
 const chatBox = document.getElementById("chatBox");
 const userInput = document.getElementById("userInput");
 const sendBtn = document.getElementById("sendBtn");
@@ -42,30 +42,18 @@ const thinking = document.getElementById("thinking");
 const fileInput = document.getElementById("fileInput");
 const attachBtn = document.getElementById("attachBtn");
 const filePreview = document.getElementById("filePreview");
-const filePreviewName = document.getElementById("filePreviewName");
-const removeFileBtn = document.getElementById("removeFileBtn");
-const whatsappBtn = document.getElementById("whatsappBtn");
-
-/* Captured once so we always have a clean copy of the welcome
-   screen markup — never re-read it from a DOM node that might
-   already have been cleared (that was the old restore bug). */
-const WELCOME_HTML = `<div class="kirongWelcome" id="kirongWelcome">
-  <div class="kirongWelcomeLogo" aria-hidden="true"><img src="/icon-192.png" alt="Kirong AI"></div>
-  <div class="welcomeEyebrow" aria-hidden="true"><span></span>KIRONG AI CORE<span></span></div>
-  <h2>Welcome, <span>Kings & Queens!</span> 👑</h2>
-  <p>Hello 👋 I'm <strong>Kirong AI</strong>, your intelligent assistant for <strong>coding, writing, business</strong> and everyday tasks.<br><br>What can I help you with today?</p>
-  <div class="quickGrid">
-    <button class="qBtn" data-prompt="Build me a modern portfolio website">💻 Build Website</button>
-    <button class="qBtn" data-prompt="Give me 3 business ideas with 10k in Kenya">💡 10K Biz Idea</button>
-    <button class="qBtn" data-prompt="Write me a professional CV for a software developer">📄 Pro CV</button>
-    <button class="qBtn" data-prompt="Explain Python like I'm 12 years old">📚 Learn Fast</button>
-  </div>
-</div>`;
+const newProjectBtn = document.getElementById("newProjectBtn");
+const micBtn = document.getElementById("micBtn");
+const voiceReplyBtn = document.getElementById("voiceReplyBtn");
 
 let messages = [];
 let selectedFile = null;
 let isSending = false;
 let currentChatId = null;
+let recognition = null;
+let isListening = false;
+let speechVoices = [];
+let voiceRepliesEnabled = loadJSON(STORAGE_KEYS.voice, false);
 
 /* ========== STORAGE ========== */
 function loadJSON(k,f){try{const r=localStorage.getItem(k);return r?JSON.parse(r):f}catch{return f}}
@@ -74,17 +62,13 @@ function createChatId(){return "chat_"+Date.now()+"_"+Math.random().toString(36)
 function createChatTitle(t){const c=String(t||"").replace(/\s+/g," ").trim();return c?c.length>42?c.slice(0,42)+"...":c:"New Chat"}
 
 /* ========== TABS SYSTEM ========== */
-function goToChatTab(){
-  document.querySelector('.tabBtn[data-tab="chat"]')?.click();
-}
 function initTabs(){
   document.querySelectorAll('.tabBtn').forEach(btn=>{
     btn.addEventListener('click',()=>{
       const tab = btn.dataset.tab;
       document.querySelectorAll('.tabBtn').forEach(b=>{b.classList.remove('active');b.setAttribute('aria-selected','false')});
       document.querySelectorAll('.tabContent').forEach(s=>s.classList.remove('active'));
-      btn.classList.add('active');
-      btn.setAttribute('aria-selected','true');
+      btn.classList.add('active');btn.setAttribute('aria-selected','true');
       document.getElementById(tab+'Tab')?.classList.add('active');
     });
   });
@@ -96,7 +80,7 @@ function initRoyalGuidelines(){
   const welcome = document.getElementById('kirongWelcome');
   if(!grid) return;
   const hasVisited = localStorage.getItem(STORAGE_KEYS.visited);
-
+  
   if(!hasVisited){
     grid.classList.add('show');
     let timer = setTimeout(()=>{
@@ -123,41 +107,20 @@ function initRoyalGuidelines(){
       });
     });
   }else{
+    // Returning user - show briefly then hide
     grid.classList.add('hide');
-    if(welcome && chatBox && chatBox.children.length>1) welcome.style.display='none';
+    if(welcome && document.getElementById('chatBox').children.length>1) welcome.style.display='none';
   }
 }
 
 /* ========== HELPERS ========== */
 function escapeHTML(v){const d=document.createElement("div");d.textContent=String(v??"");return d.innerHTML}
-
-function wrapListItems(html){
-  // Groups consecutive <li> lines into a single <ul> so lists render
-  // as real, semantic lists instead of bare, unwrapped <li> tags.
-  const lines = html.split("\n");
-  const out = [];
-  let inList = false;
-  for(const line of lines){
-    const isLi = /^<li>[\s\S]*<\/li>$/.test(line.trim());
-    if(isLi && !inList){ out.push("<ul>"); inList = true; }
-    if(!isLi && inList){ out.push("</ul>"); inList = false; }
-    out.push(line);
-  }
-  if(inList) out.push("</ul>");
-  return out.join("\n");
-}
-
 function renderMarkdown(t){
   let h=escapeHTML(t);
   h=h.replace(/```([\s\S]*?)```/g,(_,c)=>`<div class="codeWrapper"><button class="copyCodeBtn" data-copy="${encodeURIComponent(c.trim())}">📋 Copy</button><pre class="codeBlock"><code>${c.trim()}</code></pre></div>`);
   h=h.replace(/`([^`]+)`/g,"<code>$1</code>");h=h.replace(/\*\*(.*?)\*\*/g,"<strong>$1</strong>");h=h.replace(/\*(.*?)\*/g,"<em>$1</em>");
   h=h.replace(/^### (.*)$/gm,"<h4>$1</h4>");h=h.replace(/^## (.*)$/gm,"<h3>$1</h3>");h=h.replace(/^# (.*)$/gm,"<h2>$1</h2>");
-  h=h.replace(/^[-•] (.*)$/gm,"<li>$1</li>");
-  h=wrapListItems(h);
-  h=h.replace(/(https?:\/\/[^\s<]+)/g,'<a href="$1" target="_blank" rel="noopener noreferrer">$1</a>');
-  h=h.replace(/\n/g,"<br>");
-  h=h.replace(/<br>(<\/?ul>)/g,"$1").replace(/(<\/?ul>)<br>/g,"$1");
-  return h;
+  h=h.replace(/^[-•] (.*)$/gm,"<li>$1</li>");h=h.replace(/(https?:\/\/[^\s<]+)/g,'<a href="$1" target="_blank" rel="noopener noreferrer">$1</a>');h=h.replace(/\n/g,"<br>");return h;
 }
 function showToast(m){
   let t=document.getElementById("kirongToast");if(!t){t=document.createElement("div");t.id="kirongToast";t.className="kirongToast";document.body.appendChild(t)}
@@ -169,10 +132,6 @@ async function copyText(text){
 }
 
 /* ========== CHAT UI ========== */
-/* NOTE: element classes below (.msg / .msg.user / .msg.ai / .bubble)
-   are chosen to match style.css exactly — this is what was mismatched
-   before (app.js used to build .message/.messageBubble, which had
-   zero styling). */
 function isUserNearBottom(){if(!chatBox) return true;return (chatBox.scrollHeight-chatBox.scrollTop-chatBox.clientHeight)<=120}
 function scrollToBottom(f=false){if(!chatBox) return;if(!f&&!isUserNearBottom()) return;requestAnimationFrame(()=>chatBox.scrollTo({top:chatBox.scrollHeight,behavior:"smooth"}))}
 function setThinking(a){if(thinking) thinking.classList.toggle("hidden",!a);if(a) scrollToBottom()}
@@ -181,39 +140,206 @@ function setSendingState(a){isSending=a;if(sendBtn){sendBtn.disabled=a;sendBtn.s
 function addMessage(role,text,opt={}){
   if(!chatBox) return null;
   const auto=isUserNearBottom();
-  const isUser = role==="user";
-  const m=document.createElement("div");m.className=`msg ${isUser?"user":"ai"}`;
-  const b=document.createElement("div");b.className="bubble";
-  if(opt.file){const fc=document.createElement("div");fc.className="attachedFile";fc.innerHTML=`<span aria-hidden="true">📎</span><span>${escapeHTML(opt.file)}</span>`;b.appendChild(fc)}
+  const m=document.createElement("div");m.className=`message ${role}-message`;
+  const b=document.createElement("div");b.className="messageBubble";
+  if(opt.file){const fc=document.createElement("div");fc.className="attachedFile";fc.innerHTML=`<span>📎</span><span>${escapeHTML(opt.file)}</span>`;b.appendChild(fc)}
   if(text){
     const c=document.createElement("div");c.className="messageContent";c.innerHTML=role==="assistant"?renderMarkdown(text):escapeHTML(text).replace(/\n/g,"<br>");b.appendChild(c);
-    if(role==="assistant"){const cb=document.createElement("button");cb.type="button";cb.className="copyMessageBtn";cb.textContent="📋 Copy";cb.onclick=()=>copyText(text);b.appendChild(cb)}
+    if(role==="assistant"){
+      const cb=document.createElement("button");cb.className="copyMessageBtn";cb.textContent="📋 Copy";cb.onclick=()=>copyText(text);b.appendChild(cb);
+      if("speechSynthesis" in window){
+        const sb=document.createElement("button");sb.className="speakMessageBtn";sb.textContent="🔊 Listen";sb.onclick=()=>speakText(text,sb);b.appendChild(sb);
+      }
+    }
   }
   m.appendChild(b);chatBox.appendChild(m);if(auto) scrollToBottom();return m;
 }
 function addImageMessage(text,image,provider="",prompt=""){
   if(!chatBox||!image) return null;
   const auto=isUserNearBottom();
-  const m=document.createElement("div");m.className="msg ai";
-  const b=document.createElement("div");b.className="bubble imageMessage";
+  const m=document.createElement("div");m.className="message assistant-message";
+  const b=document.createElement("div");b.className="messageBubble imageMessage";
   if(text){const i=document.createElement("div");i.className="messageContent";i.innerHTML=renderMarkdown(text);b.appendChild(i)}
-  const img=document.createElement("img");img.src=image;img.alt=prompt||"Generated image";img.className="generatedImage";img.onclick=()=>window.open(image,"_blank");b.appendChild(img);
+  const img=document.createElement("img");img.src=image;img.alt=prompt||"Generated";img.className="generatedImage";img.onclick=()=>window.open(image,"_blank");b.appendChild(img);
   const act=document.createElement("div");act.className="imageActions";
-  const dl=document.createElement("button");dl.type="button";dl.textContent="⬇️ Save";dl.onclick=()=>{const a=document.createElement("a");a.href=image;a.download=`kirong-${Date.now()}.png`;a.click();showToast("🖼️ Saved")};act.appendChild(dl);
-  const cp=document.createElement("button");cp.type="button";cp.textContent="📋 Copy";cp.onclick=()=>copyText(image);act.appendChild(cp);b.appendChild(act);
+  const dl=document.createElement("button");dl.textContent="⬇️ Save";dl.onclick=()=>{const a=document.createElement("a");a.href=image;a.download=`kirong-${Date.now()}.png`;a.click();showToast("🖼️ Saved")};act.appendChild(dl);
+  const cp=document.createElement("button");cp.textContent="📋 Copy";cp.onclick=()=>copyText(image);act.appendChild(cp);b.appendChild(act);
   m.appendChild(b);chatBox.appendChild(m);if(auto) scrollToBottom();return m;
 }
 
-/* Delegated listener for copy-code buttons rendered via innerHTML
-   inside renderMarkdown — these can't get a direct onclick reference
-   since they're built from an HTML string, not createElement(). */
+/* ========== COPY-CODE BUTTON WIRING (was previously unwired) ==========
+   renderMarkdown() builds .copyCodeBtn buttons via innerHTML, so they
+   never get a direct .onclick. A single delegated listener on chatBox
+   catches clicks on any of them, including ones restored from history. */
 if(chatBox){
-  chatBox.addEventListener("click",(e)=>{
+  chatBox.addEventListener("click", e=>{
     const btn = e.target.closest(".copyCodeBtn");
     if(!btn) return;
     copyText(decodeURIComponent(btn.dataset.copy || ""));
   });
 }
+
+/* ========== FILE ATTACH UI ========== */
+function renderFilePreview(){
+  if(!filePreview) return;
+  if(!selectedFile){
+    filePreview.innerHTML="";
+    filePreview.classList.add("hidden");
+    return;
+  }
+  filePreview.classList.remove("hidden");
+  filePreview.innerHTML = `<span class="fileChip">📎 ${escapeHTML(selectedFile.name)}<button type="button" id="removeFileBtn" aria-label="Remove attached file">✕</button></span>`;
+  document.getElementById("removeFileBtn")?.addEventListener("click", ()=>{
+    selectedFile = null;
+    if(fileInput) fileInput.value = "";
+    renderFilePreview();
+  });
+}
+
+/* ========== VOICE INPUT (speech-to-text) ========== */
+const SpeechRecognitionAPI = window.SpeechRecognition || window.webkitSpeechRecognition;
+
+function initSpeechRecognition(){
+  if(!SpeechRecognitionAPI){
+    // Browser doesn't support it (e.g. desktop Firefox) — hide the mic
+    // instead of showing a button that silently does nothing.
+    if(micBtn) micBtn.style.display="none";
+    return;
+  }
+  recognition = new SpeechRecognitionAPI();
+  recognition.continuous = false;
+  recognition.interimResults = true;
+  recognition.lang = "en-US";
+
+  recognition.onresult = (e)=>{
+    let transcript = "";
+    for(let i=0;i<e.results.length;i++){
+      transcript += e.results[i][0].transcript;
+    }
+    if(userInput) userInput.value = transcript;
+  };
+
+  recognition.onerror = (e)=>{
+    isListening = false;
+    micBtn?.classList.remove("listening");
+    if(e.error === "not-allowed" || e.error === "service-not-allowed"){
+      showToast("⚠️ Microphone access denied");
+    }else if(e.error !== "no-speech" && e.error !== "aborted"){
+      showToast("⚠️ Voice input error, try again");
+    }
+  };
+
+  recognition.onend = ()=>{
+    isListening = false;
+    micBtn?.classList.remove("listening");
+  };
+}
+
+function toggleListening(){
+  if(!recognition) return;
+  if(isListening){
+    recognition.stop();
+    isListening = false;
+    micBtn?.classList.remove("listening");
+    return;
+  }
+  try{
+    recognition.start();
+    isListening = true;
+    micBtn?.classList.add("listening");
+  }catch{
+    // start() throws if already running — ignore, state stays consistent
+  }
+}
+
+if(micBtn) micBtn.addEventListener("click", toggleListening);
+
+/* ========== VOICE OUTPUT (text-to-speech) ========== */
+function loadSpeechVoices(){
+  if(!("speechSynthesis" in window)) return;
+  speechVoices = window.speechSynthesis.getVoices();
+}
+if("speechSynthesis" in window){
+  loadSpeechVoices();
+  window.speechSynthesis.onvoiceschanged = loadSpeechVoices;
+}
+
+function stripMarkdownForSpeech(text){
+  return String(text||"")
+    .replace(/```[\s\S]*?```/g,"code block, see chat for details.")
+    .replace(/`([^`]+)`/g,"$1")
+    .replace(/\*\*(.*?)\*\*/g,"$1")
+    .replace(/\*(.*?)\*/g,"$1")
+    .replace(/^#+\s*/gm,"")
+    .replace(/https?:\/\/\S+/g,"a link")
+    .trim();
+}
+
+function speakText(text, btn){
+  if(!("speechSynthesis" in window)){
+    showToast("⚠️ Voice output not supported on this device");
+    return;
+  }
+  const synth = window.speechSynthesis;
+
+  // If this exact button is already speaking, stop it (toggle off).
+  if(btn && btn.classList.contains("speaking")){
+    synth.cancel();
+    btn.classList.remove("speaking");
+    btn.textContent = "🔊 Listen";
+    return;
+  }
+
+  synth.cancel(); // stop any other utterance first
+  document.querySelectorAll(".speakMessageBtn.speaking").forEach(b=>{b.classList.remove("speaking");b.textContent="🔊 Listen"});
+
+  const utterance = new SpeechSynthesisUtterance(stripMarkdownForSpeech(text));
+  const preferred = speechVoices.find(v=>/en-/i.test(v.lang));
+  if(preferred) utterance.voice = preferred;
+  utterance.rate = 1;
+
+  if(btn){
+    btn.classList.add("speaking");
+    btn.textContent = "⏸️ Stop";
+    utterance.onend = ()=>{btn.classList.remove("speaking");btn.textContent="🔊 Listen"};
+    utterance.onerror = ()=>{btn.classList.remove("speaking");btn.textContent="🔊 Listen"};
+  }
+
+  synth.speak(utterance);
+}
+
+/* ========== AUTO VOICE REPLIES (toggle in header) ========== */
+function updateVoiceReplyBtn(){
+  if(!voiceReplyBtn) return;
+  voiceReplyBtn.textContent = voiceRepliesEnabled ? "🔊" : "🔇";
+  voiceReplyBtn.classList.toggle("active", voiceRepliesEnabled);
+  voiceReplyBtn.setAttribute("aria-pressed", String(voiceRepliesEnabled));
+  voiceReplyBtn.title = voiceRepliesEnabled ? "Voice replies: ON" : "Voice replies: OFF";
+}
+if(voiceReplyBtn){
+  updateVoiceReplyBtn();
+  voiceReplyBtn.addEventListener("click", ()=>{
+    voiceRepliesEnabled = !voiceRepliesEnabled;
+    saveJSON(STORAGE_KEYS.voice, voiceRepliesEnabled);
+    updateVoiceReplyBtn();
+    if(!voiceRepliesEnabled && "speechSynthesis" in window) window.speechSynthesis.cancel();
+    showToast(voiceRepliesEnabled ? "🔊 Voice replies on" : "🔇 Voice replies off");
+  });
+}
+
+if(attachBtn) attachBtn.addEventListener("click", ()=>fileInput?.click());
+if(fileInput) fileInput.addEventListener("change", ()=>{
+  const f = fileInput.files?.[0];
+  if(!f) return;
+  if(f.size > MAX_FILE_SIZE){
+    showToast("⚠️ File too large (max 10MB)");
+    fileInput.value = "";
+    return;
+  }
+  selectedFile = f;
+  renderFilePreview();
+  showToast(`📎 ${f.name} attached`);
+});
 
 /* ========== HISTORY & SAVE ========== */
 function addToHistory(role,content,meta={}){
@@ -233,15 +359,6 @@ function saveCurrentChat(){
   saveJSON(STORAGE_KEYS.chats,chats.slice(0,MAX_STORED_CHATS));
   renderHistoryList();
 }
-function renderMessagesIntoChatBox(){
-  if(!chatBox) return;
-  chatBox.innerHTML="";
-  if(messages.length===0){
-    chatBox.insertAdjacentHTML("beforeend", WELCOME_HTML);
-    return;
-  }
-  messages.forEach(i=>{if(i.image) addImageMessage(i.content,i.image,i.provider,i.imagePrompt);else addMessage(i.role,i.content,i.file?{file:i.file}:{})});
-}
 function restoreChat(){
   const chats=loadJSON(STORAGE_KEYS.chats,[]);
   const active=localStorage.getItem(STORAGE_KEYS.activeChat);
@@ -250,7 +367,8 @@ function restoreChat(){
   if(!chat){currentChatId=createChatId();return}
   currentChatId=chat.id;
   messages=Array.isArray(chat.messages)?chat.messages.filter(i=>i&& (i.role==="user"||i.role==="assistant")).slice(-MAX_STORED_MESSAGES):[];
-  renderMessagesIntoChatBox();
+  if(chatBox){chatBox.innerHTML=""; const w=document.createElement("div");w.id="kirongWelcome";w.innerHTML=document.querySelector("#kirongWelcome")?.innerHTML||""; if(messages.length===0) chatBox.appendChild(w); }
+  messages.forEach(i=>{if(i.image) addImageMessage(i.content,i.image,i.provider,i.imagePrompt);else addMessage(i.role,i.content,i.file?{file:i.file}:{})});
   scrollToBottom(true);renderHistoryList();
 }
 function renderHistoryList(){
@@ -260,8 +378,8 @@ function renderHistoryList(){
   if(chats.length===0){list.innerHTML='<p class="emptyText">No conversations yet. Start chatting!</p>';return}
   list.innerHTML="";
   chats.slice(0,30).forEach(chat=>{
-    const d=document.createElement("div");d.className="histItem"+(chat.id===currentChatId?" active":"");
-    d.innerHTML=`<div><b>${escapeHTML(chat.title)}</b><small>${new Date(chat.updatedAt).toLocaleDateString()}</small></div><button type="button" aria-label="Open chat">↗️</button>`;
+    const d=document.createElement("div");d.className="historyItem"+(chat.id===currentChatId?" active":"");
+    d.innerHTML=`<div><b>${escapeHTML(chat.title)}</b><small>${new Date(chat.updatedAt).toLocaleDateString()}</small></div><button aria-label="Open chat">↗️</button>`;
     d.onclick=()=>openChat(chat.id);
     list.appendChild(d);
   });
@@ -271,49 +389,20 @@ function openChat(id){
   const chat=chats.find(i=>i.id===id);if(!chat) return;
   currentChatId=chat.id;localStorage.setItem(STORAGE_KEYS.activeChat,id);
   messages=Array.isArray(chat.messages)?chat.messages.slice(-MAX_STORED_MESSAGES):[];
-  renderMessagesIntoChatBox();
-  scrollToBottom(true);renderHistoryList();goToChatTab();showToast("💬 Chat opened");
+  if(chatBox){chatBox.innerHTML=""; messages.forEach(i=>{if(i.image) addImageMessage(i.content,i.image,i.provider,i.imagePrompt);else addMessage(i.role,i.content,i.file?{file:i.file}:{})});}
+  scrollToBottom(true);renderHistoryList();document.querySelector('.tabBtn[data-tab="chat"]')?.click();showToast("💬 Chat opened");
 }
 function startNewChat(){
   if(messages.length) saveCurrentChat();
-  messages=[];clearSelectedFile();currentChatId=createChatId();localStorage.setItem(STORAGE_KEYS.activeChat,currentChatId);
-  renderMessagesIntoChatBox();
-  initRoyalGuidelines();
+  messages=[];selectedFile=null;currentChatId=createChatId();localStorage.setItem(STORAGE_KEYS.activeChat,currentChatId);
+  if(fileInput) fileInput.value="";
+  renderFilePreview();
+  if(chatBox){
+    chatBox.innerHTML=`<div class="kirongWelcome" id="kirongWelcome"><div class="kirongWelcomeLogo"><img src="/icon-192.png" alt="Kirong AI"></div><div class="welcomeEyebrow"><span></span>KIRONG AI CORE<span></span></div><h2>Welcome, <span>Kings & Queens!</span> 👑</h2><p>Hello 👋 I'm <strong>Kirong AI</strong>, your intelligent assistant for <strong>coding, writing, business</strong> and everyday tasks.<br><br>What can I help you with today?</p><div class="quickGrid"><button class="qBtn" data-prompt="Build me a modern portfolio website">💻 Build Website</button><button class="qBtn" data-prompt="Give me 3 business ideas with 10k in Kenya">💡 10K Biz Idea</button><button class="qBtn" data-prompt="Write me a professional CV for a software developer">📄 Pro CV</button><button class="qBtn" data-prompt="Explain Python like I'm 12 years old">📚 Learn Fast</button></div></div>`;
+    initRoyalGuidelines();
+  }
   renderHistoryList();showToast("＋ New chat");
 }
-
-/* ========== FILE ATTACH ========== */
-function updateFilePreview(){
-  if(!filePreview||!filePreviewName) return;
-  if(selectedFile){
-    filePreviewName.textContent = selectedFile.name;
-    filePreview.classList.remove("hidden");
-  }else{
-    filePreview.classList.add("hidden");
-    filePreviewName.textContent = "";
-  }
-}
-function clearSelectedFile(){
-  selectedFile=null;
-  if(fileInput) fileInput.value="";
-  updateFilePreview();
-}
-function handleFileSelect(file){
-  if(!file) return;
-  if(file.size > MAX_FILE_SIZE){
-    showToast("⚠️ File too large (max 10MB)");
-    if(fileInput) fileInput.value="";
-    return;
-  }
-  selectedFile = file;
-  updateFilePreview();
-}
-if(attachBtn && fileInput) attachBtn.addEventListener("click",()=>fileInput.click());
-if(fileInput) fileInput.addEventListener("change",()=>{
-  const file = fileInput.files && fileInput.files[0];
-  handleFileSelect(file);
-});
-if(removeFileBtn) removeFileBtn.addEventListener("click",clearSelectedFile);
 
 /* ========== SEND ========== */
 function buildFormData(message){
@@ -332,22 +421,22 @@ async function sendMessage(){
   addMessage("user",message,selectedFile?{file:selectedFile.name}:{});
   addToHistory("user",visible,selectedFile?{file:selectedFile.name}:{});
   if(userInput) userInput.value="";
-  const fileForRequest = selectedFile;
   setSendingState(true);setThinking(true);
   try{
     const fd=buildFormData(visible);
     const res=await fetch(API_ENDPOINT,{method:"POST",body:fd,headers:{Accept:"application/json"},cache:"no-store"});
     const ct=res.headers.get("content-type")||"";
     let data;if(ct.includes("application/json")) data=await res.json();else throw new Error(await res.text());
-    if(!res.ok||data?.type==="error") throw new Error(data?.error||data?.text||`Server ${res.status}`);
+    if(!res.ok||data?.type==="error") throw new Error(data?.text||`Server ${res.status}`);
     if(data?.type==="image"&&data?.image){
       addImageMessage(data.text||"🎨 Here is your image!",data.image,data.provider||"",data.prompt||visible);
       addToHistory("assistant",data.text||"Generated image",{image:data.image,imagePrompt:data.prompt||visible,provider:data.provider});
     }else{
-      const ans=String(data?.text||data?.reply||data?.message||"No response");
+      const ans=String(data?.text||data?.message||"No response");
       addMessage("assistant",ans);addToHistory("assistant",ans);
+      if(voiceRepliesEnabled) speakText(ans, chatBox?.querySelector(".message.assistant-message:last-child .speakMessageBtn"));
     }
-    clearSelectedFile();saveCurrentChat();
+    selectedFile=null;if(fileInput) fileInput.value="";renderFilePreview();saveCurrentChat();
   }catch(e){
     addMessage("assistant",`⚠️ ${e.message||"Connection error, try again."}`);addToHistory("assistant",`Error: ${e.message}`);
   }finally{setThinking(false);setSendingState(false);userInput?.focus()}
@@ -364,53 +453,15 @@ if(clearChatBtn) clearChatBtn.addEventListener("click",()=>{if(confirm("Clear th
 if(exportChatBtn) exportChatBtn.addEventListener("click",exportChatFile);
 if(clearHistoryBtn) clearHistoryBtn.addEventListener("click",()=>{if(confirm("Clear ALL history?")){localStorage.removeItem(STORAGE_KEYS.chats);localStorage.removeItem(STORAGE_KEYS.activeChat);startNewChat();renderHistoryList();showToast("🗑️ History cleared")}});
 if(exportHistoryBtn) exportHistoryBtn.addEventListener("click",()=>{const chats=loadJSON(STORAGE_KEYS.chats,[]);if(!chats.length){showToast("No history");return}const blob=new Blob([JSON.stringify(chats,null,2)],{type:"application/json"});const url=URL.createObjectURL(blob);const a=document.createElement("a");a.href=url;a.download=`kirong-history-${Date.now()}.json`;a.click();URL.revokeObjectURL(url)});
-if(clearToolsBtn) clearToolsBtn.addEventListener("click",()=>showToast("Nothing to clear yet"));
-if(exportToolsBtn) exportToolsBtn.addEventListener("click",()=>showToast("Nothing to export yet"));
+
+/* ========== PROJECTS (placeholder wiring so button isn't dead) ========== */
+if(newProjectBtn) newProjectBtn.addEventListener("click",()=>showToast("🚧 Projects vault coming soon, bro!"));
 
 /* ========== EVENTS ========== */
 if(sendBtn) sendBtn.addEventListener("click",sendMessage);
 if(userInput) userInput.addEventListener("keydown",e=>{if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();sendMessage()}});
 if(newChatBtn) newChatBtn.addEventListener("click",startNewChat);
-
-/* Quick action pills — fill the input with a helpful starter phrase
-   instead of a single bare word (was: "code " with nothing else). */
-document.querySelectorAll('.qa').forEach(b=>b.addEventListener('click',()=>{
-  if(userInput){userInput.value=b.dataset.prompt||"";userInput.focus()}
-}));
-
-/* Tool cards — previously dead buttons with no listener at all. */
-document.querySelectorAll('.toolCard').forEach(btn=>{
-  btn.addEventListener('click',()=>{
-    const prompt = btn.dataset.prompt;
-    if(!prompt || !userInput) return;
-    goToChatTab();
-    userInput.value = prompt;
-    userInput.focus();
-  });
-});
-
-/* "+ New Project" — also previously dead. Sends the person into
-   chat with a starter prompt since there's no real project backend yet. */
-function startProjectPrompt(){
-  goToChatTab();
-  if(userInput){
-    userInput.value = "I want to start a new project. Ask me what I'd like to build.";
-    userInput.focus();
-  }
-}
-const newProjectBtn = document.getElementById("newProjectBtn");
-const newProjectCard = document.getElementById("newProjectCard");
-if(newProjectBtn) newProjectBtn.addEventListener("click",startProjectPrompt);
-if(newProjectCard){
-  newProjectCard.addEventListener("click",startProjectPrompt);
-  newProjectCard.addEventListener("keydown",e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();startProjectPrompt()}});
-}
-
-/* WhatsApp contact button — the number/message constants existed
-   but nothing in the UI ever used them. */
-if(whatsappBtn){
-  whatsappBtn.href = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(WHATSAPP_MESSAGE)}`;
-}
+document.querySelectorAll('.qa').forEach(b=>b.addEventListener('click',()=>{if(userInput){userInput.value=(b.dataset.prompt||"")+"";userInput.focus()}}));
 
 /* ========== INIT ========== */
 function init(){
@@ -418,6 +469,8 @@ function init(){
   restoreChat();
   renderHistoryList();
   initRoyalGuidelines();
-  console.log("⚡ KIRONG AI V10 MANSION READY - Polished");
+  renderFilePreview();
+  initSpeechRecognition();
+  console.log("⚡ KIRONG AI V9.2 MANSION READY - Tabs + Guidelines + Export + File Attach + Copy-Code + Voice");
 }
 if(document.readyState==="loading") document.addEventListener("DOMContentLoaded",init);else init();
