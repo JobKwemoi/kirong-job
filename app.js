@@ -1,759 +1,4732 @@
 /* ============================================================
-   👑 KIRONG AI — FRONTEND ENGINE V9.1 MANSION (polished)
-   - Royal Tabs (Chat/Projects/Tools/History)
-   - 4-Second Smart Guidelines
-   - Clear + Export System
-   - Persistent Memory
-   - File attach UI + copy-code wiring (fixed)
+   👑 KIRONG AI — FRONTEND ENGINE V10
+   FULL MANSION UPGRADE
+   ------------------------------------------------------------
+   Keeps:
+   • Chat / Projects / Tools / History tabs
+   • Persistent device user ID
+   • Vercel backend compatibility
+   • Chat history
+   • File attachments
+   • Image generation
+   • Voice input/output
+   • Copy buttons
+   • Export
+   • Projects CRUD
+   • Pro badge scaffold
+   • Royal guidelines
+   • Safe error handling
+
+   Adds:
+   • Better API error handling
+   • Abort / timeout protection
+   • Request state protection
+   • Safer localStorage handling
+   • Better image detection
+   • Better file handling
+   • Usage / plan synchronization
+   • Backend user usage endpoint support
+   • Better project refresh
+   • Keyboard shortcuts
+   • Auto-resizing textarea
+   • Better welcome handling
+   • Message retry
+   • Chat rename
+   • Safer markdown rendering
+   • Modal escape handling
+   • Network status indicator
+   • Improved voice language handling
 ============================================================ */
+
 "use strict";
 
+/* ============================================================
+   ⚙️ CONFIGURATION
+============================================================ */
+
 const API_ENDPOINT = "/api/chat";
+const IMAGE_ENDPOINT = "/api/image";
+const PROJECTS_ENDPOINT = "/api/projects";
+
 const MAX_HISTORY_ITEMS = 20;
 const MAX_FILE_SIZE = 10 * 1024 * 1024;
 const MAX_STORED_CHATS = 50;
 const MAX_STORED_MESSAGES = 50;
 
+const REQUEST_TIMEOUT = 120000;
+
 const WHATSAPP_NUMBER = "254792442670";
 const WHATSAPP_BACKUP_NUMBER = "254736232188";
-const WHATSAPP_MESSAGE = "Hello Kirong Job Kwemoi 👑, I came from Kirong AI and I would like to talk to you directly.";
+
+const WHATSAPP_MESSAGE =
+  "Hello Kirong Job Kwemoi 👑, I came from Kirong AI and I would like to talk to you directly.";
+
+/* ============================================================
+   💾 STORAGE KEYS
+============================================================ */
 
 const STORAGE_KEYS = {
-  chats: "kirong_ai_chats_v8",
-  activeChat: "kirong_ai_active_chat_v8",
+  chats: "kirong_ai_chats_v10",
+  legacyChats: "kirong_ai_chats_v8",
+
+  activeChat: "kirong_ai_active_chat_v10",
+  legacyActiveChat: "kirong_ai_active_chat_v8",
+
   theme: "kirong_ai_theme_v8",
   language: "kirong_ai_language_v8",
   voice: "kirong_ai_voice_v8",
+
   visited: "kirong_visited",
-  userId: "kirong_ai_user_id_v1"
+
+  userId: "kirong_ai_user_id_v1",
+
+  imageMode: "kirong_ai_image_mode_v1"
 };
 
-/* DOM - NEW MANSION IDS */
+/* ============================================================
+   🧩 DOM
+============================================================ */
+
 const chatBox = document.getElementById("chatBox");
 const userInput = document.getElementById("userInput");
+
 const sendBtn = document.getElementById("sendBtn");
 const newChatBtn = document.getElementById("newChatBtn");
 const clearChatBtn = document.getElementById("clearChatBtn");
 const exportChatBtn = document.getElementById("exportChatBtn");
-const clearHistoryBtn = document.getElementById("clearHistoryBtn");
-const exportHistoryBtn = document.getElementById("exportHistoryBtn");
-const clearToolsBtn = document.getElementById("clearToolsBtn");
-const exportToolsBtn = document.getElementById("exportToolsBtn");
-const thinking = document.getElementById("thinking");
-const fileInput = document.getElementById("fileInput");
-const attachBtn = document.getElementById("attachBtn");
-const filePreview = document.getElementById("filePreview");
-const newProjectBtn = document.getElementById("newProjectBtn");
-const micBtn = document.getElementById("micBtn");
-const voiceReplyBtn = document.getElementById("voiceReplyBtn");
-const imageModeBtn = document.getElementById("imageModeBtn");
-const planBadge = document.getElementById("planBadge");
+
+const clearHistoryBtn =
+  document.getElementById("clearHistoryBtn");
+
+const exportHistoryBtn =
+  document.getElementById("exportHistoryBtn");
+
+const clearToolsBtn =
+  document.getElementById("clearToolsBtn");
+
+const exportToolsBtn =
+  document.getElementById("exportToolsBtn");
+
+const thinking =
+  document.getElementById("thinking");
+
+const fileInput =
+  document.getElementById("fileInput");
+
+const attachBtn =
+  document.getElementById("attachBtn");
+
+const filePreview =
+  document.getElementById("filePreview");
+
+const newProjectBtn =
+  document.getElementById("newProjectBtn");
+
+const micBtn =
+  document.getElementById("micBtn");
+
+const voiceReplyBtn =
+  document.getElementById("voiceReplyBtn");
+
+const imageModeBtn =
+  document.getElementById("imageModeBtn");
+
+const planBadge =
+  document.getElementById("planBadge");
+
+/* ============================================================
+   🧠 STATE
+============================================================ */
 
 let messages = [];
+
 let selectedFile = null;
+
 let isSending = false;
+
 let currentChatId = null;
+
 let recognition = null;
+
 let isListening = false;
+
 let speechVoices = [];
-let voiceRepliesEnabled = loadJSON(STORAGE_KEYS.voice, false);
 
-/* ========== STORAGE ========== */
-function loadJSON(k,f){try{const r=localStorage.getItem(k);return r?JSON.parse(r):f}catch{return f}}
-function saveJSON(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch{}}
-function createChatId(){return "chat_"+Date.now()+"_"+Math.random().toString(36).slice(2,8)}
-function createChatTitle(t){const c=String(t||"").replace(/\s+/g," ").trim();return c?c.length>42?c.slice(0,42)+"...":c:"New Chat"}
+let imageModeOn =
+  loadJSON(
+    STORAGE_KEYS.imageMode,
+    false
+  );
 
-/* ========== STABLE PER-DEVICE USER ID ==========
-   Previously nothing was sent to the backend to identify a user,
-   so everyone shared the "anonymous" account — meaning everyone's
-   Projects (and usage/billing) would have collided. This generates
-   one persistent ID per browser and reuses it on every request. */
-function getDeviceUserId(){
-  let id = localStorage.getItem(STORAGE_KEYS.userId);
-  if(!id){
-    id = (crypto.randomUUID ? crypto.randomUUID() : "user_"+Date.now()+"_"+Math.random().toString(36).slice(2,10));
-    localStorage.setItem(STORAGE_KEYS.userId, id);
+let voiceRepliesEnabled =
+  loadJSON(
+    STORAGE_KEYS.voice,
+    false
+  );
+
+let currentUserData = null;
+
+let activeAbortController = null;
+
+let networkOnline =
+  navigator.onLine !== false;
+
+/* ============================================================
+   💾 STORAGE HELPERS
+============================================================ */
+
+function loadJSON(key, fallback) {
+  try {
+    const raw =
+      localStorage.getItem(key);
+
+    if (!raw) {
+      return fallback;
+    }
+
+    return JSON.parse(raw);
+  } catch {
+    return fallback;
   }
+}
+
+function saveJSON(key, value) {
+  try {
+    localStorage.setItem(
+      key,
+      JSON.stringify(value)
+    );
+
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+function removeStorage(key) {
+  try {
+    localStorage.removeItem(key);
+  } catch {}
+}
+
+/* ============================================================
+   🆔 CHAT IDS
+============================================================ */
+
+function createChatId() {
+  return (
+    "chat_" +
+    Date.now() +
+    "_" +
+    Math.random()
+      .toString(36)
+      .slice(2, 9)
+  );
+}
+
+function createChatTitle(text) {
+  const clean =
+    String(text || "")
+      .replace(/\s+/g, " ")
+      .trim();
+
+  if (!clean) {
+    return "New Chat";
+  }
+
+  return clean.length > 42
+    ? clean.slice(0, 42) + "..."
+    : clean;
+}
+
+/* ============================================================
+   👤 STABLE DEVICE USER ID
+============================================================ */
+
+function getDeviceUserId() {
+  let id = null;
+
+  try {
+    id =
+      localStorage.getItem(
+        STORAGE_KEYS.userId
+      );
+  } catch {}
+
+  if (id) {
+    return id;
+  }
+
+  try {
+    if (
+      window.crypto &&
+      typeof crypto.randomUUID ===
+        "function"
+    ) {
+      id = crypto.randomUUID();
+    }
+  } catch {}
+
+  if (!id) {
+    id =
+      "user_" +
+      Date.now() +
+      "_" +
+      Math.random()
+        .toString(36)
+        .slice(2, 12);
+  }
+
+  try {
+    localStorage.setItem(
+      STORAGE_KEYS.userId,
+      id
+    );
+  } catch {}
+
   return id;
 }
 
-/* ========== TABS SYSTEM ========== */
-function initTabs(){
-  document.querySelectorAll('.tabBtn').forEach(btn=>{
-    btn.addEventListener('click',()=>{
-      const tab = btn.dataset.tab;
-      document.querySelectorAll('.tabBtn').forEach(b=>{b.classList.remove('active');b.setAttribute('aria-selected','false')});
-      document.querySelectorAll('.tabContent').forEach(s=>s.classList.remove('active'));
-      btn.classList.add('active');btn.setAttribute('aria-selected','true');
-      document.getElementById(tab+'Tab')?.classList.add('active');
-      if(tab==='projects') renderProjectsGrid();
-    });
-  });
+const DEVICE_USER_ID =
+  getDeviceUserId();
+
+/* ============================================================
+   🌐 NETWORK STATUS
+============================================================ */
+
+function updateNetworkStatus() {
+  networkOnline =
+    navigator.onLine !== false;
+
+  document.body.classList.toggle(
+    "offline",
+    !networkOnline
+  );
 }
 
-/* ========== 4-SECOND ROYAL GUIDELINE ========== */
-function initRoyalGuidelines(){
-  const grid = document.querySelector('.quickGrid');
-  const welcome = document.getElementById('kirongWelcome');
-  if(!grid) return;
-  const hasVisited = localStorage.getItem(STORAGE_KEYS.visited);
-  
-  if(!hasVisited){
-    grid.classList.add('show');
-    let timer = setTimeout(()=>{
-      if(!grid.dataset.used){
-        grid.classList.add('hide');
-        setTimeout(()=>{welcome?.classList.add('hideWelcome')}, 500);
-        localStorage.setItem(STORAGE_KEYS.visited,'true');
-      }
-    }, 4000);
+window.addEventListener(
+  "online",
+  () => {
+    updateNetworkStatus();
+    showToast("🟢 Connection restored");
+  }
+);
 
-    grid.addEventListener('mouseenter',()=>clearTimeout(timer));
-    grid.addEventListener('mouseleave',()=>{
-      timer=setTimeout(()=>{
-        if(!grid.dataset.used){grid.classList.add('hide');localStorage.setItem(STORAGE_KEYS.visited,'true')}
-      },2000);
+window.addEventListener(
+  "offline",
+  () => {
+    updateNetworkStatus();
+    showToast("🔴 You are offline");
+  }
+);
+
+/* ============================================================
+   🧭 TABS
+============================================================ */
+
+function initTabs() {
+  document
+    .querySelectorAll(".tabBtn")
+    .forEach((btn) => {
+      btn.addEventListener(
+        "click",
+        () => {
+          const tab =
+            btn.dataset.tab;
+
+          if (!tab) return;
+
+          document
+            .querySelectorAll(
+              ".tabBtn"
+            )
+            .forEach((b) => {
+              b.classList.remove(
+                "active"
+              );
+
+              b.setAttribute(
+                "aria-selected",
+                "false"
+              );
+            });
+
+          document
+            .querySelectorAll(
+              ".tabContent"
+            )
+            .forEach((section) => {
+              section.classList.remove(
+                "active"
+              );
+            });
+
+          btn.classList.add(
+            "active"
+          );
+
+          btn.setAttribute(
+            "aria-selected",
+            "true"
+          );
+
+          document
+            .getElementById(
+              tab + "Tab"
+            )
+            ?.classList.add(
+              "active"
+            );
+
+          if (
+            tab === "projects"
+          ) {
+            renderProjectsGrid();
+          }
+
+          if (
+            tab === "history"
+          ) {
+            renderHistoryList();
+          }
+        }
+      );
     });
+}
 
-    grid.querySelectorAll('.qBtn').forEach(btn=>{
-      btn.addEventListener('click',()=>{
-        grid.dataset.used='true';
-        grid.classList.add('hide');
-        localStorage.setItem(STORAGE_KEYS.visited,'true');
-        if(userInput){userInput.value=btn.dataset.prompt; sendMessage();}
+/* ============================================================
+   👑 ROYAL GUIDELINES
+============================================================ */
+
+function initRoyalGuidelines() {
+  const grid =
+    document.querySelector(
+      ".quickGrid"
+    );
+
+  const welcome =
+    document.getElementById(
+      "kirongWelcome"
+    );
+
+  if (!grid) return;
+
+  const hasVisited =
+    localStorage.getItem(
+      STORAGE_KEYS.visited
+    );
+
+  if (!hasVisited) {
+    grid.classList.add("show");
+
+    let timer =
+      setTimeout(() => {
+        if (!grid.dataset.used) {
+          grid.classList.add("hide");
+
+          setTimeout(() => {
+            welcome?.classList.add(
+              "hideWelcome"
+            );
+          }, 500);
+
+          localStorage.setItem(
+            STORAGE_KEYS.visited,
+            "true"
+          );
+        }
+      }, 4000);
+
+    grid.addEventListener(
+      "mouseenter",
+      () => clearTimeout(timer)
+    );
+
+    grid.addEventListener(
+      "mouseleave",
+      () => {
+        timer = setTimeout(() => {
+          if (!grid.dataset.used) {
+            grid.classList.add(
+              "hide"
+            );
+
+            localStorage.setItem(
+              STORAGE_KEYS.visited,
+              "true"
+            );
+          }
+        }, 2000);
+      }
+    );
+
+    grid
+      .querySelectorAll(".qBtn")
+      .forEach((btn) => {
+        btn.addEventListener(
+          "click",
+          () => {
+            grid.dataset.used =
+              "true";
+
+            grid.classList.add(
+              "hide"
+            );
+
+            localStorage.setItem(
+              STORAGE_KEYS.visited,
+              "true"
+            );
+
+            if (userInput) {
+              userInput.value =
+                btn.dataset.prompt ||
+                "";
+
+              sendMessage();
+            }
+          }
+        );
       });
-    });
-  }else{
-    // Returning user - show briefly then hide
-    grid.classList.add('hide');
-    if(welcome && document.getElementById('chatBox').children.length>1) welcome.style.display='none';
+  } else {
+    grid.classList.add("hide");
+
+    if (
+      welcome &&
+      chatBox &&
+      chatBox.children.length > 1
+    ) {
+      welcome.style.display =
+        "none";
+    }
   }
 }
 
-/* ========== HELPERS ========== */
-function escapeHTML(v){const d=document.createElement("div");d.textContent=String(v??"");return d.innerHTML}
-function renderMarkdown(t){
-  let h=escapeHTML(t);
-  h=h.replace(/```([\s\S]*?)```/g,(_,c)=>`<div class="codeWrapper"><button class="copyCodeBtn" data-copy="${encodeURIComponent(c.trim())}">📋 Copy</button><pre class="codeBlock"><code>${c.trim()}</code></pre></div>`);
-  h=h.replace(/`([^`]+)`/g,"<code>$1</code>");h=h.replace(/\*\*(.*?)\*\*/g,"<strong>$1</strong>");h=h.replace(/\*(.*?)\*/g,"<em>$1</em>");
-  h=h.replace(/^### (.*)$/gm,"<h4>$1</h4>");h=h.replace(/^## (.*)$/gm,"<h3>$1</h3>");h=h.replace(/^# (.*)$/gm,"<h2>$1</h2>");
-  h=h.replace(/^[-•] (.*)$/gm,"<li>$1</li>");h=h.replace(/(https?:\/\/[^\s<]+)/g,'<a href="$1" target="_blank" rel="noopener noreferrer">$1</a>');h=h.replace(/\n/g,"<br>");return h;
-}
-function showToast(m){
-  let t=document.getElementById("kirongToast");if(!t){t=document.createElement("div");t.id="kirongToast";t.className="kirongToast";document.body.appendChild(t)}
-  t.textContent=m;t.classList.add("show");clearTimeout(t._timeout);t._timeout=setTimeout(()=>t.classList.remove("show"),2200);
-}
-async function copyText(text){
-  try{await navigator.clipboard.writeText(String(text||""));showToast("📋 Copied!");return true}
-  catch{try{const a=document.createElement("textarea");a.value=String(text||"");a.style.position="fixed";a.style.opacity="0";document.body.appendChild(a);a.select();document.execCommand("copy");a.remove();showToast("📋 Copied!");return true}catch{showToast("⚠️ Copy failed");return false}}
+/* ============================================================
+   🛡️ HTML SAFETY
+============================================================ */
+
+function escapeHTML(value) {
+  const div =
+    document.createElement(
+      "div"
+    );
+
+  div.textContent =
+    String(value ?? "");
+
+  return div.innerHTML;
 }
 
-/* ========== CHAT UI ========== */
-function isUserNearBottom(){if(!chatBox) return true;return (chatBox.scrollHeight-chatBox.scrollTop-chatBox.clientHeight)<=120}
-function scrollToBottom(f=false){if(!chatBox) return;if(!f&&!isUserNearBottom()) return;requestAnimationFrame(()=>chatBox.scrollTo({top:chatBox.scrollHeight,behavior:"smooth"}))}
-function setThinking(a){if(thinking) thinking.classList.toggle("hidden",!a);if(a) scrollToBottom()}
-function setSendingState(a){isSending=a;if(sendBtn){sendBtn.disabled=a;sendBtn.style.opacity=a?"0.6":""}if(userInput) userInput.disabled=a}
+/* ============================================================
+   📝 MARKDOWN RENDERER
+============================================================ */
 
-function addMessage(role,text,opt={}){
-  if(!chatBox) return null;
-  const auto=isUserNearBottom();
-  const m=document.createElement("div");m.className=`message ${role}-message`;
-  const b=document.createElement("div");b.className="messageBubble";
-  if(opt.file){const fc=document.createElement("div");fc.className="attachedFile";fc.innerHTML=`<span>📎</span><span>${escapeHTML(opt.file)}</span>`;b.appendChild(fc)}
-  if(text){
-    const c=document.createElement("div");c.className="messageContent";c.innerHTML=role==="assistant"?renderMarkdown(text):escapeHTML(text).replace(/\n/g,"<br>");b.appendChild(c);
-    if(role==="assistant"){
-      const cb=document.createElement("button");cb.className="copyMessageBtn";cb.textContent="📋 Copy";cb.onclick=()=>copyText(text);b.appendChild(cb);
-      if("speechSynthesis" in window){
-        const sb=document.createElement("button");sb.className="speakMessageBtn";sb.textContent="🔊 Listen";sb.onclick=()=>speakText(text,sb);b.appendChild(sb);
+function renderMarkdown(text) {
+  let source =
+    String(text || "");
+
+  /*
+   * Protect fenced code blocks first.
+   */
+
+  const codeBlocks = [];
+
+  source =
+    source.replace(
+      /```([\w+-]*)\n?([\s\S]*?)```/g,
+      (_, language, code) => {
+        const index =
+          codeBlocks.length;
+
+        codeBlocks.push({
+          language:
+            language || "",
+          code:
+            code.trim()
+        });
+
+        return `@@KIRONG_CODE_${index}@@`;
       }
+    );
+
+  let html =
+    escapeHTML(source);
+
+  /*
+   * Inline formatting.
+   */
+
+  html =
+    html.replace(
+      /`([^`]+)`/g,
+      "<code>$1</code>"
+    );
+
+  html =
+    html.replace(
+      /\*\*(.*?)\*\*/g,
+      "<strong>$1</strong>"
+    );
+
+  html =
+    html.replace(
+      /\*(.*?)\*/g,
+      "<em>$1</em>"
+    );
+
+  /*
+   * Headings.
+   */
+
+  html =
+    html.replace(
+      /^### (.*)$/gm,
+      "<h4>$1</h4>"
+    );
+
+  html =
+    html.replace(
+      /^## (.*)$/gm,
+      "<h3>$1</h3>"
+    );
+
+  html =
+    html.replace(
+      /^# (.*)$/gm,
+      "<h2>$1</h2>"
+    );
+
+  /*
+   * Basic unordered lists.
+   */
+
+  html =
+    html.replace(
+      /^[-•] (.*)$/gm,
+      "<li>$1</li>"
+    );
+
+  /*
+   * Safe links.
+   */
+
+  html =
+    html.replace(
+      /(https?:\/\/[^\s<]+)/g,
+      (url) => {
+        const clean =
+          url.replace(
+            /[),.!?]+$/,
+            ""
+          );
+
+        return (
+          `<a href="${clean}" ` +
+          `target="_blank" ` +
+          `rel="noopener noreferrer">` +
+          `${clean}` +
+          `</a>`
+        );
+      }
+    );
+
+  /*
+   * Restore code blocks.
+   */
+
+  codeBlocks.forEach(
+    (block, index) => {
+      const token =
+        `@@KIRONG_CODE_${index}@@`;
+
+      const encoded =
+        encodeURIComponent(
+          block.code
+        );
+
+      const language =
+        block.language
+          ? escapeHTML(
+              block.language
+            )
+          : "";
+
+      const replacement =
+        `<div class="codeWrapper">` +
+        `<div class="codeHeader">` +
+        `<span>${language}</span>` +
+        `<button class="copyCodeBtn" ` +
+        `data-copy="${encoded}">` +
+        `📋 Copy` +
+        `</button>` +
+        `</div>` +
+        `<pre class="codeBlock"><code>` +
+        `${escapeHTML(
+          block.code
+        )}` +
+        `</code></pre>` +
+        `</div>`;
+
+      html =
+        html.replace(
+          token,
+          replacement
+        );
     }
-  }
-  m.appendChild(b);chatBox.appendChild(m);if(auto) scrollToBottom();return m;
-}
-function addImageMessage(text,image,provider="",prompt=""){
-  if(!chatBox||!image) return null;
-  const auto=isUserNearBottom();
-  const m=document.createElement("div");m.className="message assistant-message";
-  const b=document.createElement("div");b.className="messageBubble imageMessage";
-  if(text){const i=document.createElement("div");i.className="messageContent";i.innerHTML=renderMarkdown(text);b.appendChild(i)}
-  const img=document.createElement("img");img.src=image;img.alt=prompt||"Generated";img.className="generatedImage";img.onclick=()=>openImageLightbox(image,prompt);
-  img.onerror=()=>{
-    img.replaceWith((()=>{
-      const errBox=document.createElement("div");errBox.className="messageContent";
-      errBox.innerHTML=`⚠️ Image failed to load. It may still be generating — try opening it directly: <a href="${image}" target="_blank" rel="noopener noreferrer">${escapeHTML(image)}</a>`;
-      return errBox;
-    })());
-  };
-  b.appendChild(img);
-  const act=document.createElement("div");act.className="imageActions";
-  const dl=document.createElement("button");dl.textContent="⬇️ Save";dl.onclick=()=>{const a=document.createElement("a");a.href=image;a.download=`kirong-${Date.now()}.png`;a.click();showToast("🖼️ Saved")};act.appendChild(dl);
-  const cp=document.createElement("button");cp.textContent="📋 Copy";cp.onclick=()=>copyText(image);act.appendChild(cp);b.appendChild(act);
-  m.appendChild(b);chatBox.appendChild(m);if(auto) scrollToBottom();return m;
+  );
+
+  html =
+    html.replace(
+      /\n/g,
+      "<br>"
+    );
+
+  return html;
 }
 
-/* ========== COPY-CODE BUTTON WIRING (was previously unwired) ==========
-   renderMarkdown() builds .copyCodeBtn buttons via innerHTML, so they
-   never get a direct .onclick. A single delegated listener on chatBox
-   catches clicks on any of them, including ones restored from history. */
-if(chatBox){
-  chatBox.addEventListener("click", e=>{
-    const btn = e.target.closest(".copyCodeBtn");
-    if(!btn) return;
-    copyText(decodeURIComponent(btn.dataset.copy || ""));
+/* ============================================================
+   🍞 TOAST
+============================================================ */
+
+function showToast(message) {
+  let toast =
+    document.getElementById(
+      "kirongToast"
+    );
+
+  if (!toast) {
+    toast =
+      document.createElement(
+        "div"
+      );
+
+    toast.id =
+      "kirongToast";
+
+    toast.className =
+      "kirongToast";
+
+    document.body.appendChild(
+      toast
+    );
+  }
+
+  toast.textContent =
+    String(message || "");
+
+  toast.classList.add(
+    "show"
+  );
+
+  clearTimeout(
+    toast._timeout
+  );
+
+  toast._timeout =
+    setTimeout(() => {
+      toast.classList.remove(
+        "show"
+      );
+    }, 2400);
+}
+
+/* ============================================================
+   📋 COPY
+============================================================ */
+
+async function copyText(text) {
+  const value =
+    String(text || "");
+
+  try {
+    if (
+      navigator.clipboard &&
+      window.isSecureContext
+    ) {
+      await navigator.clipboard.writeText(
+        value
+      );
+
+      showToast(
+        "📋 Copied!"
+      );
+
+      return true;
+    }
+  } catch {}
+
+  try {
+    const textarea =
+      document.createElement(
+        "textarea"
+      );
+
+    textarea.value =
+      value;
+
+    textarea.style.position =
+      "fixed";
+
+    textarea.style.left =
+      "-9999px";
+
+    document.body.appendChild(
+      textarea
+    );
+
+    textarea.focus();
+    textarea.select();
+
+    document.execCommand(
+      "copy"
+    );
+
+    textarea.remove();
+
+    showToast(
+      "📋 Copied!"
+    );
+
+    return true;
+  } catch {
+    showToast(
+      "⚠️ Copy failed"
+    );
+
+    return false;
+  }
+}
+
+/* ============================================================
+   📜 CHAT SCROLL
+============================================================ */
+
+function isUserNearBottom() {
+  if (!chatBox) {
+    return true;
+  }
+
+  return (
+    chatBox.scrollHeight -
+      chatBox.scrollTop -
+      chatBox.clientHeight <=
+    120
+  );
+}
+
+function scrollToBottom(force = false) {
+  if (!chatBox) return;
+
+  if (
+    !force &&
+    !isUserNearBottom()
+  ) {
+    return;
+  }
+
+  requestAnimationFrame(() => {
+    chatBox.scrollTo({
+      top:
+        chatBox.scrollHeight,
+      behavior: "smooth"
+    });
   });
 }
 
-/* ========== FILE ATTACH UI ========== */
-function renderFilePreview(){
-  if(!filePreview) return;
-  if(!selectedFile){
-    filePreview.innerHTML="";
-    filePreview.classList.add("hidden");
-    return;
+/* ============================================================
+   🧠 THINKING
+============================================================ */
+
+function setThinking(active) {
+  if (thinking) {
+    thinking.classList.toggle(
+      "hidden",
+      !active
+    );
   }
-  filePreview.classList.remove("hidden");
-  filePreview.innerHTML = `<span class="fileChip">📎 ${escapeHTML(selectedFile.name)}<button type="button" id="removeFileBtn" aria-label="Remove attached file">✕</button></span>`;
-  document.getElementById("removeFileBtn")?.addEventListener("click", ()=>{
-    selectedFile = null;
-    if(fileInput) fileInput.value = "";
-    renderFilePreview();
-  });
+
+  if (active) {
+    scrollToBottom();
+  }
 }
 
-/* ========== VOICE INPUT (speech-to-text) ========== */
-const SpeechRecognitionAPI = window.SpeechRecognition || window.webkitSpeechRecognition;
+/* ============================================================
+   🚦 SENDING STATE
+============================================================ */
 
-function initSpeechRecognition(){
-  if(!SpeechRecognitionAPI){
-    // Browser doesn't support it (e.g. desktop Firefox) — hide the mic
-    // instead of showing a button that silently does nothing.
-    if(micBtn) micBtn.style.display="none";
-    return;
+function setSendingState(active) {
+  isSending =
+    Boolean(active);
+
+  if (sendBtn) {
+    sendBtn.disabled =
+      isSending;
+
+    sendBtn.style.opacity =
+      isSending
+        ? "0.6"
+        : "";
   }
-  recognition = new SpeechRecognitionAPI();
-  recognition.continuous = false;
-  recognition.interimResults = true;
-  recognition.lang = "en-US";
 
-  recognition.onresult = (e)=>{
-    let transcript = "";
-    for(let i=0;i<e.results.length;i++){
-      transcript += e.results[i][0].transcript;
-    }
-    if(userInput) userInput.value = transcript;
-  };
+  if (userInput) {
+    userInput.disabled =
+      isSending;
+  }
 
-  recognition.onerror = (e)=>{
-    isListening = false;
-    micBtn?.classList.remove("listening");
-    if(e.error === "not-allowed" || e.error === "service-not-allowed"){
-      showToast("⚠️ Microphone access denied");
-    }else if(e.error !== "no-speech" && e.error !== "aborted"){
-      showToast("⚠️ Voice input error, try again");
-    }
-  };
+  if (attachBtn) {
+    attachBtn.disabled =
+      isSending;
+  }
 
-  recognition.onend = ()=>{
-    isListening = false;
-    micBtn?.classList.remove("listening");
-  };
+  if (imageModeBtn) {
+    imageModeBtn.disabled =
+      isSending;
+  }
 }
 
-function toggleListening(){
-  if(!recognition) return;
-  if(isListening){
-    recognition.stop();
-    isListening = false;
-    micBtn?.classList.remove("listening");
+/* ============================================================
+   💬 ADD MESSAGE
+============================================================ */
+
+function addMessage(
+  role,
+  text,
+  options = {}
+) {
+  if (!chatBox) {
+    return null;
+  }
+
+  const autoScroll =
+    isUserNearBottom();
+
+  const message =
+    document.createElement(
+      "div"
+    );
+
+  message.className =
+    `message ${role}-message`;
+
+  const bubble =
+    document.createElement(
+      "div"
+    );
+
+  bubble.className =
+    "messageBubble";
+
+  if (options.file) {
+    const fileCard =
+      document.createElement(
+        "div"
+      );
+
+    fileCard.className =
+      "attachedFile";
+
+    fileCard.innerHTML =
+      `<span>📎</span>` +
+      `<span>${escapeHTML(
+        options.file
+      )}</span>`;
+
+    bubble.appendChild(
+      fileCard
+    );
+  }
+
+  if (text) {
+    const content =
+      document.createElement(
+        "div"
+      );
+
+    content.className =
+      "messageContent";
+
+    content.innerHTML =
+      role === "assistant"
+        ? renderMarkdown(text)
+        : escapeHTML(
+            text
+          ).replace(
+            /\n/g,
+            "<br>"
+          );
+
+    bubble.appendChild(
+      content
+    );
+
+    if (
+      role ===
+      "assistant"
+    ) {
+      const actions =
+        document.createElement(
+          "div"
+        );
+
+      actions.className =
+        "messageActions";
+
+      const copyBtn =
+        document.createElement(
+          "button"
+        );
+
+      copyBtn.className =
+        "copyMessageBtn";
+
+      copyBtn.textContent =
+        "📋 Copy";
+
+      copyBtn.addEventListener(
+        "click",
+        () =>
+          copyText(text)
+      );
+
+      actions.appendChild(
+        copyBtn
+      );
+
+      if (
+        "speechSynthesis" in
+        window
+      ) {
+        const speakBtn =
+          document.createElement(
+            "button"
+          );
+
+        speakBtn.className =
+          "speakMessageBtn";
+
+        speakBtn.textContent =
+          "🔊 Listen";
+
+        speakBtn.addEventListener(
+          "click",
+          () =>
+            speakText(
+              text,
+              speakBtn
+            )
+        );
+
+        actions.appendChild(
+          speakBtn
+        );
+      }
+
+      const retryBtn =
+        document.createElement(
+          "button"
+        );
+
+      retryBtn.className =
+        "retryMessageBtn";
+
+      retryBtn.textContent =
+        "↻ Retry";
+
+      retryBtn.addEventListener(
+        "click",
+        () =>
+          retryLastUserMessage()
+      );
+
+      actions.appendChild(
+        retryBtn
+      );
+
+      bubble.appendChild(
+        actions
+      );
+    }
+  }
+
+  message.appendChild(
+    bubble
+  );
+
+  chatBox.appendChild(
+    message
+  );
+
+  if (autoScroll) {
+    scrollToBottom();
+  }
+
+  return message;
+}
+
+/* ============================================================
+   🎨 IMAGE MESSAGE
+============================================================ */
+
+function addImageMessage(
+  text,
+  image,
+  provider = "",
+  prompt = ""
+) {
+  if (
+    !chatBox ||
+    !image
+  ) {
+    return null;
+  }
+
+  const autoScroll =
+    isUserNearBottom();
+
+  const message =
+    document.createElement(
+      "div"
+    );
+
+  message.className =
+    "message assistant-message";
+
+  const bubble =
+    document.createElement(
+      "div"
+    );
+
+  bubble.className =
+    "messageBubble imageMessage";
+
+  if (text) {
+    const content =
+      document.createElement(
+        "div"
+      );
+
+    content.className =
+      "messageContent";
+
+    content.innerHTML =
+      renderMarkdown(text);
+
+    bubble.appendChild(
+      content
+    );
+  }
+
+  const img =
+    document.createElement(
+      "img"
+    );
+
+  img.src =
+    image;
+
+  img.alt =
+    prompt ||
+    "Generated image";
+
+  img.className =
+    "generatedImage";
+
+  img.loading =
+    "lazy";
+
+  img.addEventListener(
+    "click",
+    () =>
+      openImageLightbox(
+        image,
+        prompt
+      )
+  );
+
+  img.onerror = () => {
+    const errorBox =
+      document.createElement(
+        "div"
+      );
+
+    errorBox.className =
+      "messageContent";
+
+    errorBox.innerHTML =
+      `⚠️ Image failed to load. ` +
+      `Try opening it directly: ` +
+      `<a href="${escapeHTML(
+        image
+      )}" target="_blank" rel="noopener noreferrer">Open image</a>`;
+
+    img.replaceWith(
+      errorBox
+    );
+  };
+
+  bubble.appendChild(
+    img
+  );
+
+  const actions =
+    document.createElement(
+      "div"
+    );
+
+  actions.className =
+    "imageActions";
+
+  const download =
+    document.createElement(
+      "button"
+    );
+
+  download.textContent =
+    "⬇️ Save";
+
+  download.addEventListener(
+    "click",
+    () => {
+      const a =
+        document.createElement(
+          "a"
+        );
+
+      a.href =
+        image;
+
+      a.download =
+        `kirong-${Date.now()}.png`;
+
+      document.body.appendChild(
+        a
+      );
+
+      a.click();
+
+      a.remove();
+
+      showToast(
+        "🖼️ Saved"
+      );
+    }
+  );
+
+  actions.appendChild(
+    download
+  );
+
+  const copy =
+    document.createElement(
+      "button"
+    );
+
+  copy.textContent =
+    "📋 Copy";
+
+  copy.addEventListener(
+    "click",
+    () =>
+      copyText(image)
+  );
+
+  actions.appendChild(
+    copy
+  );
+
+  bubble.appendChild(
+    actions
+  );
+
+  if (provider) {
+    const source =
+      document.createElement(
+        "small"
+      );
+
+    source.className =
+      "imageProvider";
+
+    source.textContent =
+      `Generated by ${provider}`;
+
+    bubble.appendChild(
+      source
+    );
+  }
+
+  message.appendChild(
+    bubble
+  );
+
+  chatBox.appendChild(
+    message
+  );
+
+  if (autoScroll) {
+    scrollToBottom();
+  }
+
+  return message;
+}
+
+/* ============================================================
+   📋 COPY CODE DELEGATION
+============================================================ */
+
+if (chatBox) {
+  chatBox.addEventListener(
+    "click",
+    (event) => {
+      const button =
+        event.target.closest(
+          ".copyCodeBtn"
+        );
+
+      if (!button) {
+        return;
+      }
+
+      let text = "";
+
+      try {
+        text =
+          decodeURIComponent(
+            button.dataset.copy ||
+              ""
+          );
+      } catch {
+        text =
+          button.dataset.copy ||
+          "";
+      }
+
+      copyText(text);
+    }
+  );
+}
+
+/* ============================================================
+   📎 FILE PREVIEW
+============================================================ */
+
+function renderFilePreview() {
+  if (!filePreview) {
     return;
   }
-  try{
+
+  if (!selectedFile) {
+    filePreview.innerHTML =
+      "";
+
+    filePreview.classList.add(
+      "hidden"
+    );
+
+    return;
+  }
+
+  filePreview.classList.remove(
+    "hidden"
+  );
+
+  filePreview.innerHTML =
+    `<span class="fileChip">` +
+    `📎 ${escapeHTML(
+      selectedFile.name
+    )}` +
+    `<button type="button" ` +
+    `id="removeFileBtn" ` +
+    `aria-label="Remove attached file">` +
+    `✕` +
+    `</button>` +
+    `</span>`;
+
+  document
+    .getElementById(
+      "removeFileBtn"
+    )
+    ?.addEventListener(
+      "click",
+      () => {
+        selectedFile =
+          null;
+
+        if (fileInput) {
+          fileInput.value =
+            "";
+        }
+
+        renderFilePreview();
+      }
+    );
+}
+
+/* ============================================================
+   📂 FILE INPUT
+============================================================ */
+
+if (attachBtn) {
+  attachBtn.addEventListener(
+    "click",
+    () =>
+      fileInput?.click()
+  );
+}
+
+if (fileInput) {
+  fileInput.addEventListener(
+    "change",
+    () => {
+      const file =
+        fileInput.files?.[0];
+
+      if (!file) {
+        return;
+      }
+
+      if (
+        file.size >
+        MAX_FILE_SIZE
+      ) {
+        showToast(
+          "⚠️ File too large — maximum 10MB"
+        );
+
+        fileInput.value =
+          "";
+
+        selectedFile =
+          null;
+
+        renderFilePreview();
+
+        return;
+      }
+
+      selectedFile =
+        file;
+
+      renderFilePreview();
+
+      showToast(
+        `📎 ${file.name} attached`
+      );
+    }
+  );
+}
+
+/* ============================================================
+   🎤 SPEECH RECOGNITION
+============================================================ */
+
+const SpeechRecognitionAPI =
+  window.SpeechRecognition ||
+  window.webkitSpeechRecognition;
+
+function initSpeechRecognition() {
+  if (!SpeechRecognitionAPI) {
+    if (micBtn) {
+      micBtn.style.display =
+        "none";
+    }
+
+    return;
+  }
+
+  recognition =
+    new SpeechRecognitionAPI();
+
+  recognition.continuous =
+    false;
+
+  recognition.interimResults =
+    true;
+
+  recognition.lang =
+    getRecognitionLanguage();
+
+  recognition.onresult =
+    (event) => {
+      let transcript =
+        "";
+
+      for (
+        let i = 0;
+        i <
+        event.results.length;
+        i++
+      ) {
+        transcript +=
+          event.results[i][0]
+            .transcript;
+      }
+
+      if (userInput) {
+        userInput.value =
+          transcript;
+
+        autoResizeInput();
+      }
+    };
+
+  recognition.onerror =
+    (event) => {
+      isListening =
+        false;
+
+      micBtn?.classList.remove(
+        "listening"
+      );
+
+      if (
+        event.error ===
+          "not-allowed" ||
+        event.error ===
+          "service-not-allowed"
+      ) {
+        showToast(
+          "⚠️ Microphone access denied"
+        );
+      } else if (
+        event.error !==
+          "no-speech" &&
+        event.error !==
+          "aborted"
+      ) {
+        showToast(
+          "⚠️ Voice input error"
+        );
+      }
+    };
+
+  recognition.onend =
+    () => {
+      isListening =
+        false;
+
+      micBtn?.classList.remove(
+        "listening"
+      );
+    };
+}
+
+function getRecognitionLanguage() {
+  const language =
+    loadJSON(
+      STORAGE_KEYS.language,
+      "English"
+    );
+
+  const map = {
+    English: "en-US",
+    Swahili: "sw-KE",
+    French: "fr-FR",
+    Spanish: "es-ES",
+    Hindi: "hi-IN"
+  };
+
+  return (
+    map[language] ||
+    "en-US"
+  );
+}
+
+function toggleListening() {
+  if (!recognition) {
+    showToast(
+      "⚠️ Voice input is not supported"
+    );
+
+    return;
+  }
+
+  if (isListening) {
+    try {
+      recognition.stop();
+    } catch {}
+
+    isListening =
+      false;
+
+    micBtn?.classList.remove(
+      "listening"
+    );
+
+    return;
+  }
+
+  try {
+    recognition.lang =
+      getRecognitionLanguage();
+
     recognition.start();
-    isListening = true;
-    micBtn?.classList.add("listening");
-  }catch{
-    // start() throws if already running — ignore, state stays consistent
+
+    isListening =
+      true;
+
+    micBtn?.classList.add(
+      "listening"
+    );
+  } catch {}
+}
+
+if (micBtn) {
+  micBtn.addEventListener(
+    "click",
+    toggleListening
+  );
+}
+
+/* ============================================================
+   🔊 SPEECH SYNTHESIS
+============================================================ */
+
+function loadSpeechVoices() {
+  if (
+    !(
+      "speechSynthesis" in
+      window
+    )
+  ) {
+    return;
   }
+
+  speechVoices =
+    window.speechSynthesis.getVoices();
 }
 
-if(micBtn) micBtn.addEventListener("click", toggleListening);
-
-/* ========== VOICE OUTPUT (text-to-speech) ========== */
-function loadSpeechVoices(){
-  if(!("speechSynthesis" in window)) return;
-  speechVoices = window.speechSynthesis.getVoices();
-}
-if("speechSynthesis" in window){
+if (
+  "speechSynthesis" in
+  window
+) {
   loadSpeechVoices();
-  window.speechSynthesis.onvoiceschanged = loadSpeechVoices;
+
+  window.speechSynthesis.onvoiceschanged =
+    loadSpeechVoices;
 }
 
-function stripMarkdownForSpeech(text){
-  return String(text||"")
-    .replace(/```[\s\S]*?```/g,"code block, see chat for details.")
-    .replace(/`([^`]+)`/g,"$1")
-    .replace(/\*\*(.*?)\*\*/g,"$1")
-    .replace(/\*(.*?)\*/g,"$1")
-    .replace(/^#+\s*/gm,"")
-    .replace(/https?:\/\/\S+/g,"a link")
+function stripMarkdownForSpeech(
+  text
+) {
+  return String(text || "")
+    .replace(
+      /```[\s\S]*?```/g,
+      "Code block. See the chat for details."
+    )
+    .replace(
+      /`([^`]+)`/g,
+      "$1"
+    )
+    .replace(
+      /\*\*(.*?)\*\*/g,
+      "$1"
+    )
+    .replace(
+      /\*(.*?)\*/g,
+      "$1"
+    )
+    .replace(
+      /^#+\s*/gm,
+      ""
+    )
+    .replace(
+      /https?:\/\/\S+/g,
+      "a link"
+    )
     .trim();
 }
 
-function speakText(text, btn){
-  if(!("speechSynthesis" in window)){
-    showToast("⚠️ Voice output not supported on this device");
+function speakText(
+  text,
+  button
+) {
+  if (
+    !(
+      "speechSynthesis" in
+      window
+    )
+  ) {
+    showToast(
+      "⚠️ Voice output not supported"
+    );
+
     return;
   }
-  const synth = window.speechSynthesis;
 
-  // If this exact button is already speaking, stop it (toggle off).
-  if(btn && btn.classList.contains("speaking")){
+  const synth =
+    window.speechSynthesis;
+
+  if (
+    button &&
+    button.classList.contains(
+      "speaking"
+    )
+  ) {
     synth.cancel();
-    btn.classList.remove("speaking");
-    btn.textContent = "🔊 Listen";
+
+    button.classList.remove(
+      "speaking"
+    );
+
+    button.textContent =
+      "🔊 Listen";
+
     return;
   }
 
-  synth.cancel(); // stop any other utterance first
-  document.querySelectorAll(".speakMessageBtn.speaking").forEach(b=>{b.classList.remove("speaking");b.textContent="🔊 Listen"});
+  synth.cancel();
 
-  const utterance = new SpeechSynthesisUtterance(stripMarkdownForSpeech(text));
-  const preferred = speechVoices.find(v=>/en-/i.test(v.lang));
-  if(preferred) utterance.voice = preferred;
-  utterance.rate = 1;
+  document
+    .querySelectorAll(
+      ".speakMessageBtn.speaking"
+    )
+    .forEach((btn) => {
+      btn.classList.remove(
+        "speaking"
+      );
 
-  if(btn){
-    btn.classList.add("speaking");
-    btn.textContent = "⏸️ Stop";
-    utterance.onend = ()=>{btn.classList.remove("speaking");btn.textContent="🔊 Listen"};
-    utterance.onerror = ()=>{btn.classList.remove("speaking");btn.textContent="🔊 Listen"};
+      btn.textContent =
+        "🔊 Listen";
+    });
+
+  const utterance =
+    new SpeechSynthesisUtterance(
+      stripMarkdownForSpeech(
+        text
+      )
+    );
+
+  const preferred =
+    speechVoices.find(
+      (voice) =>
+        voice.lang.startsWith(
+          "en"
+        )
+    );
+
+  if (preferred) {
+    utterance.voice =
+      preferred;
   }
 
-  synth.speak(utterance);
+  utterance.rate =
+    1;
+
+  utterance.pitch =
+    1;
+
+  if (button) {
+    button.classList.add(
+      "speaking"
+    );
+
+    button.textContent =
+      "⏸️ Stop";
+
+    utterance.onend =
+      () => {
+        button.classList.remove(
+          "speaking"
+        );
+
+        button.textContent =
+          "🔊 Listen";
+      };
+
+    utterance.onerror =
+      () => {
+        button.classList.remove(
+          "speaking"
+        );
+
+        button.textContent =
+          "🔊 Listen";
+      };
+  }
+
+  synth.speak(
+    utterance
+  );
 }
 
-/* ========== AUTO VOICE REPLIES (toggle in header) ========== */
-function updateVoiceReplyBtn(){
-  if(!voiceReplyBtn) return;
-  voiceReplyBtn.textContent = voiceRepliesEnabled ? "🔊" : "🔇";
-  voiceReplyBtn.classList.toggle("active", voiceRepliesEnabled);
-  voiceReplyBtn.setAttribute("aria-pressed", String(voiceRepliesEnabled));
-  voiceReplyBtn.title = voiceRepliesEnabled ? "Voice replies: ON" : "Voice replies: OFF";
+/* ============================================================
+   🔊 AUTO VOICE REPLIES
+============================================================ */
+
+function updateVoiceReplyBtn() {
+  if (!voiceReplyBtn) {
+    return;
+  }
+
+  voiceReplyBtn.textContent =
+    voiceRepliesEnabled
+      ? "🔊"
+      : "🔇";
+
+  voiceReplyBtn.classList.toggle(
+    "active",
+    voiceRepliesEnabled
+  );
+
+  voiceReplyBtn.setAttribute(
+    "aria-pressed",
+    String(
+      voiceRepliesEnabled
+    )
+  );
+
+  voiceReplyBtn.title =
+    voiceRepliesEnabled
+      ? "Voice replies: ON"
+      : "Voice replies: OFF";
 }
-if(voiceReplyBtn){
+
+if (voiceReplyBtn) {
   updateVoiceReplyBtn();
-  voiceReplyBtn.addEventListener("click", ()=>{
-    voiceRepliesEnabled = !voiceRepliesEnabled;
-    saveJSON(STORAGE_KEYS.voice, voiceRepliesEnabled);
-    updateVoiceReplyBtn();
-    if(!voiceRepliesEnabled && "speechSynthesis" in window) window.speechSynthesis.cancel();
-    showToast(voiceRepliesEnabled ? "🔊 Voice replies on" : "🔇 Voice replies off");
-  });
+
+  voiceReplyBtn.addEventListener(
+    "click",
+    () => {
+      voiceRepliesEnabled =
+        !voiceRepliesEnabled;
+
+      saveJSON(
+        STORAGE_KEYS.voice,
+        voiceRepliesEnabled
+      );
+
+      updateVoiceReplyBtn();
+
+      if (
+        !voiceRepliesEnabled &&
+        "speechSynthesis" in
+          window
+      ) {
+        window.speechSynthesis.cancel();
+      }
+
+      showToast(
+        voiceRepliesEnabled
+          ? "🔊 Voice replies ON"
+          : "🔇 Voice replies OFF"
+      );
+    }
+  );
 }
 
-if(attachBtn) attachBtn.addEventListener("click", ()=>fileInput?.click());
-if(fileInput) fileInput.addEventListener("change", ()=>{
-  const f = fileInput.files?.[0];
-  if(!f) return;
-  if(f.size > MAX_FILE_SIZE){
-    showToast("⚠️ File too large (max 10MB)");
-    fileInput.value = "";
+/* ============================================================
+   🧠 IMAGE MODE
+============================================================ */
+
+function isImageRequest(text) {
+  const t =
+    String(text || "")
+      .toLowerCase()
+      .trim();
+
+  const hasVerb =
+    /\b(draw|paint|illustrate|sketch|design|generate|create|make|render|visualize|show me)\b/i.test(
+      t
+    );
+
+  const hasNoun =
+    /\b(image|picture|photo|photograph|logo|drawing|illustration|artwork|poster|avatar|wallpaper)\b/i.test(
+      t
+    );
+
+  const swahili =
+    /\bchora\b/i.test(t) ||
+    /\bpicha\b/i.test(t) ||
+    /tengeneza\s+picha/i.test(t) ||
+    /unda\s+picha/i.test(t) ||
+    /nitengenezee\s+picha/i.test(t);
+
+  return (
+    (hasVerb && hasNoun) ||
+    swahili
+  );
+}
+
+function updateImageModeBtn() {
+  if (!imageModeBtn) {
     return;
   }
-  selectedFile = f;
-  renderFilePreview();
-  showToast(`📎 ${f.name} attached`);
-});
 
-/* ========== HISTORY & SAVE ========== */
-function addToHistory(role,content,meta={}){
-  if(!content&&!meta.image) return;
-  messages.push({id:createChatId(),role,content:String(content||""),image:meta.image||null,imagePrompt:meta.imagePrompt||null,provider:meta.provider||null,file:meta.file||null,timestamp:Date.now()});
-  if(messages.length>MAX_STORED_MESSAGES) messages=messages.slice(-MAX_STORED_MESSAGES);
+  imageModeBtn.classList.toggle(
+    "active",
+    imageModeOn
+  );
+
+  imageModeBtn.setAttribute(
+    "aria-pressed",
+    String(imageModeOn)
+  );
+
+  imageModeBtn.title =
+    imageModeOn
+      ? "Image mode: ON"
+      : "Image mode: OFF";
+
+  if (userInput) {
+    userInput.placeholder =
+      imageModeOn
+        ? "Describe the image you want..."
+        : "Ask Kirong anything...";
+  }
+}
+
+if (imageModeBtn) {
+  imageModeBtn.addEventListener(
+    "click",
+    () => {
+      imageModeOn =
+        !imageModeOn;
+
+      saveJSON(
+        STORAGE_KEYS.imageMode,
+        imageModeOn
+      );
+
+      updateImageModeBtn();
+
+      showToast(
+        imageModeOn
+          ? "🎨 Image mode ON"
+          : "🎨 Image mode OFF"
+      );
+
+      userInput?.focus();
+    }
+  );
+}
+
+/* ============================================================
+   💬 HISTORY
+============================================================ */
+
+function addToHistory(
+  role,
+  content,
+  meta = {}
+) {
+  if (
+    !content &&
+    !meta.image
+  ) {
+    return;
+  }
+
+  messages.push({
+    id:
+      "msg_" +
+      Date.now() +
+      "_" +
+      Math.random()
+        .toString(36)
+        .slice(2, 7),
+
+    role,
+
+    content:
+      String(
+        content || ""
+      ),
+
+    image:
+      meta.image ||
+      null,
+
+    imagePrompt:
+      meta.imagePrompt ||
+      null,
+
+    provider:
+      meta.provider ||
+      null,
+
+    file:
+      meta.file ||
+      null,
+
+    timestamp:
+      Date.now()
+  });
+
+  if (
+    messages.length >
+    MAX_STORED_MESSAGES
+  ) {
+    messages =
+      messages.slice(
+        -MAX_STORED_MESSAGES
+      );
+  }
+
   saveCurrentChat();
 }
-function saveCurrentChat(){
-  if(!currentChatId){currentChatId=createChatId();localStorage.setItem(STORAGE_KEYS.activeChat,currentChatId)}
-  const chats=loadJSON(STORAGE_KEYS.chats,[]);
-  const first=messages.find(i=>i.role==="user"&&i.content);
-  const data={id:currentChatId,title:createChatTitle(first?.content),messages:messages.slice(-MAX_STORED_MESSAGES),updatedAt:Date.now()};
-  const idx=chats.findIndex(c=>c.id===currentChatId);
-  if(idx>=0) chats[idx]=data;else chats.unshift(data);
-  chats.sort((a,b)=>(b.updatedAt||0)-(a.updatedAt||0));
-  saveJSON(STORAGE_KEYS.chats,chats.slice(0,MAX_STORED_CHATS));
+
+/* ============================================================
+   💾 SAVE CHAT
+============================================================ */
+
+function saveCurrentChat() {
+  if (!currentChatId) {
+    currentChatId =
+      createChatId();
+
+    localStorage.setItem(
+      STORAGE_KEYS.activeChat,
+      currentChatId
+    );
+  }
+
+  let chats =
+    loadJSON(
+      STORAGE_KEYS.chats,
+      null
+    );
+
+  /*
+   * Backward compatibility with V8.
+   */
+
+  if (!Array.isArray(chats)) {
+    chats =
+      loadJSON(
+        STORAGE_KEYS.legacyChats,
+        []
+      );
+  }
+
+  const firstUserMessage =
+    messages.find(
+      (item) =>
+        item.role === "user" &&
+        item.content
+    );
+
+  const data = {
+    id:
+      currentChatId,
+
+    title:
+      createChatTitle(
+        firstUserMessage?.content
+      ),
+
+    messages:
+      messages.slice(
+        -MAX_STORED_MESSAGES
+      ),
+
+    updatedAt:
+      Date.now()
+  };
+
+  const index =
+    chats.findIndex(
+      (chat) =>
+        chat.id ===
+        currentChatId
+    );
+
+  if (index >= 0) {
+    chats[index] =
+      data;
+  } else {
+    chats.unshift(
+      data
+    );
+  }
+
+  chats.sort(
+    (a, b) =>
+      (b.updatedAt || 0) -
+      (a.updatedAt || 0)
+  );
+
+  saveJSON(
+    STORAGE_KEYS.chats,
+    chats.slice(
+      0,
+      MAX_STORED_CHATS
+    )
+  );
+
+  localStorage.setItem(
+    STORAGE_KEYS.activeChat,
+    currentChatId
+  );
+
   renderHistoryList();
 }
-function restoreChat(){
-  const chats=loadJSON(STORAGE_KEYS.chats,[]);
-  const active=localStorage.getItem(STORAGE_KEYS.activeChat);
-  if(!active){currentChatId=createChatId();return}
-  const chat=chats.find(i=>i.id===active);
-  if(!chat){currentChatId=createChatId();return}
-  currentChatId=chat.id;
-  messages=Array.isArray(chat.messages)?chat.messages.filter(i=>i&& (i.role==="user"||i.role==="assistant")).slice(-MAX_STORED_MESSAGES):[];
-  if(chatBox){chatBox.innerHTML=""; const w=document.createElement("div");w.id="kirongWelcome";w.innerHTML=document.querySelector("#kirongWelcome")?.innerHTML||""; if(messages.length===0) chatBox.appendChild(w); }
-  messages.forEach(i=>{if(i.image) addImageMessage(i.content,i.image,i.provider,i.imagePrompt);else addMessage(i.role,i.content,i.file?{file:i.file}:{})});
-  scrollToBottom(true);renderHistoryList();
-}
-function renderHistoryList(){
-  const list=document.getElementById("historyList");
-  if(!list) return;
-  const chats=loadJSON(STORAGE_KEYS.chats,[]);
-  if(chats.length===0){list.innerHTML='<p class="emptyText">No conversations yet. Start chatting!</p>';return}
-  list.innerHTML="";
-  chats.slice(0,30).forEach(chat=>{
-    const d=document.createElement("div");d.className="historyItem"+(chat.id===currentChatId?" active":"");
-    d.innerHTML=`<div><b>${escapeHTML(chat.title)}</b><small>${new Date(chat.updatedAt).toLocaleDateString()}</small></div><button aria-label="Open chat">↗️</button>`;
-    d.onclick=()=>openChat(chat.id);
-    list.appendChild(d);
-  });
-}
-function openChat(id){
-  const chats=loadJSON(STORAGE_KEYS.chats,[]);
-  const chat=chats.find(i=>i.id===id);if(!chat) return;
-  currentChatId=chat.id;localStorage.setItem(STORAGE_KEYS.activeChat,id);
-  messages=Array.isArray(chat.messages)?chat.messages.slice(-MAX_STORED_MESSAGES):[];
-  if(chatBox){chatBox.innerHTML=""; messages.forEach(i=>{if(i.image) addImageMessage(i.content,i.image,i.provider,i.imagePrompt);else addMessage(i.role,i.content,i.file?{file:i.file}:{})});}
-  scrollToBottom(true);renderHistoryList();document.querySelector('.tabBtn[data-tab="chat"]')?.click();showToast("💬 Chat opened");
-}
-function startNewChat(){
-  if(messages.length) saveCurrentChat();
-  messages=[];selectedFile=null;currentChatId=createChatId();localStorage.setItem(STORAGE_KEYS.activeChat,currentChatId);
-  if(fileInput) fileInput.value="";
-  renderFilePreview();
-  if(chatBox){
-    chatBox.innerHTML=`<div class="kirongWelcome" id="kirongWelcome"><div class="kirongWelcomeLogo"><img src="/icon-192.png" alt="Kirong AI"></div><div class="welcomeEyebrow"><span></span>KIRONG AI CORE<span></span></div><h2>Welcome, <span>Kings & Queens!</span> 👑</h2><p>Hello 👋 I'm <strong>Kirong AI</strong>, your intelligent assistant for <strong>coding, writing, business</strong> and everyday tasks.<br><br>What can I help you with today?</p><div class="quickGrid"><button class="qBtn" data-prompt="Build me a modern portfolio website">💻 Build Website</button><button class="qBtn" data-prompt="Give me 3 business ideas with 10k in Kenya">💡 10K Biz Idea</button><button class="qBtn" data-prompt="Write me a professional CV for a software developer">📄 Pro CV</button><button class="qBtn" data-prompt="Explain Python like I'm 12 years old">📚 Learn Fast</button></div></div>`;
-    initRoyalGuidelines();
+
+/* ============================================================
+   🔄 RESTORE CHAT
+============================================================ */
+
+function restoreChat() {
+  let chats =
+    loadJSON(
+      STORAGE_KEYS.chats,
+      null
+    );
+
+  if (!Array.isArray(chats)) {
+    chats =
+      loadJSON(
+        STORAGE_KEYS.legacyChats,
+        []
+      );
   }
-  renderHistoryList();showToast("＋ New chat");
-}
 
-/* ========== SEND ========== */
-function buildFormData(message){
-  const fd=new FormData();fd.append("message",message);fd.append("language","English");
-  fd.append("history",JSON.stringify(messages.filter(i=>i&&(i.role==="user"||i.role==="assistant")&&typeof i.content==="string").slice(-MAX_HISTORY_ITEMS).map(i=>({role:i.role,content:i.content}))));
-  if(selectedFile) fd.append("file",selectedFile,selectedFile.name);
-  return fd;
-}
-async function sendMessage(){
-  if(isSending) return;
-  const message=String(userInput?.value||"").trim();
-  if(!message&&!selectedFile) return;
-  const visible=message||`Please analyze file: ${selectedFile?.name}`;
-  if(!currentChatId){currentChatId=createChatId();localStorage.setItem(STORAGE_KEYS.activeChat,currentChatId)}
-  document.getElementById("kirongWelcome")?.classList.add("hideWelcome");
-  addMessage("user",message,selectedFile?{file:selectedFile.name}:{});
-  addToHistory("user",visible,selectedFile?{file:selectedFile.name}:{});
-  if(userInput) userInput.value="";
-  setSendingState(true);setThinking(true);
+  let active =
+    localStorage.getItem(
+      STORAGE_KEYS.activeChat
+    );
 
-  const wantsImage = !selectedFile && (imageModeOn || isImageRequest(message));
+  if (!active) {
+    active =
+      localStorage.getItem(
+        STORAGE_KEYS.legacyActiveChat
+      );
+  }
 
-  try{
-    if(wantsImage){
-      const res=await fetch(IMAGE_ENDPOINT,{
-        method:"POST",
-        headers:{"Content-Type":"application/json","Accept":"application/json","X-Kirong-User-Id":getDeviceUserId()},
-        body:JSON.stringify({prompt:message,userId:getDeviceUserId()}),
-        cache:"no-store"
-      });
-      const data=await res.json().catch(()=>({}));
-      if(!res.ok||data?.type==="error"||!data?.ok){
-        const errMsg = typeof data?.error==="string" ? data.error
-          : typeof data?.error?.message==="string" ? data.error.message
-          : typeof data?.text==="string" ? data.text
-          : `Server ${res.status}`;
-        throw new Error(errMsg);
-      }
-      addImageMessage(data.text||"🎨 Here is your image!",data.image,data.provider||"",data.prompt||message);
-      addToHistory("assistant",data.text||"Generated image",{image:data.image,imagePrompt:data.prompt||message,provider:data.provider});
-    }else{
-    const fd=buildFormData(visible);
-    const res=await fetch(API_ENDPOINT,{method:"POST",body:fd,headers:{Accept:"application/json","X-Kirong-User-Id":getDeviceUserId()},cache:"no-store"});
-    const ct=res.headers.get("content-type")||"";
-    let data;if(ct.includes("application/json")) data=await res.json();else throw new Error(await res.text());
-    if(!res.ok||data?.type==="error") throw new Error(data?.text||`Server ${res.status}`);
-    if(data?.type==="image"&&data?.image){
-      addImageMessage(data.text||"🎨 Here is your image!",data.image,data.provider||"",data.prompt||visible);
-      addToHistory("assistant",data.text||"Generated image",{image:data.image,imagePrompt:data.prompt||visible,provider:data.provider});
-    }else{
-      const ans=String(data?.text||data?.message||"No response");
-      addMessage("assistant",ans);addToHistory("assistant",ans);
-      if(voiceRepliesEnabled) speakText(ans, chatBox?.querySelector(".message.assistant-message:last-child .speakMessageBtn"));
-    }
-    }
-    selectedFile=null;if(fileInput) fileInput.value="";renderFilePreview();saveCurrentChat();
-  }catch(e){
-    addMessage("assistant",`⚠️ ${e.message||"Connection error, try again."}`);addToHistory("assistant",`Error: ${e.message}`);
-  }finally{setThinking(false);setSendingState(false);userInput?.focus()}
-}
+  if (!active) {
+    currentChatId =
+      createChatId();
 
-/* ========== CLEAR + EXPORT ========== */
-function exportChatFile(){
-  if(messages.length===0){showToast("No chat to export");return}
-  const lines=messages.map(i=>`${i.role==="user"?"You":"Kirong AI"}:\n${i.content}${i.image?`\n[Image: ${i.imagePrompt}]`:""}`).join("\n\n");
-  const blob=new Blob([`KIRONG AI CHAT EXPORT\n====================\n\n${lines}`],{type:"text/plain"});const url=URL.createObjectURL(blob);
-  const a=document.createElement("a");a.href=url;a.download=`kirong-chat-${Date.now()}.txt`;a.click();URL.revokeObjectURL(url);showToast("💾 Exported!");
-}
-if(clearChatBtn) clearChatBtn.addEventListener("click",()=>{if(confirm("Clear this conversation?")) startNewChat()});
-if(exportChatBtn) exportChatBtn.addEventListener("click",exportChatFile);
-if(clearHistoryBtn) clearHistoryBtn.addEventListener("click",()=>{if(confirm("Clear ALL history?")){localStorage.removeItem(STORAGE_KEYS.chats);localStorage.removeItem(STORAGE_KEYS.activeChat);startNewChat();renderHistoryList();showToast("🗑️ History cleared")}});
-if(exportHistoryBtn) exportHistoryBtn.addEventListener("click",()=>{const chats=loadJSON(STORAGE_KEYS.chats,[]);if(!chats.length){showToast("No history");return}const blob=new Blob([JSON.stringify(chats,null,2)],{type:"application/json"});const url=URL.createObjectURL(blob);const a=document.createElement("a");a.href=url;a.download=`kirong-history-${Date.now()}.json`;a.click();URL.revokeObjectURL(url)});
+    showWelcome();
 
-/* ========== PROJECTS (Phase 2 — real backend, Vercel Blob) ========== */
-const PROJECTS_ENDPOINT = "/api/projects";
-const projectsGrid = document.getElementById("projectsGrid");
+    return;
+  }
 
-/* ---- lightweight modal (also reusable for future features) ---- */
-function openModal(innerHTML, extraClass=""){
-  closeModal();
-  const overlay = document.createElement("div");
-  overlay.className = "modalOverlay";
-  overlay.id = "kirongModalOverlay";
-  overlay.innerHTML = `<div class="modalBox ${extraClass}">${innerHTML}</div>`;
-  overlay.addEventListener("click", e=>{ if(e.target===overlay) closeModal(); });
-  document.body.appendChild(overlay);
-}
-function closeModal(){
-  document.getElementById("kirongModalOverlay")?.remove();
-}
+  const chat =
+    chats.find(
+      (item) =>
+        item.id === active
+    );
 
-/* ---- image lightbox: tap a generated image to view it full-size
-   without leaving the app (replaces the old window.open behavior) ---- */
-function openImageLightbox(image, alt){
-  openModal(
-    `<button class="imageLightboxClose" id="lightboxCloseBtn" aria-label="Close image">✕</button>
-     <img src="${image}" alt="${escapeHTML(alt||'Generated image')}" />`,
-    "imageLightboxBox"
+  if (!chat) {
+    currentChatId =
+      createChatId();
+
+    showWelcome();
+
+    return;
+  }
+
+  currentChatId =
+    chat.id;
+
+  messages =
+    Array.isArray(
+      chat.messages
+    )
+      ? chat.messages
+          .filter(
+            (item) =>
+              item &&
+              (item.role ===
+                "user" ||
+                item.role ===
+                  "assistant")
+          )
+          .slice(
+            -MAX_STORED_MESSAGES
+          )
+      : [];
+
+  renderMessages();
+
+  scrollToBottom(
+    true
   );
-  document.getElementById("lightboxCloseBtn")?.addEventListener("click", closeModal);
 }
 
-/* ---- helpers ---- */
-function timeAgo(iso){
-  if(!iso) return "just now";
-  const diff = Date.now() - new Date(iso).getTime();
-  const mins = Math.floor(diff/60000);
-  if(mins<1) return "just now";
-  if(mins<60) return `${mins}m ago`;
-  const hrs = Math.floor(mins/60);
-  if(hrs<24) return `${hrs}h ago`;
-  const days = Math.floor(hrs/24);
-  if(days<30) return `${days}d ago`;
-  return new Date(iso).toLocaleDateString();
-}
-const PROJECT_ICONS = {website:"🌐",cv:"📄",business:"💼",code:"💻",note:"📝"};
+/* ============================================================
+   🖼️ RENDER MESSAGES
+============================================================ */
 
-/* ---- API calls ---- */
-async function apiFetchProjects(){
-  const res = await fetch(`${PROJECTS_ENDPOINT}?userId=${encodeURIComponent(getDeviceUserId())}`,{
-    headers:{ "X-Kirong-User-Id": getDeviceUserId(), Accept:"application/json" },
-    cache:"no-store"
-  });
-  const data = await res.json().catch(()=>({}));
-  if(!res.ok || !data.ok) throw new Error(data?.error || `Server ${res.status}`);
-  return Array.isArray(data.projects) ? data.projects : [];
-}
-async function apiCreateProject({title,type,content}){
-  const res = await fetch(PROJECTS_ENDPOINT,{
-    method:"POST",
-    headers:{ "Content-Type":"application/json", "X-Kirong-User-Id": getDeviceUserId() },
-    body: JSON.stringify({ userId:getDeviceUserId(), title, type, content })
-  });
-  const data = await res.json().catch(()=>({}));
-  if(!res.ok || !data.ok) throw new Error(data?.error || `Server ${res.status}`);
-  return data.project;
-}
-async function apiUpdateProject({id,title,content,type}){
-  const res = await fetch(PROJECTS_ENDPOINT,{
-    method:"PUT",
-    headers:{ "Content-Type":"application/json", "X-Kirong-User-Id": getDeviceUserId() },
-    body: JSON.stringify({ userId:getDeviceUserId(), id, title, content, type })
-  });
-  const data = await res.json().catch(()=>({}));
-  if(!res.ok || !data.ok) throw new Error(data?.error || `Server ${res.status}`);
-  return data.project;
-}
-async function apiDeleteProject(id){
-  const res = await fetch(`${PROJECTS_ENDPOINT}?id=${encodeURIComponent(id)}&userId=${encodeURIComponent(getDeviceUserId())}`,{
-    method:"DELETE",
-    headers:{ "X-Kirong-User-Id": getDeviceUserId() }
-  });
-  const data = await res.json().catch(()=>({}));
-  if(!res.ok || !data.ok) throw new Error(data?.error || `Server ${res.status}`);
+function renderMessages() {
+  if (!chatBox) {
+    return;
+  }
+
+  chatBox.innerHTML =
+    "";
+
+  if (
+    messages.length ===
+    0
+  ) {
+    showWelcome();
+
+    return;
+  }
+
+  messages.forEach(
+    (item) => {
+      if (item.image) {
+        addImageMessage(
+          item.content,
+          item.image,
+          item.provider,
+          item.imagePrompt
+        );
+      } else {
+        addMessage(
+          item.role,
+          item.content,
+          item.file
+            ? {
+                file:
+                  item.file
+              }
+            : {}
+        );
+      }
+    }
+  );
 }
 
-/* ---- rendering ---- */
-function renderProjectCard(project){
-  const icon = PROJECT_ICONS[project.type] || "📝";
-  const d = document.createElement("div");
-  d.className = "projectCard";
-  d.innerHTML = `<span>${icon}</span><h3>${escapeHTML(project.title)}</h3><p>Updated ${timeAgo(project.updatedAt)}</p>`;
-  d.addEventListener("click", ()=>openProjectDetail(project));
-  return d;
+/* ============================================================
+   👋 WELCOME
+============================================================ */
+
+function showWelcome() {
+  if (!chatBox) {
+    return;
+  }
+
+  chatBox.innerHTML =
+    `
+    <div
+      class="kirongWelcome"
+      id="kirongWelcome"
+    >
+      <div class="kirongWelcomeLogo">
+        <img
+          src="/icon-192.png"
+          alt="Kirong AI"
+        >
+      </div>
+
+      <div class="welcomeEyebrow">
+        <span></span>
+        KIRONG AI CORE
+        <span></span>
+      </div>
+
+      <h2>
+        Welcome,
+        <span>Kings & Queens!</span>
+        👑
+      </h2>
+
+      <p>
+        Hello 👋 I'm
+        <strong>Kirong AI</strong>,
+        your intelligent assistant for
+        <strong>
+          coding, writing, business
+        </strong>
+        and everyday tasks.
+        <br><br>
+        What can I help you with today?
+      </p>
+
+      <div class="quickGrid">
+        <button
+          class="qBtn"
+          data-prompt="Build me a modern portfolio website"
+        >
+          💻 Build Website
+        </button>
+
+        <button
+          class="qBtn"
+          data-prompt="Give me 3 business ideas with 10k in Kenya"
+        >
+          💡 10K Biz Idea
+        </button>
+
+        <button
+          class="qBtn"
+          data-prompt="Write me a professional CV for a software developer"
+        >
+          📄 Pro CV
+        </button>
+
+        <button
+          class="qBtn"
+          data-prompt="Explain Python like I'm 12 years old"
+        >
+          📚 Learn Fast
+        </button>
+      </div>
+    </div>
+    `;
+
+  bindQuickButtons();
+
+  initRoyalGuidelines();
 }
 
-async function renderProjectsGrid(){
-  if(!projectsGrid) return;
-  projectsGrid.innerHTML = `<div class="projectCard new" id="newProjectCard"><span>＋</span><h3>New Project</h3><p>Start something royal</p></div>`;
-  document.getElementById("newProjectCard")?.addEventListener("click", openNewProjectModal);
+function bindQuickButtons() {
+  document
+    .querySelectorAll(
+      ".qBtn"
+    )
+    .forEach((button) => {
+      button.addEventListener(
+        "click",
+        () => {
+          const prompt =
+            button.dataset
+              .prompt || "";
 
-  try{
-    const projects = await apiFetchProjects();
-    if(projects.length===0){
-      const empty = document.createElement("p");
-      empty.className = "emptyText";
-      empty.textContent = "No projects yet. Create your first one!";
-      projectsGrid.appendChild(empty);
+          if (userInput) {
+            userInput.value =
+              prompt;
+
+            autoResizeInput();
+
+            sendMessage();
+          }
+        }
+      );
+    });
+}
+
+/* ============================================================
+   📜 HISTORY LIST
+============================================================ */
+
+function renderHistoryList() {
+  const list =
+    document.getElementById(
+      "historyList"
+    );
+
+  if (!list) {
+    return;
+  }
+
+  let chats =
+    loadJSON(
+      STORAGE_KEYS.chats,
+      null
+    );
+
+  if (!Array.isArray(chats)) {
+    chats =
+      loadJSON(
+        STORAGE_KEYS.legacyChats,
+        []
+      );
+  }
+
+  if (!chats.length) {
+    list.innerHTML =
+      '<p class="emptyText">No conversations yet. Start chatting!</p>';
+
+    return;
+  }
+
+  list.innerHTML =
+    "";
+
+  chats
+    .slice(0, 30)
+    .forEach(
+      (chat) => {
+        const item =
+          document.createElement(
+            "div"
+          );
+
+        item.className =
+          "historyItem" +
+          (chat.id ===
+          currentChatId
+            ? " active"
+            : "");
+
+        item.innerHTML =
+          `<div>` +
+          `<b>${escapeHTML(
+            chat.title ||
+              "New Chat"
+          )}</b>` +
+          `<small>${new Date(
+            chat.updatedAt ||
+              Date.now()
+          ).toLocaleDateString()}</small>` +
+          `</div>` +
+          `<button aria-label="Open chat">↗️</button>`;
+
+        item.addEventListener(
+          "click",
+          () =>
+            openChat(
+              chat.id
+            )
+        );
+
+        list.appendChild(
+          item
+        );
+      }
+    );
+}
+
+/* ============================================================
+   💬 OPEN CHAT
+============================================================ */
+
+function openChat(id) {
+  let chats =
+    loadJSON(
+      STORAGE_KEYS.chats,
+      []
+    );
+
+  if (!Array.isArray(chats)) {
+    chats = [];
+  }
+
+  const chat =
+    chats.find(
+      (item) =>
+        item.id === id
+    );
+
+  if (!chat) {
+    return;
+  }
+
+  currentChatId =
+    chat.id;
+
+  localStorage.setItem(
+    STORAGE_KEYS.activeChat,
+    id
+  );
+
+  messages =
+    Array.isArray(
+      chat.messages
+    )
+      ? chat.messages
+          .slice(
+            -MAX_STORED_MESSAGES
+          )
+      : [];
+
+  renderMessages();
+
+  renderHistoryList();
+
+  scrollToBottom(
+    true
+  );
+
+  document
+    .querySelector(
+      '.tabBtn[data-tab="chat"]'
+    )
+    ?.click();
+
+  showToast(
+    "💬 Chat opened"
+  );
+}
+
+/* ============================================================
+   ➕ NEW CHAT
+============================================================ */
+
+function startNewChat() {
+  if (messages.length) {
+    saveCurrentChat();
+  }
+
+  messages = [];
+
+  selectedFile =
+    null;
+
+  currentChatId =
+    createChatId();
+
+  localStorage.setItem(
+    STORAGE_KEYS.activeChat,
+    currentChatId
+  );
+
+  if (fileInput) {
+    fileInput.value =
+      "";
+  }
+
+  renderFilePreview();
+
+  showWelcome();
+
+  renderHistoryList();
+
+  showToast(
+    "＋ New chat"
+  );
+}
+
+/* ============================================================
+   🔁 RETRY
+============================================================ */
+
+function retryLastUserMessage() {
+  const lastUser =
+    [...messages]
+      .reverse()
+      .find(
+        (item) =>
+          item.role ===
+          "user"
+      );
+
+  if (!lastUser) {
+    showToast(
+      "No user message to retry"
+    );
+
+    return;
+  }
+
+  if (userInput) {
+    userInput.value =
+      lastUser.content
+        .replace(
+          /^Please analyze file:\s*/,
+          ""
+        );
+
+    autoResizeInput();
+
+    sendMessage();
+  }
+}
+
+/* ============================================================
+   📦 FORM DATA
+============================================================ */
+
+function buildFormData(
+  message
+) {
+  const form =
+    new FormData();
+
+  form.append(
+    "message",
+    message
+  );
+
+  form.append(
+    "language",
+    loadJSON(
+      STORAGE_KEYS.language,
+      "English"
+    )
+  );
+
+  form.append(
+    "userId",
+    DEVICE_USER_ID
+  );
+
+  const history =
+    messages
+      .filter(
+        (item) =>
+          item &&
+          (item.role ===
+            "user" ||
+            item.role ===
+              "assistant") &&
+          typeof item.content ===
+            "string"
+      )
+      .slice(
+        -MAX_HISTORY_ITEMS
+      )
+      .map(
+        (item) => ({
+          role:
+            item.role,
+          content:
+            item.content
+        })
+      );
+
+  form.append(
+    "history",
+    JSON.stringify(history)
+  );
+
+  if (selectedFile) {
+    form.append(
+      "file",
+      selectedFile,
+      selectedFile.name
+    );
+  }
+
+  return form;
+}
+
+/* ============================================================
+   ⏱️ FETCH WITH TIMEOUT
+============================================================ */
+
+async function fetchWithTimeout(
+  url,
+  options = {},
+  timeout = REQUEST_TIMEOUT
+) {
+  activeAbortController =
+    new AbortController();
+
+  const externalSignal =
+    options.signal;
+
+  const timer =
+    setTimeout(() => {
+      activeAbortController.abort();
+    }, timeout);
+
+  try {
+    const response =
+      await fetch(url, {
+        ...options,
+        signal:
+          activeAbortController.signal
+      });
+
+    return response;
+  } catch (error) {
+    if (
+      error?.name ===
+      "AbortError"
+    ) {
+      throw new Error(
+        "Request timed out. Please try again."
+      );
+    }
+
+    if (
+      !networkOnline ||
+      !navigator.onLine
+    ) {
+      throw new Error(
+        "You appear to be offline."
+      );
+    }
+
+    throw error;
+  } finally {
+    clearTimeout(timer);
+
+    activeAbortController =
+      null;
+
+    if (externalSignal) {
+      /* kept for compatibility */
+    }
+  }
+}
+
+/* ============================================================
+   🧾 API ERROR
+============================================================ */
+
+async function parseApiResponse(
+  response
+) {
+  const contentType =
+    response.headers.get(
+      "content-type"
+    ) || "";
+
+  if (
+    contentType.includes(
+      "application/json"
+    )
+  ) {
+    const data =
+      await response
+        .json()
+        .catch(() => ({}));
+
+    if (!response.ok) {
+      const error =
+        typeof data?.error ===
+        "string"
+          ? data.error
+          : typeof data?.text ===
+            "string"
+            ? data.text
+            : `Server ${response.status}`;
+
+      throw new Error(
+        error
+      );
+    }
+
+    return data;
+  }
+
+  const text =
+    await response
+      .text()
+      .catch(() => "");
+
+  if (!response.ok) {
+    throw new Error(
+      text ||
+        `Server ${response.status}`
+    );
+  }
+
+  return {
+    text
+  };
+}
+
+/* ============================================================
+   👤 USER / USAGE SYNC
+============================================================ */
+
+async function refreshUserData() {
+  /*
+   * Optional endpoint.
+   *
+   * This intentionally fails silently because the current
+   * backend may not expose /api/user yet.
+   */
+
+  try {
+    const response =
+      await fetch(
+        `/api/user?userId=${encodeURIComponent(
+          DEVICE_USER_ID
+        )}`,
+        {
+          headers: {
+            Accept:
+              "application/json",
+
+            "X-Kirong-User-Id":
+              DEVICE_USER_ID
+          },
+
+          cache:
+            "no-store"
+        }
+      );
+
+    if (!response.ok) {
+      return null;
+    }
+
+    const data =
+      await response
+        .json()
+        .catch(() => null);
+
+    if (data) {
+      currentUserData =
+        data;
+
+      updatePlanBadge(
+        data
+      );
+    }
+
+    return data;
+  } catch {
+    return null;
+  }
+}
+
+function updatePlanBadge(
+  data
+) {
+  if (!planBadge) {
+    return;
+  }
+
+  const plan =
+    data?.plan ||
+    data?.user?.plan ||
+    data?.subscription?.plan;
+
+  if (
+    String(plan)
+      .toLowerCase() ===
+    "pro"
+  ) {
+    planBadge.textContent =
+      "👑 PRO";
+
+    planBadge.classList.add(
+      "pro"
+    );
+
+    return;
+  }
+
+  planBadge.textContent =
+    "FREE";
+
+  planBadge.classList.remove(
+    "pro"
+  );
+}
+
+/* ============================================================
+   📤 SEND MESSAGE
+============================================================ */
+
+async function sendMessage() {
+  if (isSending) {
+    return;
+  }
+
+  const message =
+    String(
+      userInput?.value ||
+        ""
+    ).trim();
+
+  if (
+    !message &&
+    !selectedFile
+  ) {
+    return;
+  }
+
+  if (
+    !networkOnline ||
+    !navigator.onLine
+  ) {
+    showToast(
+      "🔴 You are offline"
+    );
+
+    return;
+  }
+
+  const attachedName =
+    selectedFile?.name ||
+    null;
+
+  const visibleMessage =
+    message ||
+    `Please analyze file: ${attachedName}`;
+
+  if (!currentChatId) {
+    currentChatId =
+      createChatId();
+
+    localStorage.setItem(
+      STORAGE_KEYS.activeChat,
+      currentChatId
+    );
+  }
+
+  document
+    .getElementById(
+      "kirongWelcome"
+    )
+    ?.classList.add(
+      "hideWelcome"
+    );
+
+  /*
+   * Render user message.
+   */
+
+  addMessage(
+    "user",
+    message,
+    attachedName
+      ? {
+          file:
+            attachedName
+        }
+      : {}
+  );
+
+  addToHistory(
+    "user",
+    visibleMessage,
+    attachedName
+      ? {
+          file:
+            attachedName
+        }
+      : {}
+  );
+
+  if (userInput) {
+    userInput.value =
+      "";
+
+    autoResizeInput();
+  }
+
+  setSendingState(
+    true
+  );
+
+  setThinking(
+    true
+  );
+
+  const wantsImage =
+    !selectedFile &&
+    (imageModeOn ||
+      isImageRequest(
+        message
+      ));
+
+  try {
+    /* ========================================================
+       🎨 IMAGE REQUEST
+    ======================================================== */
+
+    if (wantsImage) {
+      const response =
+        await fetchWithTimeout(
+          IMAGE_ENDPOINT,
+          {
+            method:
+              "POST",
+
+            headers: {
+              "Content-Type":
+                "application/json",
+
+              Accept:
+                "application/json",
+
+              "X-Kirong-User-Id":
+                DEVICE_USER_ID
+            },
+
+            body:
+              JSON.stringify({
+                prompt:
+                  message,
+
+                userId:
+                  DEVICE_USER_ID
+              }),
+
+            cache:
+              "no-store"
+          }
+        );
+
+      const data =
+        await parseApiResponse(
+          response
+        );
+
+      if (
+        data?.type ===
+          "error" ||
+        data?.ok === false
+      ) {
+        throw new Error(
+          extractApiError(
+            data
+          )
+        );
+      }
+
+      if (!data?.image) {
+        throw new Error(
+          "Image server returned no image."
+        );
+      }
+
+      addImageMessage(
+        data.text ||
+          "🎨 Here is your image!",
+        data.image,
+        data.provider ||
+          "",
+        data.prompt ||
+          message
+      );
+
+      addToHistory(
+        "assistant",
+        data.text ||
+          "Generated image",
+        {
+          image:
+            data.image,
+
+          imagePrompt:
+            data.prompt ||
+            message,
+
+          provider:
+            data.provider
+        }
+      );
+
+      /*
+       * Clear attachment.
+       */
+
+      selectedFile =
+        null;
+
+      if (fileInput) {
+        fileInput.value =
+          "";
+      }
+
+      renderFilePreview();
+
+      saveCurrentChat();
+
       return;
     }
-    projects.forEach(p=>projectsGrid.appendChild(renderProjectCard(p)));
-  }catch(e){
-    const err = document.createElement("p");
-    err.className = "emptyText";
-    err.textContent = `⚠️ Could not load projects: ${e.message}`;
-    projectsGrid.appendChild(err);
+
+    /* ========================================================
+       💬 NORMAL CHAT REQUEST
+    ======================================================== */
+
+    const form =
+      buildFormData(
+        visibleMessage
+      );
+
+    const response =
+      await fetchWithTimeout(
+        API_ENDPOINT,
+        {
+          method:
+            "POST",
+
+          body:
+            form,
+
+          headers: {
+            Accept:
+              "application/json",
+
+            "X-Kirong-User-Id":
+              DEVICE_USER_ID
+          },
+
+          cache:
+            "no-store"
+        }
+      );
+
+    const data =
+      await parseApiResponse(
+        response
+      );
+
+    if (
+      data?.type ===
+      "error"
+    ) {
+      throw new Error(
+        extractApiError(
+          data
+        )
+      );
+    }
+
+    if (
+      data?.ok === false
+    ) {
+      throw new Error(
+        extractApiError(
+          data
+        )
+      );
+    }
+
+    /* ========================================================
+       🖼️ IMAGE RESPONSE FROM CHAT API
+    ======================================================== */
+
+    if (
+      data?.type ===
+        "image" &&
+      data?.image
+    ) {
+      addImageMessage(
+        data.text ||
+          "🎨 Here is your image!",
+        data.image,
+        data.provider ||
+          "",
+        data.prompt ||
+          visibleMessage
+      );
+
+      addToHistory(
+        "assistant",
+        data.text ||
+          "Generated image",
+        {
+          image:
+            data.image,
+
+          imagePrompt:
+            data.prompt ||
+            visibleMessage,
+
+          provider:
+            data.provider
+        }
+      );
+    } else {
+      /* ======================================================
+         🤖 NORMAL AI RESPONSE
+      ====================================================== */
+
+      const answer =
+        String(
+          data?.text ||
+            data?.message ||
+            data?.reply ||
+            "No response received."
+        );
+
+      addMessage(
+        "assistant",
+        answer
+      );
+
+      addToHistory(
+        "assistant",
+        answer
+      );
+
+      if (
+        voiceRepliesEnabled
+      ) {
+        const lastAssistant =
+          chatBox?.querySelector(
+            ".message.assistant-message:last-child .speakMessageBtn"
+          );
+
+        speakText(
+          answer,
+          lastAssistant
+        );
+      }
+    }
+
+    selectedFile =
+      null;
+
+    if (fileInput) {
+      fileInput.value =
+        "";
+    }
+
+    renderFilePreview();
+
+    saveCurrentChat();
+
+    /*
+     * Optional usage refresh.
+     */
+
+    refreshUserData();
+  } catch (error) {
+    const message =
+      friendlyError(
+        error
+      );
+
+    addMessage(
+      "assistant",
+      `⚠️ ${message}`
+    );
+
+    addToHistory(
+      "assistant",
+      `Error: ${message}`
+    );
+  } finally {
+    setThinking(
+      false
+    );
+
+    setSendingState(
+      false
+    );
+
+    userInput?.focus();
   }
 }
 
-/* ---- create dialog ---- */
-function openNewProjectModal(){
-  openModal(`
-    <h3>✨ New Project</h3>
-    <div class="modalField"><label>Title</label><input type="text" id="newProjTitle" placeholder="e.g. My Portfolio Site" maxlength="120" /></div>
-    <div class="modalField"><label>Type</label>
-      <select id="newProjType">
-        <option value="website">🌐 Website</option>
-        <option value="cv">📄 CV</option>
-        <option value="business">💼 Business Plan</option>
-        <option value="code">💻 Code Project</option>
-        <option value="note">📝 Note</option>
-      </select>
-    </div>
-    <div class="modalActions">
-      <button id="modalCancelBtn">Cancel</button>
-      <button class="primaryBtn" id="modalCreateBtn">Create</button>
-    </div>
-  `);
-  document.getElementById("newProjTitle")?.focus();
-  document.getElementById("modalCancelBtn")?.addEventListener("click", closeModal);
-  document.getElementById("modalCreateBtn")?.addEventListener("click", async ()=>{
-    const title = document.getElementById("newProjTitle")?.value.trim();
-    const type = document.getElementById("newProjType")?.value || "note";
-    if(!title){ showToast("⚠️ Give your project a title"); return; }
-    try{
-      await apiCreateProject({title, type, content:""});
-      closeModal();
-      showToast("✨ Project created!");
-      renderProjectsGrid();
-    }catch(e){
-      showToast(`⚠️ ${e.message}`);
+/* ============================================================
+   🧯 FRIENDLY ERRORS
+============================================================ */
+
+function extractApiError(
+  data
+) {
+  if (!data) {
+    return "Something went wrong.";
+  }
+
+  if (
+    typeof data.error ===
+    "string"
+  ) {
+    return data.error;
+  }
+
+  if (
+    typeof data.text ===
+    "string"
+  ) {
+    return data.text;
+  }
+
+  if (
+    typeof data.message ===
+    "string"
+  ) {
+    return data.message;
+  }
+
+  if (
+    data.error &&
+    typeof data.error.message ===
+      "string"
+  ) {
+    return data.error.message;
+  }
+
+  return "Something went wrong.";
+}
+
+function friendlyError(
+  error
+) {
+  const raw =
+    String(
+      error?.message ||
+        error ||
+        ""
+    ).trim();
+
+  if (!raw) {
+    return "Connection error. Please try again.";
+  }
+
+  if (
+    /failed to fetch/i.test(
+      raw
+    )
+  ) {
+    return "Unable to reach Kirong AI. Check your internet connection and try again.";
+  }
+
+  if (
+    /timed out/i.test(
+      raw
+    )
+  ) {
+    return "The request took too long. Please try again.";
+  }
+
+  if (
+    /429/.test(raw)
+  ) {
+    return "Kirong AI is busy or your usage limit was reached. Please try again later.";
+  }
+
+  if (
+    /401|403/.test(raw)
+  ) {
+    return "This request is not authorized.";
+  }
+
+  if (
+    /500|502|503|504/.test(
+      raw
+    )
+  ) {
+    return "Kirong AI server is temporarily unavailable. Please try again.";
+  }
+
+  return raw;
+}
+
+/* ============================================================
+   💾 EXPORT CHAT
+============================================================ */
+
+function exportChatFile() {
+  if (!messages.length) {
+    showToast(
+      "No chat to export"
+    );
+
+    return;
+  }
+
+  const lines =
+    messages
+      .map(
+        (item) =>
+          `${item.role === "user" ? "You" : "Kirong AI"}:\n` +
+          `${item.content || ""}` +
+          (item.image
+            ? `\n[Image: ${
+                item.imagePrompt ||
+                "Generated image"
+              }]`
+            : "")
+      )
+      .join(
+        "\n\n"
+      );
+
+  const content =
+    `KIRONG AI CHAT EXPORT\n` +
+    `====================\n\n` +
+    lines;
+
+  downloadTextFile(
+    content,
+    `kirong-chat-${Date.now()}.txt`,
+    "text/plain"
+  );
+
+  showToast(
+    "💾 Chat exported!"
+  );
+}
+
+function downloadTextFile(
+  content,
+  filename,
+  type
+) {
+  const blob =
+    new Blob(
+      [content],
+      { type }
+    );
+
+  const url =
+    URL.createObjectURL(
+      blob
+    );
+
+  const anchor =
+    document.createElement(
+      "a"
+    );
+
+  anchor.href =
+    url;
+
+  anchor.download =
+    filename;
+
+  document.body.appendChild(
+    anchor
+  );
+
+  anchor.click();
+
+  anchor.remove();
+
+  setTimeout(
+    () =>
+      URL.revokeObjectURL(
+        url
+      ),
+    1000
+  );
+}
+
+/* ============================================================
+   🧹 CLEAR CHAT
+============================================================ */
+
+if (clearChatBtn) {
+  clearChatBtn.addEventListener(
+    "click",
+    () => {
+      if (
+        confirm(
+          "Clear this conversation?"
+        )
+      ) {
+        startNewChat();
+      }
     }
-  });
+  );
 }
 
-/* ---- view / edit dialog ---- */
-function openProjectDetail(project){
-  openModal(`
-    <h3>${PROJECT_ICONS[project.type]||"📝"} ${escapeHTML(project.title)}</h3>
-    <div class="modalField"><label>Title</label><input type="text" id="editProjTitle" value="${escapeHTML(project.title)}" maxlength="120" /></div>
-    <div class="modalField"><label>Content</label><textarea id="editProjContent" placeholder="Project content, notes, code, draft text...">${escapeHTML(project.content||"")}</textarea></div>
-    <div class="modalActions">
-      <button class="dangerBtn" id="modalDeleteBtn">🗑️ Delete</button>
-      <button id="modalSendChatBtn">💬 Discuss in Chat</button>
-      <button class="primaryBtn" id="modalSaveBtn">💾 Save</button>
-    </div>
-  `);
+/* ============================================================
+   📤 EXPORT CHAT
+============================================================ */
 
-  document.getElementById("modalSendChatBtn")?.addEventListener("click", ()=>{
-    closeModal();
-    document.querySelector('.tabBtn[data-tab="chat"]')?.click();
-    if(userInput){
-      const content = document.getElementById("editProjContent")?.value ?? project.content ?? "";
-      userInput.value = `Here is my project "${project.title}":\n\n${content}\n\nHelp me improve it.`;
-      userInput.focus();
+if (exportChatBtn) {
+  exportChatBtn.addEventListener(
+    "click",
+    exportChatFile
+  );
+}
+
+/* ============================================================
+   🗑️ CLEAR HISTORY
+============================================================ */
+
+if (clearHistoryBtn) {
+  clearHistoryBtn.addEventListener(
+    "click",
+    () => {
+      if (
+        !confirm(
+          "Clear ALL chat history? This cannot be undone."
+        )
+      ) {
+        return;
+      }
+
+      removeStorage(
+        STORAGE_KEYS.chats
+      );
+
+      removeStorage(
+        STORAGE_KEYS.legacyChats
+      );
+
+      removeStorage(
+        STORAGE_KEYS.activeChat
+      );
+
+      removeStorage(
+        STORAGE_KEYS.legacyActiveChat
+      );
+
+      messages = [];
+
+      currentChatId =
+        createChatId();
+
+      localStorage.setItem(
+        STORAGE_KEYS.activeChat,
+        currentChatId
+      );
+
+      showWelcome();
+
+      renderHistoryList();
+
+      showToast(
+        "🗑️ History cleared"
+      );
     }
-  });
+  );
+}
 
-  document.getElementById("modalDeleteBtn")?.addEventListener("click", async ()=>{
-    if(!confirm("Delete this project? This can't be undone.")) return;
-    try{
-      await apiDeleteProject(project.id);
+/* ============================================================
+   📤 EXPORT HISTORY
+============================================================ */
+
+if (exportHistoryBtn) {
+  exportHistoryBtn.addEventListener(
+    "click",
+    () => {
+      let chats =
+        loadJSON(
+          STORAGE_KEYS.chats,
+          []
+        );
+
+      if (!Array.isArray(chats)) {
+        chats = [];
+      }
+
+      if (!chats.length) {
+        showToast(
+          "No history"
+        );
+
+        return;
+      }
+
+      downloadTextFile(
+        JSON.stringify(
+          chats,
+          null,
+          2
+        ),
+        `kirong-history-${Date.now()}.json`,
+        "application/json"
+      );
+
+      showToast(
+        "📤 History exported!"
+      );
+    }
+  );
+}
+
+/* ============================================================
+   🧰 TOOLS CLEAR
+============================================================ */
+
+if (clearToolsBtn) {
+  clearToolsBtn.addEventListener(
+    "click",
+    () => {
+      showToast(
+        "🧰 Tools are ready"
+      );
+    }
+  );
+}
+
+/* ============================================================
+   🧰 TOOLS EXPORT
+============================================================ */
+
+if (exportToolsBtn) {
+  exportToolsBtn.addEventListener(
+    "click",
+    () => {
+      const tools = {
+        name:
+          "Kirong AI Tools",
+
+        exportedAt:
+          new Date().toISOString(),
+
+        userId:
+          DEVICE_USER_ID,
+
+        features: [
+          "Chat",
+          "Projects",
+          "File analysis",
+          "Image generation",
+          "Voice input",
+          "Voice output"
+        ]
+      };
+
+      downloadTextFile(
+        JSON.stringify(
+          tools,
+          null,
+          2
+        ),
+        `kirong-tools-${Date.now()}.json`,
+        "application/json"
+      );
+
+      showToast(
+        "🧰 Tools exported!"
+      );
+    }
+  );
+}
+
+/* ============================================================
+   🏗️ PROJECTS
+============================================================ */
+
+const projectsGrid =
+  document.getElementById(
+    "projectsGrid"
+  );
+
+const PROJECT_ICONS = {
+  website: "🌐",
+  cv: "📄",
+  business: "💼",
+  code: "💻",
+  note: "📝"
+};
+
+/* ============================================================
+   🪟 MODAL
+============================================================ */
+
+function openModal(
+  innerHTML,
+  extraClass = ""
+) {
+  closeModal();
+
+  const overlay =
+    document.createElement(
+      "div"
+    );
+
+  overlay.className =
+    "modalOverlay";
+
+  overlay.id =
+    "kirongModalOverlay";
+
+  overlay.innerHTML =
+    `<div class="modalBox ${extraClass}">` +
+    innerHTML +
+    `</div>`;
+
+  overlay.addEventListener(
+    "click",
+    (event) => {
+      if (
+        event.target ===
+        overlay
+      ) {
+        closeModal();
+      }
+    }
+  );
+
+  document.body.appendChild(
+    overlay
+  );
+}
+
+function closeModal() {
+  document
+    .getElementById(
+      "kirongModalOverlay"
+    )
+    ?.remove();
+}
+
+document.addEventListener(
+  "keydown",
+  (event) => {
+    if (
+      event.key ===
+      "Escape"
+    ) {
       closeModal();
-      showToast("🗑️ Project deleted");
-      renderProjectsGrid();
-    }catch(e){ showToast(`⚠️ ${e.message}`); }
+    }
+  }
+);
+
+/* ============================================================
+   🖼️ IMAGE LIGHTBOX
+============================================================ */
+
+function openImageLightbox(
+  image,
+  alt
+) {
+  openModal(
+    `
+      <button
+        class="imageLightboxClose"
+        id="lightboxCloseBtn"
+        aria-label="Close image"
+      >
+        ✕
+      </button>
+
+      <img
+        src="${escapeHTML(
+          image
+        )}"
+        alt="${escapeHTML(
+          alt ||
+            "Generated image"
+        )}"
+      />
+    `,
+    "imageLightboxBox"
+  );
+
+  document
+    .getElementById(
+      "lightboxCloseBtn"
+    )
+    ?.addEventListener(
+      "click",
+      closeModal
+    );
+}
+
+/* ============================================================
+   ⏱️ TIME AGO
+============================================================ */
+
+function timeAgo(
+  iso
+) {
+  if (!iso) {
+    return "just now";
+  }
+
+  const time =
+    new Date(
+      iso
+    ).getTime();
+
+  if (
+    !Number.isFinite(time)
+  ) {
+    return "just now";
+  }
+
+  const diff =
+    Math.max(
+      0,
+      Date.now() - time
+    );
+
+  const minutes =
+    Math.floor(
+      diff / 60000
+    );
+
+  if (minutes < 1) {
+    return "just now";
+  }
+
+  if (minutes < 60) {
+    return `${minutes}m ago`;
+  }
+
+  const hours =
+    Math.floor(
+      minutes / 60
+    );
+
+  if (hours < 24) {
+    return `${hours}h ago`;
+  }
+
+  const days =
+    Math.floor(
+      hours / 24
+    );
+
+  if (days < 30) {
+    return `${days}d ago`;
+  }
+
+  return new Date(
+    iso
+  ).toLocaleDateString();
+}
+
+/* ============================================================
+   📡 PROJECT API — GET
+============================================================ */
+
+async function apiFetchProjects() {
+  const userId =
+    DEVICE_USER_ID;
+
+  const response =
+    await fetch(
+      `${PROJECTS_ENDPOINT}?userId=${encodeURIComponent(
+        userId
+      )}`,
+      {
+        headers: {
+          Accept:
+            "application/json",
+
+          "X-Kirong-User-Id":
+            userId
+        },
+
+        cache:
+          "no-store"
+      }
+    );
+
+  const data =
+    await response
+      .json()
+      .catch(() => ({}));
+
+  if (
+    !response.ok ||
+    !data.ok
+  ) {
+    throw new Error(
+      data?.error ||
+        `Server ${response.status}`
+    );
+  }
+
+  return Array.isArray(
+    data.projects
+  )
+    ? data.projects
+    : [];
+}
+
+/* ============================================================
+   ➕ PROJECT API — CREATE
+============================================================ */
+
+async function apiCreateProject({
+  title,
+  type,
+  content
+}) {
+  const response =
+    await fetch(
+      PROJECTS_ENDPOINT,
+      {
+        method:
+          "POST",
+
+        headers: {
+          "Content-Type":
+            "application/json",
+
+          Accept:
+            "application/json",
+
+          "X-Kirong-User-Id":
+            DEVICE_USER_ID
+        },
+
+        body:
+          JSON.stringify({
+            userId:
+              DEVICE_USER_ID,
+
+            title,
+
+            type,
+
+            content
+          })
+      }
+    );
+
+  const data =
+    await response
+      .json()
+      .catch(() => ({}));
+
+  if (
+    !response.ok ||
+    !data.ok
+  ) {
+    throw new Error(
+      data?.error ||
+        `Server ${response.status}`
+    );
+  }
+
+  return data.project;
+}
+
+/* ============================================================
+   ✏️ PROJECT API — UPDATE
+============================================================ */
+
+async function apiUpdateProject({
+  id,
+  title,
+  content,
+  type
+}) {
+  const response =
+    await fetch(
+      PROJECTS_ENDPOINT,
+      {
+        method:
+          "PUT",
+
+        headers: {
+          "Content-Type":
+            "application/json",
+
+          Accept:
+            "application/json",
+
+          "X-Kirong-User-Id":
+            DEVICE_USER_ID
+        },
+
+        body:
+          JSON.stringify({
+            userId:
+              DEVICE_USER_ID,
+
+            id,
+
+            title,
+
+            content,
+
+            type
+          })
+      }
+    );
+
+  const data =
+    await response
+      .json()
+      .catch(() => ({}));
+
+  if (
+    !response.ok ||
+    !data.ok
+  ) {
+    throw new Error(
+      data?.error ||
+        `Server ${response.status}`
+    );
+  }
+
+  return data.project;
+}
+
+/* ============================================================
+   🗑️ PROJECT API — DELETE
+============================================================ */
+
+async function apiDeleteProject(
+  id
+) {
+  const response =
+    await fetch(
+      `${PROJECTS_ENDPOINT}?id=${encodeURIComponent(
+        id
+      )}&userId=${encodeURIComponent(
+        DEVICE_USER_ID
+      )}`,
+      {
+        method:
+          "DELETE",
+
+        headers: {
+          Accept:
+            "application/json",
+
+          "X-Kirong-User-Id":
+            DEVICE_USER_ID
+        }
+      }
+    );
+
+  const data =
+    await response
+      .json()
+      .catch(() => ({}));
+
+  if (
+    !response.ok ||
+    !data.ok
+  ) {
+    throw new Error(
+      data?.error ||
+        `Server ${response.status}`
+    );
+  }
+}
+
+/* ============================================================
+   🗂️ PROJECT CARD
+============================================================ */
+
+function renderProjectCard(
+  project
+) {
+  const icon =
+    PROJECT_ICONS[
+      project.type
+    ] || "📝";
+
+  const card =
+    document.createElement(
+      "div"
+    );
+
+  card.className =
+    "projectCard";
+
+  card.innerHTML =
+    `<span>${icon}</span>` +
+    `<h3>${escapeHTML(
+      project.title
+    )}</h3>` +
+    `<p>Updated ${timeAgo(
+      project.updatedAt
+    )}</p>`;
+
+  card.addEventListener(
+    "click",
+    () =>
+      openProjectDetail(
+        project
+      )
+  );
+
+  return card;
+}
+
+/* ============================================================
+   🗂️ PROJECT GRID
+============================================================ */
+
+async function renderProjectsGrid() {
+  if (!projectsGrid) {
+    return;
+  }
+
+  projectsGrid.innerHTML =
+    `
+      <div
+        class="projectCard new"
+        id="newProjectCard"
+      >
+        <span>＋</span>
+        <h3>New Project</h3>
+        <p>Start something royal</p>
+      </div>
+    `;
+
+  document
+    .getElementById(
+      "newProjectCard"
+    )
+    ?.addEventListener(
+      "click",
+      openNewProjectModal
+    );
+
+  try {
+    const projects =
+      await apiFetchProjects();
+
+    if (!projects.length) {
+      const empty =
+        document.createElement(
+          "p"
+        );
+
+      empty.className =
+        "emptyText";
+
+      empty.textContent =
+        "No projects yet. Create your first one!";
+
+      projectsGrid.appendChild(
+        empty
+      );
+
+      return;
+    }
+
+    projects.forEach(
+      (project) => {
+        projectsGrid.appendChild(
+          renderProjectCard(
+            project
+          )
+        );
+      }
+    );
+  } catch (error) {
+    const empty =
+      document.createElement(
+        "p"
+      );
+
+    empty.className =
+      "emptyText";
+
+    empty.textContent =
+      `⚠️ Could not load projects: ${friendlyError(
+        error
+      )}`;
+
+    projectsGrid.appendChild(
+      empty
+    );
+  }
+}
+
+/* ============================================================
+   ✨ NEW PROJECT MODAL
+============================================================ */
+
+function openNewProjectModal() {
+  openModal(
+    `
+      <h3>✨ New Project</h3>
+
+      <div class="modalField">
+        <label>Title</label>
+
+        <input
+          type="text"
+          id="newProjTitle"
+          placeholder="e.g. My Portfolio Site"
+          maxlength="120"
+        />
+      </div>
+
+      <div class="modalField">
+        <label>Type</label>
+
+        <select id="newProjType">
+          <option value="website">
+            🌐 Website
+          </option>
+
+          <option value="cv">
+            📄 CV
+          </option>
+
+          <option value="business">
+            💼 Business Plan
+          </option>
+
+          <option value="code">
+            💻 Code Project
+          </option>
+
+          <option value="note">
+            📝 Note
+          </option>
+        </select>
+      </div>
+
+      <div class="modalActions">
+        <button
+          id="modalCancelBtn"
+        >
+          Cancel
+        </button>
+
+        <button
+          class="primaryBtn"
+          id="modalCreateBtn"
+        >
+          Create
+        </button>
+      </div>
+    `
+  );
+
+  document
+    .getElementById(
+      "newProjTitle"
+    )
+    ?.focus();
+
+  document
+    .getElementById(
+      "modalCancelBtn"
+    )
+    ?.addEventListener(
+      "click",
+      closeModal
+    );
+
+  document
+    .getElementById(
+      "modalCreateBtn"
+    )
+    ?.addEventListener(
+      "click",
+      async () => {
+        const title =
+          document
+            .getElementById(
+              "newProjTitle"
+            )
+            ?.value.trim();
+
+        const type =
+          document
+            .getElementById(
+              "newProjType"
+            )
+            ?.value ||
+          "note";
+
+        if (!title) {
+          showToast(
+            "⚠️ Give your project a title"
+          );
+
+          return;
+        }
+
+        try {
+          await apiCreateProject({
+            title,
+            type,
+            content:
+              ""
+          });
+
+          closeModal();
+
+          showToast(
+            "✨ Project created!"
+          );
+
+          renderProjectsGrid();
+        } catch (error) {
+          showToast(
+            `⚠️ ${friendlyError(
+              error
+            )}`
+          );
+        }
+      }
+    );
+}
+
+/* ============================================================
+   ✏️ PROJECT DETAIL
+============================================================ */
+
+function openProjectDetail(
+  project
+) {
+  openModal(
+    `
+      <h3>
+        ${
+          PROJECT_ICONS[
+            project.type
+          ] || "📝"
+        }
+        ${escapeHTML(
+          project.title
+        )}
+      </h3>
+
+      <div class="modalField">
+        <label>Title</label>
+
+        <input
+          type="text"
+          id="editProjTitle"
+          value="${escapeHTML(
+            project.title
+          )}"
+          maxlength="120"
+        />
+      </div>
+
+      <div class="modalField">
+        <label>Content</label>
+
+        <textarea
+          id="editProjContent"
+          placeholder="Project content, notes, code, draft text..."
+        >${escapeHTML(
+          project.content ||
+            ""
+        )}</textarea>
+      </div>
+
+      <div class="modalActions">
+
+        <button
+          class="dangerBtn"
+          id="modalDeleteBtn"
+        >
+          🗑️ Delete
+        </button>
+
+        <button
+          id="modalSendChatBtn"
+        >
+          💬 Discuss in Chat
+        </button>
+
+        <button
+          class="primaryBtn"
+          id="modalSaveBtn"
+        >
+          💾 Save
+        </button>
+
+      </div>
+    `
+  );
+
+  document
+    .getElementById(
+      "modalSendChatBtn"
+    )
+    ?.addEventListener(
+      "click",
+      () => {
+        const content =
+          document
+            .getElementById(
+              "editProjContent"
+            )
+            ?.value ??
+          project.content ??
+          "";
+
+        closeModal();
+
+        document
+          .querySelector(
+            '.tabBtn[data-tab="chat"]'
+          )
+          ?.click();
+
+        if (userInput) {
+          userInput.value =
+            `Here is my project "${project.title}":\n\n` +
+            `${content}\n\n` +
+            `Help me improve it.`;
+
+          autoResizeInput();
+
+          userInput.focus();
+        }
+      }
+    );
+
+  document
+    .getElementById(
+      "modalDeleteBtn"
+    )
+    ?.addEventListener(
+      "click",
+      async () => {
+        if (
+          !confirm(
+            "Delete this project? This can't be undone."
+          )
+        ) {
+          return;
+        }
+
+        try {
+          await apiDeleteProject(
+            project.id
+          );
+
+          closeModal();
+
+          showToast(
+            "🗑️ Project deleted"
+          );
+
+          renderProjectsGrid();
+        } catch (error) {
+          showToast(
+            `⚠️ ${friendlyError(
+              error
+            )}`
+          );
+        }
+      }
+    );
+
+  document
+    .getElementById(
+      "modalSaveBtn"
+    )
+    ?.addEventListener(
+      "click",
+      async () => {
+        const title =
+          document
+            .getElementById(
+              "editProjTitle"
+            )
+            ?.value.trim();
+
+        const content =
+          document
+            .getElementById(
+              "editProjContent"
+            )
+            ?.value ||
+          "";
+
+        if (!title) {
+          showToast(
+            "⚠️ Title can't be empty"
+          );
+
+          return;
+        }
+
+        try {
+          await apiUpdateProject({
+            id:
+              project.id,
+
+            title,
+
+            content,
+
+            type:
+              project.type
+          });
+
+          closeModal();
+
+          showToast(
+            "💾 Project saved"
+          );
+
+          renderProjectsGrid();
+        } catch (error) {
+          showToast(
+            `⚠️ ${friendlyError(
+              error
+            )}`
+          );
+        }
+      }
+    );
+}
+
+/* ============================================================
+   ➕ NEW PROJECT BUTTON
+============================================================ */
+
+if (newProjectBtn) {
+  newProjectBtn.addEventListener(
+    "click",
+    openNewProjectModal
+  );
+}
+
+/* ============================================================
+   👑 PRO
+============================================================ */
+
+if (planBadge) {
+  planBadge.addEventListener(
+    "click",
+    () => {
+      const whatsapp =
+        `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(
+          WHATSAPP_MESSAGE
+        )}`;
+
+      /*
+       * Keep current Phase-4 scaffold.
+       * We do not pretend payment exists yet.
+       */
+
+      openModal(
+        `
+          <h3>👑 Kirong AI Pro</h3>
+
+          <p>
+            Unlock the full Kirong AI experience.
+          </p>
+
+          <div class="proFeatureList">
+            <div>⚡ Higher daily limits</div>
+            <div>🎨 More image generations</div>
+            <div>📁 More file analysis</div>
+            <div>💼 Business tools</div>
+            <div>📱 WhatsApp Business features</div>
+            <div>📝 Blog & content engine</div>
+          </div>
+
+          <div class="modalActions">
+            <button
+              id="proCloseBtn"
+            >
+              Maybe later
+            </button>
+
+            <button
+              class="primaryBtn"
+              id="proWhatsappBtn"
+            >
+              💬 Talk to Kirong
+            </button>
+          </div>
+        `
+      );
+
+      document
+        .getElementById(
+          "proCloseBtn"
+        )
+        ?.addEventListener(
+          "click",
+          closeModal
+        );
+
+      document
+        .getElementById(
+          "proWhatsappBtn"
+        )
+        ?.addEventListener(
+          "click",
+          () => {
+            window.open(
+              whatsapp,
+              "_blank",
+              "noopener,noreferrer"
+            );
+          }
+        );
+    }
+  );
+}
+
+/* ============================================================
+   📱 WHATSAPP HELPERS
+============================================================ */
+
+function openWhatsApp(
+  number =
+    WHATSAPP_NUMBER
+) {
+  const url =
+    `https://wa.me/${number}?text=${encodeURIComponent(
+      WHATSAPP_MESSAGE
+    )}`;
+
+  window.open(
+    url,
+    "_blank",
+    "noopener,noreferrer"
+  );
+}
+
+/* ============================================================
+   🧠 AUTO RESIZE INPUT
+============================================================ */
+
+function autoResizeInput() {
+  if (!userInput) {
+    return;
+  }
+
+  userInput.style.height =
+    "auto";
+
+  userInput.style.height =
+    Math.min(
+      userInput.scrollHeight,
+      180
+    ) + "px";
+}
+
+if (userInput) {
+  userInput.addEventListener(
+    "input",
+    autoResizeInput
+  );
+}
+
+/* ============================================================
+   ⌨️ KEYBOARD SHORTCUTS
+============================================================ */
+
+document.addEventListener(
+  "keydown",
+  (event) => {
+    /*
+     * Ctrl/Cmd + Enter
+     */
+
+    if (
+      (event.ctrlKey ||
+        event.metaKey) &&
+      event.key ===
+        "Enter"
+    ) {
+      event.preventDefault();
+
+      if (
+        !isSending
+      ) {
+        sendMessage();
+      }
+    }
+
+    /*
+     * Escape cancels current request.
+     */
+
+    if (
+      event.key ===
+        "Escape" &&
+      isSending &&
+      activeAbortController
+    ) {
+      activeAbortController.abort();
+
+      showToast(
+        "⏹️ Request stopped"
+      );
+    }
+  }
+);
+
+/* ============================================================
+   🧩 QUICK QA BUTTONS
+============================================================ */
+
+document
+  .querySelectorAll(
+    ".qa"
+  )
+  .forEach((button) => {
+    button.addEventListener(
+      "click",
+      () => {
+        if (!userInput) {
+          return;
+        }
+
+        userInput.value =
+          button.dataset
+            .prompt ||
+          "";
+
+        autoResizeInput();
+
+        userInput.focus();
+      }
+    );
   });
 
-  document.getElementById("modalSaveBtn")?.addEventListener("click", async ()=>{
-    const title = document.getElementById("editProjTitle")?.value.trim();
-    const content = document.getElementById("editProjContent")?.value ?? "";
-    if(!title){ showToast("⚠️ Title can't be empty"); return; }
-    try{
-      await apiUpdateProject({id:project.id, title, content, type:project.type});
-      closeModal();
-      showToast("💾 Project saved");
-      renderProjectsGrid();
-    }catch(e){ showToast(`⚠️ ${e.message}`); }
-  });
+/* ============================================================
+   🆕 NEW CHAT
+============================================================ */
+
+if (newChatBtn) {
+  newChatBtn.addEventListener(
+    "click",
+    startNewChat
+  );
 }
 
-/* ---- wiring: header "+ New" button and tab switch ---- */
-if(newProjectBtn) newProjectBtn.addEventListener("click", openNewProjectModal);
+/* ============================================================
+   📤 SEND BUTTON
+============================================================ */
 
-const IMAGE_ENDPOINT = "/api/image";
-let imageModeOn = false;
-
-/* Detects an image-generation intent even when the 🎨 toggle is off,
-   in both English and common Swahili phrasing. Checks for a
-   generation verb AND an image-related noun anywhere in the text
-   (not requiring them to sit next to each other), so phrasing like
-   "generate for me its image" still matches. */
-function isImageRequest(text){
-  const t = String(text||"").toLowerCase();
-  const hasVerb = /\b(draw|paint|illustrate|sketch|design|generate|create|make|render|show me)\b/.test(t);
-  const hasNoun = /\b(image|picture|photo|photograph|logo|drawing|illustration|artwork)\b/.test(t);
-  const swahili = /\bchora\b|\bpicha\b|tengeneza\s+picha|unda\s+picha/.test(t);
-  return (hasVerb && hasNoun) || swahili;
+if (sendBtn) {
+  sendBtn.addEventListener(
+    "click",
+    sendMessage
+  );
 }
 
-function updateImageModeBtn(){
-  if(!imageModeBtn) return;
-  imageModeBtn.classList.toggle("active", imageModeOn);
-  imageModeBtn.setAttribute("aria-pressed", String(imageModeOn));
-  if(userInput) userInput.placeholder = imageModeOn ? "Describe the image you want..." : "Ask Kirong anything...";
+/* ============================================================
+   ↵ ENTER TO SEND
+============================================================ */
+
+if (userInput) {
+  userInput.addEventListener(
+    "keydown",
+    (event) => {
+      if (
+        event.key ===
+          "Enter" &&
+        !event.shiftKey
+      ) {
+        event.preventDefault();
+
+        sendMessage();
+      }
+    }
+  );
 }
-if(imageModeBtn){
-  imageModeBtn.addEventListener("click", ()=>{
-    imageModeOn = !imageModeOn;
-    updateImageModeBtn();
-    showToast(imageModeOn ? "🎨 Image mode on — describe what to draw" : "🎨 Image mode off");
-    userInput?.focus();
-  });
-}
 
-/* ========== PRO / M-PESA UPGRADE (scaffolded — Phase 4) ==========
-   No payment flow exists yet. Safe placeholder for now. */
-if(planBadge) planBadge.addEventListener("click",()=>{
-  showToast("👑 Pro + M-Pesa upgrade coming soon!");
-});
+/* ============================================================
+   🛠️ IMAGE MODE INIT
+============================================================ */
 
-/* ========== EVENTS ========== */
-if(sendBtn) sendBtn.addEventListener("click",sendMessage);
-if(userInput) userInput.addEventListener("keydown",e=>{if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();sendMessage()}});
-if(newChatBtn) newChatBtn.addEventListener("click",startNewChat);
-document.querySelectorAll('.qa').forEach(b=>b.addEventListener('click',()=>{if(userInput){userInput.value=(b.dataset.prompt||"")+"";userInput.focus()}}));
+updateImageModeBtn();
 
-/* ========== INIT ========== */
-function init(){
+updateVoiceReplyBtn();
+
+updateNetworkStatus();
+
+/* ============================================================
+   🚀 INITIALIZATION
+============================================================ */
+
+function init() {
   initTabs();
+
   restoreChat();
+
   renderHistoryList();
-  initRoyalGuidelines();
+
   renderFilePreview();
+
   initSpeechRecognition();
-  console.log("⚡ KIRONG AI V9.4 MANSION READY - Tabs + Guidelines + Export + File Attach + Copy-Code + Voice + Projects + Image Gen");
+
+  updateImageModeBtn();
+
+  updateVoiceReplyBtn();
+
+  autoResizeInput();
+
+  refreshUserData();
+
+  console.log(
+    "⚡ KIRONG AI V10 MANSION READY"
+  );
+
+  console.log(
+    "👤 User ID:",
+    DEVICE_USER_ID
+  );
+
+  console.log(
+    "👑 Chat + Projects + History + Files + Images + Voice + Pro"
+  );
 }
-if(document.readyState==="loading") document.addEventListener("DOMContentLoaded",init);else init();
+
+if (
+  document.readyState ===
+  "loading"
+) {
+  document.addEventListener(
+    "DOMContentLoaded",
+    init
+  );
+} else {
+  init();
+}
+
