@@ -1,6 +1,6 @@
 // ============================================================
-// 👑 KIRONG AI — USER STORAGE V13
-// Vercel Blob backed user records
+// 👑 KIRONG AI — USER STORAGE V14
+// Vercel Blob + User Profiles + Usage
 // ============================================================
 
 "use strict";
@@ -16,10 +16,6 @@ import {
   normalizePlan
 } from "./plans.js";
 
-// ============================================================
-// 🔐 BLOB CONFIGURATION
-// ============================================================
-
 const TOKEN =
   process.env.BLOB_READ_WRITE_TOKEN;
 
@@ -27,7 +23,7 @@ const USER_PREFIX =
   "kirong-ai/users/";
 
 // ============================================================
-// 🛡️ SAFE USER ID
+// 🔐 SAFE ID
 // ============================================================
 
 function safeId(id) {
@@ -38,7 +34,7 @@ function safeId(id) {
 }
 
 // ============================================================
-// 📁 USER PATH
+// 📁 PATH
 // ============================================================
 
 function userPath(userId) {
@@ -46,7 +42,7 @@ function userPath(userId) {
 }
 
 // ============================================================
-// 🔐 REQUIRE BLOB TOKEN
+// 🔐 TOKEN
 // ============================================================
 
 function requireToken() {
@@ -58,41 +54,36 @@ function requireToken() {
 }
 
 // ============================================================
-// 📥 GET USER
+// 📥 GET
 // ============================================================
 
 export async function getUser(userId) {
   requireToken();
 
-  const id =
-    safeId(userId);
-
-  const path =
-    userPath(id);
+  const id = safeId(userId);
 
   try {
-    // ----------------------------------------------------------
-    // Private Blob stores require reading via get() (authenticated,
-    // streamed) — a plain public-URL fetch() will not work since
-    // private blob URLs reject unauthenticated requests.
-    // ----------------------------------------------------------
+    const result = await get(
+      userPath(id),
+      {
+        token: TOKEN,
+        access: "private",
+        useCache: false
+      }
+    );
 
-    const result =
-      await get(
-        path,
-        {
-          token: TOKEN,
-          access: "private",
-          useCache: false
-        }
-      );
-
-    if (!result || result.statusCode !== 200 || !result.stream) {
+    if (
+      !result ||
+      result.statusCode !== 200 ||
+      !result.stream
+    ) {
       return null;
     }
 
     const text =
-      await new Response(result.stream).text();
+      await new Response(
+        result.stream
+      ).text();
 
     let user;
 
@@ -102,28 +93,19 @@ export async function getUser(userId) {
       return null;
     }
 
-    if (!user || typeof user !== "object") {
+    if (
+      !user ||
+      typeof user !== "object"
+    ) {
       return null;
     }
-
-    // --------------------------------------------------------
-    // Ensure user ID is valid
-    // --------------------------------------------------------
 
     user.userId =
       safeId(
         user.userId || id
       );
 
-    // --------------------------------------------------------
-    // Reset daily usage if needed
-    // --------------------------------------------------------
-
     resetDailyUsageIfNeeded(user);
-
-    // --------------------------------------------------------
-    // Normalize expired subscriptions
-    // --------------------------------------------------------
 
     normalizePlan(user);
 
@@ -136,19 +118,9 @@ export async function getUser(userId) {
         error?.message || ""
       ).toLowerCase();
 
-    // --------------------------------------------------------
-    // Missing user = normal condition
-    // --------------------------------------------------------
-    // @vercel/blob's get() throws a BlobNotFoundError (message:
-    // "The requested blob does not exist") when the file isn't
-    // there yet — e.g. a brand new user who has never been saved.
-    // This is expected and should return null, NOT bubble up as
-    // a 500. We check the error's `name` first (most reliable
-    // across SDK versions), then fall back to message text.
-    // --------------------------------------------------------
-
     if (
-      error?.name === "BlobNotFoundError" ||
+      error?.name ===
+        "BlobNotFoundError" ||
       message.includes("not found") ||
       message.includes("does not exist") ||
       message.includes("404")
@@ -156,22 +128,21 @@ export async function getUser(userId) {
       return null;
     }
 
-    // --------------------------------------------------------
-    // Do NOT silently hide real storage failures
-    // --------------------------------------------------------
-
     throw error;
   }
 }
 
 // ============================================================
-// 💾 SAVE USER
+// 💾 SAVE
 // ============================================================
 
 export async function saveUser(user) {
   requireToken();
 
-  if (!user || typeof user !== "object") {
+  if (
+    !user ||
+    typeof user !== "object"
+  ) {
     throw new Error(
       "Invalid user object."
     );
@@ -183,53 +154,29 @@ export async function saveUser(user) {
     );
   }
 
-  const id =
-    safeId(
-      user.userId
-    );
-
-  user.userId = id;
-
-  // ----------------------------------------------------------
-  // Reset usage if a new day started
-  // ----------------------------------------------------------
+  user.userId =
+    safeId(user.userId);
 
   resetDailyUsageIfNeeded(user);
 
-  // ----------------------------------------------------------
-  // Normalize subscription status
-  // ----------------------------------------------------------
-
   normalizePlan(user);
-
-  // ----------------------------------------------------------
-  // Update timestamp
-  // ----------------------------------------------------------
 
   user.updatedAt =
     new Date().toISOString();
 
-  const path =
-    userPath(id);
-
-  // ----------------------------------------------------------
-  // Store JSON
-  // ----------------------------------------------------------
-
   const blob =
     await put(
-      path,
+      userPath(user.userId),
+
       JSON.stringify(
         user,
         null,
         2
       ),
+
       {
         token: TOKEN,
 
-        // This store is configured as PRIVATE in the Vercel
-        // dashboard — access must match the store's mode or
-        // put() throws "Cannot use public access on a private store."
         access: "private",
 
         contentType:
@@ -237,9 +184,6 @@ export async function saveUser(user) {
 
         addRandomSuffix: false,
 
-        // Current @vercel/blob SDK uses `allowOverwrite`
-        // (older versions used `overwrite`). Pass both is
-        // unnecessary — allowOverwrite is the current name.
         allowOverwrite: true
       }
     );
@@ -253,45 +197,30 @@ export async function saveUser(user) {
 }
 
 // ============================================================
-// 👤 GET OR CREATE USER
+// 👤 GET OR CREATE
 // ============================================================
 
-export async function getOrCreateUser(
-  userId
-) {
-  const id =
-    safeId(userId);
+export async function getOrCreateUser(userId) {
+  const id = safeId(userId);
 
   let user =
     await getUser(id);
 
-  // ----------------------------------------------------------
-  // Existing user
-  // ----------------------------------------------------------
-
   if (user) {
     resetDailyUsageIfNeeded(user);
-
     normalizePlan(user);
 
     return user;
   }
 
-  // ----------------------------------------------------------
-  // New user
-  // ----------------------------------------------------------
-
   user =
     createDefaultUser(id);
 
-  user =
-    await saveUser(user);
-
-  return user;
+  return await saveUser(user);
 }
 
 // ============================================================
-// 🔄 UPDATE USER
+// 🔄 UPDATE
 // ============================================================
 
 export async function updateUser(
@@ -299,9 +228,7 @@ export async function updateUser(
   updates = {}
 ) {
   const user =
-    await getOrCreateUser(
-      userId
-    );
+    await getOrCreateUser(userId);
 
   if (
     !updates ||
@@ -312,14 +239,12 @@ export async function updateUser(
     );
   }
 
-  // ----------------------------------------------------------
-  // Prevent changing identity accidentally
-  // ----------------------------------------------------------
-
   const {
     userId: ignoredUserId,
     createdAt: ignoredCreatedAt,
     usage: ignoredUsage,
+    plan: ignoredPlan,
+    subscription: ignoredSubscription,
     ...safeUpdates
   } = updates;
 
@@ -328,43 +253,26 @@ export async function updateUser(
     safeUpdates
   );
 
-  // ----------------------------------------------------------
-  // Keep user ID stable
-  // ----------------------------------------------------------
-
   user.userId =
     safeId(userId);
 
-  // ----------------------------------------------------------
-  // Save
-  // ----------------------------------------------------------
-
-  return await saveUser(
-    user
-  );
+  return await saveUser(user);
 }
 
 // ============================================================
-// 📊 GET USER USAGE
+// 📊 USAGE
 // ============================================================
 
-export async function getUserUsage(
-  userId
-) {
+export async function getUserUsage(userId) {
   const user =
-    await getOrCreateUser(
-      userId
-    );
+    await getOrCreateUser(userId);
 
   return {
-    userId:
-      user.userId,
+    userId: user.userId,
 
-    plan:
-      user.plan,
+    plan: user.plan,
 
-    usage:
-      user.usage,
+    usage: user.usage,
 
     subscription:
       user.subscription || null
@@ -372,16 +280,12 @@ export async function getUserUsage(
 }
 
 // ============================================================
-// 👑 CHECK IF USER IS PRO
+// 👑 PRO CHECK
 // ============================================================
 
-export async function isProUser(
-  userId
-) {
+export async function isProUser(userId) {
   const user =
-    await getOrCreateUser(
-      userId
-    );
+    await getOrCreateUser(userId);
 
   return (
     normalizePlan(user) ===
@@ -390,20 +294,10 @@ export async function isProUser(
 }
 
 // ============================================================
-// 🗑️ DELETE USER RECORD
-// ============================================================
-// Intentionally NOT implemented here.
-// User deletion should use a separate authenticated
-// admin/account-deletion flow.
+// 📦 PATH
 // ============================================================
 
-// ============================================================
-// 📦 STORAGE INFORMATION
-// ============================================================
-
-export function getUserStoragePath(
-  userId
-) {
+export function getUserStoragePath(userId) {
   return userPath(
     safeId(userId)
   );
