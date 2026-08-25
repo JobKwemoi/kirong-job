@@ -150,7 +150,7 @@ body{
 
 /* GENERATED IMAGE MESSAGES */
 .imageMessage{padding:10px}
-.generatedImage{width:100%;border-radius:14px;margin-top:8px;cursor:pointer;display:block}
+.generatedImage{width:100%;max-height:280px;object-fit:cover;border-radius:14px;margin-top:8px;cursor:zoom-in;display:block;background:rgba(0,0,0,.2)}
 .imageActions{display:flex;gap:8px;margin-top:10px}
 .imageActions button{
   height:30px;padding:0 12px;border-radius:999px;border:1px solid var(--border);
@@ -261,6 +261,21 @@ body{
   padding:20px;box-shadow:var(--purpleGlow)
 }
 .modalBox h3{font-size:15px;font-weight:800;margin-bottom:14px}
+
+/* IMAGE LIGHTBOX — a modalBox variant with no padding/card chrome,
+   used for viewing a generated image at full size (tap to close) */
+.modalBox.imageLightboxBox{
+  padding:0;background:transparent;border:none;box-shadow:none;
+  max-width:92vw;max-height:90vh;position:relative
+}
+.imageLightboxBox img{
+  width:100%;max-height:90vh;object-fit:contain;border-radius:16px;display:block
+}
+.imageLightboxClose{
+  position:absolute;top:-14px;right:-14px;width:32px;height:32px;border-radius:999px;
+  border:1px solid var(--border2);background:var(--card2);color:var(--text);
+  font-size:14px;cursor:pointer;display:grid;place-items:center;box-shadow:var(--purpleGlow)
+}
 .modalField{margin-bottom:12px}
 .modalField label{display:block;font-size:11px;color:var(--muted);margin-bottom:6px;font-weight:700}
 .modalField input,.modalField select,.modalField textarea{
