@@ -440,7 +440,22 @@ async function sendMessage(){
   addToHistory("user",visible,selectedFile?{file:selectedFile.name}:{});
   if(userInput) userInput.value="";
   setSendingState(true);setThinking(true);
+
+  const wantsImage = !selectedFile && (imageModeOn || isImageRequest(message));
+
   try{
+    if(wantsImage){
+      const res=await fetch(IMAGE_ENDPOINT,{
+        method:"POST",
+        headers:{"Content-Type":"application/json","Accept":"application/json","X-Kirong-User-Id":getDeviceUserId()},
+        body:JSON.stringify({prompt:message,userId:getDeviceUserId()}),
+        cache:"no-store"
+      });
+      const data=await res.json().catch(()=>({}));
+      if(!res.ok||data?.type==="error"||!data?.ok) throw new Error(data?.error||data?.text||`Server ${res.status}`);
+      addImageMessage(data.text||"🎨 Here is your image!",data.image,data.provider||"",data.prompt||message);
+      addToHistory("assistant",data.text||"Generated image",{image:data.image,imagePrompt:data.prompt||message,provider:data.provider});
+    }else{
     const fd=buildFormData(visible);
     const res=await fetch(API_ENDPOINT,{method:"POST",body:fd,headers:{Accept:"application/json","X-Kirong-User-Id":getDeviceUserId()},cache:"no-store"});
     const ct=res.headers.get("content-type")||"";
@@ -453,6 +468,7 @@ async function sendMessage(){
       const ans=String(data?.text||data?.message||"No response");
       addMessage("assistant",ans);addToHistory("assistant",ans);
       if(voiceRepliesEnabled) speakText(ans, chatBox?.querySelector(".message.assistant-message:last-child .speakMessageBtn"));
+    }
     }
     selectedFile=null;if(fileInput) fileInput.value="";renderFilePreview();saveCurrentChat();
   }catch(e){
@@ -662,13 +678,36 @@ function openProjectDetail(project){
 /* ---- wiring: header "+ New" button and tab switch ---- */
 if(newProjectBtn) newProjectBtn.addEventListener("click", openNewProjectModal);
 
-/* ========== IMAGE GENERATION MODE (scaffolded — Phase 3) ==========
-   Backend has no image provider wired yet, so this is a safe
-   placeholder: it does NOT change how sendMessage() behaves.
-   When Phase 3 lands, this becomes a real mode toggle. */
-if(imageModeBtn) imageModeBtn.addEventListener("click",()=>{
-  showToast("🎨 Image generation launching soon, bro!");
-});
+const IMAGE_ENDPOINT = "/api/image";
+let imageModeOn = false;
+
+/* Detects an image-generation intent even when the 🎨 toggle is off,
+   in both English and common Swahili phrasing. Checks for a
+   generation verb AND an image-related noun anywhere in the text
+   (not requiring them to sit next to each other), so phrasing like
+   "generate for me its image" still matches. */
+function isImageRequest(text){
+  const t = String(text||"").toLowerCase();
+  const hasVerb = /\b(draw|paint|illustrate|sketch|design|generate|create|make|render|show me)\b/.test(t);
+  const hasNoun = /\b(image|picture|photo|photograph|logo|drawing|illustration|artwork)\b/.test(t);
+  const swahili = /\bchora\b|\bpicha\b|tengeneza\s+picha|unda\s+picha/.test(t);
+  return (hasVerb && hasNoun) || swahili;
+}
+
+function updateImageModeBtn(){
+  if(!imageModeBtn) return;
+  imageModeBtn.classList.toggle("active", imageModeOn);
+  imageModeBtn.setAttribute("aria-pressed", String(imageModeOn));
+  if(userInput) userInput.placeholder = imageModeOn ? "Describe the image you want..." : "Ask Kirong anything...";
+}
+if(imageModeBtn){
+  imageModeBtn.addEventListener("click", ()=>{
+    imageModeOn = !imageModeOn;
+    updateImageModeBtn();
+    showToast(imageModeOn ? "🎨 Image mode on — describe what to draw" : "🎨 Image mode off");
+    userInput?.focus();
+  });
+}
 
 /* ========== PRO / M-PESA UPGRADE (scaffolded — Phase 4) ==========
    No payment flow exists yet. Safe placeholder for now. */
@@ -690,6 +729,6 @@ function init(){
   initRoyalGuidelines();
   renderFilePreview();
   initSpeechRecognition();
-  console.log("⚡ KIRONG AI V9.3 MANSION READY - Tabs + Guidelines + Export + File Attach + Copy-Code + Voice + Projects");
+  console.log("⚡ KIRONG AI V9.4 MANSION READY - Tabs + Guidelines + Export + File Attach + Copy-Code + Voice + Projects + Image Gen");
 }
 if(document.readyState==="loading") document.addEventListener("DOMContentLoaded",init);else init();
