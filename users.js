@@ -141,9 +141,18 @@ export async function getUser(userId) {
     // --------------------------------------------------------
     // Missing user = normal condition
     // --------------------------------------------------------
+    // @vercel/blob's head() throws a BlobNotFoundError (message:
+    // "The requested blob does not exist") when the file isn't
+    // there yet — e.g. a brand new user who has never been saved.
+    // This is expected and should return null, NOT bubble up as
+    // a 500. We check the error's `name` first (most reliable
+    // across SDK versions), then fall back to message text.
+    // --------------------------------------------------------
 
     if (
+      error?.name === "BlobNotFoundError" ||
       message.includes("not found") ||
+      message.includes("does not exist") ||
       message.includes("404")
     ) {
       return null;
