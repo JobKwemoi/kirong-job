@@ -1,12 +1,14 @@
 // ============================================================
-// 👑 KIRONG AI — CHAT ENGINE V13
-// Intelligent AI Router + Billing + User Storage
+// 👑 KIRONG AI — CHAT ENGINE V14
+// Intelligent AI Router + Billing + User Storage + File Upload
 // ============================================================
 
 "use strict";
 
 import OpenAI from "openai";
 import Groq from "groq-sdk";
+import formidable from "formidable";
+import fs from "fs";
 
 import {
   getOrCreateUser,
@@ -21,6 +23,20 @@ import {
   getUsageSnapshot,
   canUseFeature
 } from "../plans.js";
+
+// ============================================================
+// ⚙️ VERCEL / NEXT-STYLE CONFIG
+// ============================================================
+// This tells the platform NOT to use its default JSON body
+// parser, because we need to parse multipart/form-data
+// (FormData) ourselves using formidable.
+// ============================================================
+
+export const config = {
+  api: {
+    bodyParser: false
+  }
+};
 
 // ============================================================
 // 🔐 ENVIRONMENT
@@ -55,6 +71,21 @@ const HUGGINGFACE_KEYS =
     process.env.HUGGINGFACE_API_KEYS ||
     process.env.HUGGINGFACE_API_KEY
   );
+
+// ============================================================
+// 📎 FILE UPLOAD SETTINGS
+// ============================================================
+
+const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
+
+// Extensions we can safely read as plain text and feed to the AI.
+const TEXT_FILE_EXTENSIONS = [
+  ".txt", ".md", ".csv", ".json", ".js", ".ts", ".jsx", ".tsx",
+  ".html", ".css", ".py", ".java", ".c", ".cpp", ".log", ".yml",
+  ".yaml", ".xml", ".sql"
+];
+
+const MAX_FILE_TEXT_CHARS = 20000; // avoid blowing up token limits
 
 // ============================================================
 // 🧩 PARSE MULTIPLE API KEYS
@@ -148,6 +179,14 @@ You can help users create:
 - CVs
 - professional documents
 - coding projects
+
+FILES:
+- The user may attach a file. If file content is included below
+  the user's message, read and use it to answer their question.
+- If a file was attached but its content could not be read
+  (e.g. it's an image or unsupported format), acknowledge the
+  file by name and ask the user what they'd like you to do with it,
+  or explain what info you'd need them to paste instead.
 
 SAFETY:
 - Never reveal API keys or private server configuration.
@@ -250,12 +289,135 @@ function cleanMessage(message) {
 }
 
 // ============================================================
+// 📎 NORMALIZE FORMIDABLE FIELD
+// ============================================================
+// formidable v3 returns fields as arrays (e.g. fields.message
+// is ["hello"] instead of "hello"). This flattens that safely.
+// ============================================================
+
+function firstValue(value) {
+  if (Array.isArray(value)) {
+    return value.length ? value[0] : "";
+  }
+
+  return value ?? "";
+}
+
+// ============================================================
+// 📎 PARSE MULTIPART FORM (FormData) REQUEST
+// ============================================================
+
+function parseMultipartForm(req) {
+  return new Promise((resolve, reject) => {
+    const form = formidable({
+      maxFileSize: MAX_FILE_SIZE,
+      multiples: false,
+      keepExtensions: true
+    });
+
+    form.parse(req, (err, fields, files) => {
+      if (err) {
+        return reject(err);
+      }
+
+      resolve({ fields, files });
+    });
+  });
+}
+
+// ============================================================
+// 📎 READ UPLOADED FILE (IF TEXT-READABLE)
+// ============================================================
+
+function readUploadedFileText(fileObj) {
+  if (!fileObj) {
+    return null;
+  }
+
+  // formidable v3 uses `filepath` + `originalFilename`,
+  // older versions use `path` + `name`. Support both.
+  const filepath =
+    fileObj.filepath || fileObj.path;
+
+  const originalName =
+    fileObj.originalFilename ||
+    fileObj.name ||
+    "uploaded-file";
+
+  const size =
+    fileObj.size || 0;
+
+  if (!filepath) {
+    return {
+      name: originalName,
+      size,
+      readable: false,
+      text: null
+    };
+  }
+
+  const lowerName = String(originalName).toLowerCase();
+
+  const isTextFile = TEXT_FILE_EXTENSIONS.some(
+    ext => lowerName.endsWith(ext)
+  );
+
+  if (!isTextFile) {
+    // Not something we can safely read as text (e.g. image, pdf, docx).
+    return {
+      name: originalName,
+      size,
+      readable: false,
+      text: null
+    };
+  }
+
+  try {
+    const raw = fs.readFileSync(filepath, "utf8");
+
+    const truncated =
+      raw.length > MAX_FILE_TEXT_CHARS;
+
+    const text = truncated
+      ? raw.slice(0, MAX_FILE_TEXT_CHARS)
+      : raw;
+
+    return {
+      name: originalName,
+      size,
+      readable: true,
+      truncated,
+      text
+    };
+  } catch (readError) {
+    console.error(
+      "FILE READ ERROR:",
+      readError
+    );
+
+    return {
+      name: originalName,
+      size,
+      readable: false,
+      text: null
+    };
+  } finally {
+    // Clean up temp file from disk.
+    try {
+      fs.unlinkSync(filepath);
+    } catch {
+      // ignore cleanup errors
+    }
+  }
+}
+
+// ============================================================
 // 👤 GET USER ID
 // ============================================================
 
-function getUserId(req, body) {
+function getUserId(req, fields) {
   const fromBody =
-    body?.userId;
+    firstValue(fields?.userId);
 
   const fromHeader =
     req.headers[
@@ -858,16 +1020,67 @@ export default async function handler(
 
   try {
     // --------------------------------------------------------
-    // BODY
+    // PARSE MULTIPART FORM (message, language, history, file)
     // --------------------------------------------------------
 
-    const body =
-      req.body || {};
+    let fields = {};
+    let files = {};
 
-    const message =
-      cleanMessage(
-        body.message
+    try {
+      const parsed =
+        await parseMultipartForm(req);
+
+      fields = parsed.fields || {};
+      files = parsed.files || {};
+    } catch (parseError) {
+      console.error(
+        "FORM PARSE ERROR:",
+        parseError
       );
+
+      return res
+        .status(400)
+        .json({
+          ok: false,
+
+          error:
+            "Could not read the uploaded form data. Check your file size and try again.",
+
+          code:
+            "FORM_PARSE_ERROR"
+        });
+    }
+
+    // --------------------------------------------------------
+    // MESSAGE
+    // --------------------------------------------------------
+
+    let message =
+      cleanMessage(
+        firstValue(fields.message)
+      );
+
+    // --------------------------------------------------------
+    // FILE (OPTIONAL)
+    // --------------------------------------------------------
+
+    const uploadedFile =
+      files.file
+        ? (Array.isArray(files.file) ? files.file[0] : files.file)
+        : null;
+
+    let fileInfo = null;
+
+    if (uploadedFile) {
+      fileInfo =
+        readUploadedFileText(uploadedFile);
+    }
+
+    // If there's no typed message but a file was attached,
+    // fall back to a generic prompt so we don't 400 unnecessarily.
+    if (!message && fileInfo) {
+      message = `Please analyze the attached file: ${fileInfo.name}`;
+    }
 
     if (!message) {
       return res
@@ -880,6 +1093,24 @@ export default async function handler(
         });
     }
 
+    // Append file content (or a note about it) to the message
+    // sent to the AI, without touching what's shown in the UI.
+    if (fileInfo) {
+      if (fileInfo.readable) {
+        message +=
+          `\n\n--- Attached file: ${fileInfo.name} ---\n` +
+          fileInfo.text +
+          (fileInfo.truncated
+            ? "\n--- (file truncated, showing first portion) ---"
+            : "");
+      } else {
+        message +=
+          `\n\n[User attached a file named "${fileInfo.name}" that could not be read as text ` +
+          `(likely an image, PDF, or unsupported format). Acknowledge it and ask the user ` +
+          `what they'd like you to do with it, or ask them to paste the relevant content.]`;
+      }
+    }
+
     // --------------------------------------------------------
     // USER
     // --------------------------------------------------------
@@ -887,7 +1118,7 @@ export default async function handler(
     const userId =
       getUserId(
         req,
-        body
+        fields
       );
 
     const user =
@@ -911,7 +1142,7 @@ export default async function handler(
 
     const mode =
       normalizeMode(
-        body.mode
+        firstValue(fields.mode)
       );
 
     // --------------------------------------------------------
@@ -988,12 +1219,24 @@ export default async function handler(
     // HISTORY
     // --------------------------------------------------------
 
-    const history =
-      Array.isArray(
-        body.history
-      )
-        ? body.history
-        : [];
+    let history = [];
+
+    const rawHistory =
+      firstValue(fields.history);
+
+    if (rawHistory) {
+      try {
+        const parsedHistory =
+          JSON.parse(rawHistory);
+
+        history =
+          Array.isArray(parsedHistory)
+            ? parsedHistory
+            : [];
+      } catch {
+        history = [];
+      }
+    }
 
     // --------------------------------------------------------
     // SYSTEM PROMPT
@@ -1180,6 +1423,11 @@ export default async function handler(
       .json({
         ok: true,
 
+        type: "text",
+
+        text:
+          result.text,
+
         reply:
           result.text,
 
@@ -1210,7 +1458,12 @@ export default async function handler(
       .json({
         ok: false,
 
+        type: "error",
+
         error:
+          "Kirong AI is temporarily unavailable.",
+
+        text:
           "Kirong AI is temporarily unavailable.",
 
         code:
