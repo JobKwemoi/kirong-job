@@ -178,7 +178,7 @@ function addImageMessage(text,image,provider="",prompt=""){
   const m=document.createElement("div");m.className="message assistant-message";
   const b=document.createElement("div");b.className="messageBubble imageMessage";
   if(text){const i=document.createElement("div");i.className="messageContent";i.innerHTML=renderMarkdown(text);b.appendChild(i)}
-  const img=document.createElement("img");img.src=image;img.alt=prompt||"Generated";img.className="generatedImage";img.onclick=()=>window.open(image,"_blank");
+  const img=document.createElement("img");img.src=image;img.alt=prompt||"Generated";img.className="generatedImage";img.onclick=()=>openImageLightbox(image,prompt);
   img.onerror=()=>{
     img.replaceWith((()=>{
       const errBox=document.createElement("div");errBox.className="messageContent";
@@ -507,17 +507,28 @@ const PROJECTS_ENDPOINT = "/api/projects";
 const projectsGrid = document.getElementById("projectsGrid");
 
 /* ---- lightweight modal (also reusable for future features) ---- */
-function openModal(innerHTML){
+function openModal(innerHTML, extraClass=""){
   closeModal();
   const overlay = document.createElement("div");
   overlay.className = "modalOverlay";
   overlay.id = "kirongModalOverlay";
-  overlay.innerHTML = `<div class="modalBox">${innerHTML}</div>`;
+  overlay.innerHTML = `<div class="modalBox ${extraClass}">${innerHTML}</div>`;
   overlay.addEventListener("click", e=>{ if(e.target===overlay) closeModal(); });
   document.body.appendChild(overlay);
 }
 function closeModal(){
   document.getElementById("kirongModalOverlay")?.remove();
+}
+
+/* ---- image lightbox: tap a generated image to view it full-size
+   without leaving the app (replaces the old window.open behavior) ---- */
+function openImageLightbox(image, alt){
+  openModal(
+    `<button class="imageLightboxClose" id="lightboxCloseBtn" aria-label="Close image">✕</button>
+     <img src="${image}" alt="${escapeHTML(alt||'Generated image')}" />`,
+    "imageLightboxBox"
+  );
+  document.getElementById("lightboxCloseBtn")?.addEventListener("click", closeModal);
 }
 
 /* ---- helpers ---- */
