@@ -45,6 +45,8 @@ const filePreview = document.getElementById("filePreview");
 const newProjectBtn = document.getElementById("newProjectBtn");
 const micBtn = document.getElementById("micBtn");
 const voiceReplyBtn = document.getElementById("voiceReplyBtn");
+const imageModeBtn = document.getElementById("imageModeBtn");
+const planBadge = document.getElementById("planBadge");
 
 let messages = [];
 let selectedFile = null;
@@ -456,6 +458,20 @@ if(exportHistoryBtn) exportHistoryBtn.addEventListener("click",()=>{const chats=
 
 /* ========== PROJECTS (placeholder wiring so button isn't dead) ========== */
 if(newProjectBtn) newProjectBtn.addEventListener("click",()=>showToast("🚧 Projects vault coming soon, bro!"));
+
+/* ========== IMAGE GENERATION MODE (scaffolded — Phase 3) ==========
+   Backend has no image provider wired yet, so this is a safe
+   placeholder: it does NOT change how sendMessage() behaves.
+   When Phase 3 lands, this becomes a real mode toggle. */
+if(imageModeBtn) imageModeBtn.addEventListener("click",()=>{
+  showToast("🎨 Image generation launching soon, bro!");
+});
+
+/* ========== PRO / M-PESA UPGRADE (scaffolded — Phase 4) ==========
+   No payment flow exists yet. Safe placeholder for now. */
+if(planBadge) planBadge.addEventListener("click",()=>{
+  showToast("👑 Pro + M-Pesa upgrade coming soon!");
+});
 
 /* ========== EVENTS ========== */
 if(sendBtn) sendBtn.addEventListener("click",sendMessage);
