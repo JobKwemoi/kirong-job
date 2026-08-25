@@ -452,7 +452,13 @@ async function sendMessage(){
         cache:"no-store"
       });
       const data=await res.json().catch(()=>({}));
-      if(!res.ok||data?.type==="error"||!data?.ok) throw new Error(data?.error||data?.text||`Server ${res.status}`);
+      if(!res.ok||data?.type==="error"||!data?.ok){
+        const errMsg = typeof data?.error==="string" ? data.error
+          : typeof data?.error?.message==="string" ? data.error.message
+          : typeof data?.text==="string" ? data.text
+          : `Server ${res.status}`;
+        throw new Error(errMsg);
+      }
       addImageMessage(data.text||"🎨 Here is your image!",data.image,data.provider||"",data.prompt||message);
       addToHistory("assistant",data.text||"Generated image",{image:data.image,imagePrompt:data.prompt||message,provider:data.provider});
     }else{
