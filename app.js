@@ -24,7 +24,8 @@ const STORAGE_KEYS = {
   theme: "kirong_ai_theme_v8",
   language: "kirong_ai_language_v8",
   voice: "kirong_ai_voice_v8",
-  visited: "kirong_visited"
+  visited: "kirong_visited",
+  userId: "kirong_ai_user_id_v1"
 };
 
 /* DOM - NEW MANSION IDS */
@@ -63,6 +64,20 @@ function saveJSON(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch{}}
 function createChatId(){return "chat_"+Date.now()+"_"+Math.random().toString(36).slice(2,8)}
 function createChatTitle(t){const c=String(t||"").replace(/\s+/g," ").trim();return c?c.length>42?c.slice(0,42)+"...":c:"New Chat"}
 
+/* ========== STABLE PER-DEVICE USER ID ==========
+   Previously nothing was sent to the backend to identify a user,
+   so everyone shared the "anonymous" account — meaning everyone's
+   Projects (and usage/billing) would have collided. This generates
+   one persistent ID per browser and reuses it on every request. */
+function getDeviceUserId(){
+  let id = localStorage.getItem(STORAGE_KEYS.userId);
+  if(!id){
+    id = (crypto.randomUUID ? crypto.randomUUID() : "user_"+Date.now()+"_"+Math.random().toString(36).slice(2,10));
+    localStorage.setItem(STORAGE_KEYS.userId, id);
+  }
+  return id;
+}
+
 /* ========== TABS SYSTEM ========== */
 function initTabs(){
   document.querySelectorAll('.tabBtn').forEach(btn=>{
@@ -72,6 +87,7 @@ function initTabs(){
       document.querySelectorAll('.tabContent').forEach(s=>s.classList.remove('active'));
       btn.classList.add('active');btn.setAttribute('aria-selected','true');
       document.getElementById(tab+'Tab')?.classList.add('active');
+      if(tab==='projects') renderProjectsGrid();
     });
   });
 }
@@ -426,7 +442,7 @@ async function sendMessage(){
   setSendingState(true);setThinking(true);
   try{
     const fd=buildFormData(visible);
-    const res=await fetch(API_ENDPOINT,{method:"POST",body:fd,headers:{Accept:"application/json"},cache:"no-store"});
+    const res=await fetch(API_ENDPOINT,{method:"POST",body:fd,headers:{Accept:"application/json","X-Kirong-User-Id":getDeviceUserId()},cache:"no-store"});
     const ct=res.headers.get("content-type")||"";
     let data;if(ct.includes("application/json")) data=await res.json();else throw new Error(await res.text());
     if(!res.ok||data?.type==="error") throw new Error(data?.text||`Server ${res.status}`);
@@ -456,8 +472,195 @@ if(exportChatBtn) exportChatBtn.addEventListener("click",exportChatFile);
 if(clearHistoryBtn) clearHistoryBtn.addEventListener("click",()=>{if(confirm("Clear ALL history?")){localStorage.removeItem(STORAGE_KEYS.chats);localStorage.removeItem(STORAGE_KEYS.activeChat);startNewChat();renderHistoryList();showToast("🗑️ History cleared")}});
 if(exportHistoryBtn) exportHistoryBtn.addEventListener("click",()=>{const chats=loadJSON(STORAGE_KEYS.chats,[]);if(!chats.length){showToast("No history");return}const blob=new Blob([JSON.stringify(chats,null,2)],{type:"application/json"});const url=URL.createObjectURL(blob);const a=document.createElement("a");a.href=url;a.download=`kirong-history-${Date.now()}.json`;a.click();URL.revokeObjectURL(url)});
 
-/* ========== PROJECTS (placeholder wiring so button isn't dead) ========== */
-if(newProjectBtn) newProjectBtn.addEventListener("click",()=>showToast("🚧 Projects vault coming soon, bro!"));
+/* ========== PROJECTS (Phase 2 — real backend, Vercel Blob) ========== */
+const PROJECTS_ENDPOINT = "/api/projects";
+const projectsGrid = document.getElementById("projectsGrid");
+
+/* ---- lightweight modal (also reusable for future features) ---- */
+function openModal(innerHTML){
+  closeModal();
+  const overlay = document.createElement("div");
+  overlay.className = "modalOverlay";
+  overlay.id = "kirongModalOverlay";
+  overlay.innerHTML = `<div class="modalBox">${innerHTML}</div>`;
+  overlay.addEventListener("click", e=>{ if(e.target===overlay) closeModal(); });
+  document.body.appendChild(overlay);
+}
+function closeModal(){
+  document.getElementById("kirongModalOverlay")?.remove();
+}
+
+/* ---- helpers ---- */
+function timeAgo(iso){
+  if(!iso) return "just now";
+  const diff = Date.now() - new Date(iso).getTime();
+  const mins = Math.floor(diff/60000);
+  if(mins<1) return "just now";
+  if(mins<60) return `${mins}m ago`;
+  const hrs = Math.floor(mins/60);
+  if(hrs<24) return `${hrs}h ago`;
+  const days = Math.floor(hrs/24);
+  if(days<30) return `${days}d ago`;
+  return new Date(iso).toLocaleDateString();
+}
+const PROJECT_ICONS = {website:"🌐",cv:"📄",business:"💼",code:"💻",note:"📝"};
+
+/* ---- API calls ---- */
+async function apiFetchProjects(){
+  const res = await fetch(`${PROJECTS_ENDPOINT}?userId=${encodeURIComponent(getDeviceUserId())}`,{
+    headers:{ "X-Kirong-User-Id": getDeviceUserId(), Accept:"application/json" },
+    cache:"no-store"
+  });
+  const data = await res.json().catch(()=>({}));
+  if(!res.ok || !data.ok) throw new Error(data?.error || `Server ${res.status}`);
+  return Array.isArray(data.projects) ? data.projects : [];
+}
+async function apiCreateProject({title,type,content}){
+  const res = await fetch(PROJECTS_ENDPOINT,{
+    method:"POST",
+    headers:{ "Content-Type":"application/json", "X-Kirong-User-Id": getDeviceUserId() },
+    body: JSON.stringify({ userId:getDeviceUserId(), title, type, content })
+  });
+  const data = await res.json().catch(()=>({}));
+  if(!res.ok || !data.ok) throw new Error(data?.error || `Server ${res.status}`);
+  return data.project;
+}
+async function apiUpdateProject({id,title,content,type}){
+  const res = await fetch(PROJECTS_ENDPOINT,{
+    method:"PUT",
+    headers:{ "Content-Type":"application/json", "X-Kirong-User-Id": getDeviceUserId() },
+    body: JSON.stringify({ userId:getDeviceUserId(), id, title, content, type })
+  });
+  const data = await res.json().catch(()=>({}));
+  if(!res.ok || !data.ok) throw new Error(data?.error || `Server ${res.status}`);
+  return data.project;
+}
+async function apiDeleteProject(id){
+  const res = await fetch(`${PROJECTS_ENDPOINT}?id=${encodeURIComponent(id)}&userId=${encodeURIComponent(getDeviceUserId())}`,{
+    method:"DELETE",
+    headers:{ "X-Kirong-User-Id": getDeviceUserId() }
+  });
+  const data = await res.json().catch(()=>({}));
+  if(!res.ok || !data.ok) throw new Error(data?.error || `Server ${res.status}`);
+}
+
+/* ---- rendering ---- */
+function renderProjectCard(project){
+  const icon = PROJECT_ICONS[project.type] || "📝";
+  const d = document.createElement("div");
+  d.className = "projectCard";
+  d.innerHTML = `<span>${icon}</span><h3>${escapeHTML(project.title)}</h3><p>Updated ${timeAgo(project.updatedAt)}</p>`;
+  d.addEventListener("click", ()=>openProjectDetail(project));
+  return d;
+}
+
+async function renderProjectsGrid(){
+  if(!projectsGrid) return;
+  projectsGrid.innerHTML = `<div class="projectCard new" id="newProjectCard"><span>＋</span><h3>New Project</h3><p>Start something royal</p></div>`;
+  document.getElementById("newProjectCard")?.addEventListener("click", openNewProjectModal);
+
+  try{
+    const projects = await apiFetchProjects();
+    if(projects.length===0){
+      const empty = document.createElement("p");
+      empty.className = "emptyText";
+      empty.textContent = "No projects yet. Create your first one!";
+      projectsGrid.appendChild(empty);
+      return;
+    }
+    projects.forEach(p=>projectsGrid.appendChild(renderProjectCard(p)));
+  }catch(e){
+    const err = document.createElement("p");
+    err.className = "emptyText";
+    err.textContent = `⚠️ Could not load projects: ${e.message}`;
+    projectsGrid.appendChild(err);
+  }
+}
+
+/* ---- create dialog ---- */
+function openNewProjectModal(){
+  openModal(`
+    <h3>✨ New Project</h3>
+    <div class="modalField"><label>Title</label><input type="text" id="newProjTitle" placeholder="e.g. My Portfolio Site" maxlength="120" /></div>
+    <div class="modalField"><label>Type</label>
+      <select id="newProjType">
+        <option value="website">🌐 Website</option>
+        <option value="cv">📄 CV</option>
+        <option value="business">💼 Business Plan</option>
+        <option value="code">💻 Code Project</option>
+        <option value="note">📝 Note</option>
+      </select>
+    </div>
+    <div class="modalActions">
+      <button id="modalCancelBtn">Cancel</button>
+      <button class="primaryBtn" id="modalCreateBtn">Create</button>
+    </div>
+  `);
+  document.getElementById("newProjTitle")?.focus();
+  document.getElementById("modalCancelBtn")?.addEventListener("click", closeModal);
+  document.getElementById("modalCreateBtn")?.addEventListener("click", async ()=>{
+    const title = document.getElementById("newProjTitle")?.value.trim();
+    const type = document.getElementById("newProjType")?.value || "note";
+    if(!title){ showToast("⚠️ Give your project a title"); return; }
+    try{
+      await apiCreateProject({title, type, content:""});
+      closeModal();
+      showToast("✨ Project created!");
+      renderProjectsGrid();
+    }catch(e){
+      showToast(`⚠️ ${e.message}`);
+    }
+  });
+}
+
+/* ---- view / edit dialog ---- */
+function openProjectDetail(project){
+  openModal(`
+    <h3>${PROJECT_ICONS[project.type]||"📝"} ${escapeHTML(project.title)}</h3>
+    <div class="modalField"><label>Title</label><input type="text" id="editProjTitle" value="${escapeHTML(project.title)}" maxlength="120" /></div>
+    <div class="modalField"><label>Content</label><textarea id="editProjContent" placeholder="Project content, notes, code, draft text...">${escapeHTML(project.content||"")}</textarea></div>
+    <div class="modalActions">
+      <button class="dangerBtn" id="modalDeleteBtn">🗑️ Delete</button>
+      <button id="modalSendChatBtn">💬 Discuss in Chat</button>
+      <button class="primaryBtn" id="modalSaveBtn">💾 Save</button>
+    </div>
+  `);
+
+  document.getElementById("modalSendChatBtn")?.addEventListener("click", ()=>{
+    closeModal();
+    document.querySelector('.tabBtn[data-tab="chat"]')?.click();
+    if(userInput){
+      const content = document.getElementById("editProjContent")?.value ?? project.content ?? "";
+      userInput.value = `Here is my project "${project.title}":\n\n${content}\n\nHelp me improve it.`;
+      userInput.focus();
+    }
+  });
+
+  document.getElementById("modalDeleteBtn")?.addEventListener("click", async ()=>{
+    if(!confirm("Delete this project? This can't be undone.")) return;
+    try{
+      await apiDeleteProject(project.id);
+      closeModal();
+      showToast("🗑️ Project deleted");
+      renderProjectsGrid();
+    }catch(e){ showToast(`⚠️ ${e.message}`); }
+  });
+
+  document.getElementById("modalSaveBtn")?.addEventListener("click", async ()=>{
+    const title = document.getElementById("editProjTitle")?.value.trim();
+    const content = document.getElementById("editProjContent")?.value ?? "";
+    if(!title){ showToast("⚠️ Title can't be empty"); return; }
+    try{
+      await apiUpdateProject({id:project.id, title, content, type:project.type});
+      closeModal();
+      showToast("💾 Project saved");
+      renderProjectsGrid();
+    }catch(e){ showToast(`⚠️ ${e.message}`); }
+  });
+}
+
+/* ---- wiring: header "+ New" button and tab switch ---- */
+if(newProjectBtn) newProjectBtn.addEventListener("click", openNewProjectModal);
 
 /* ========== IMAGE GENERATION MODE (scaffolded — Phase 3) ==========
    Backend has no image provider wired yet, so this is a safe
@@ -487,6 +690,6 @@ function init(){
   initRoyalGuidelines();
   renderFilePreview();
   initSpeechRecognition();
-  console.log("⚡ KIRONG AI V9.2 MANSION READY - Tabs + Guidelines + Export + File Attach + Copy-Code + Voice");
+  console.log("⚡ KIRONG AI V9.3 MANSION READY - Tabs + Guidelines + Export + File Attach + Copy-Code + Voice + Projects");
 }
 if(document.readyState==="loading") document.addEventListener("DOMContentLoaded",init);else init();
