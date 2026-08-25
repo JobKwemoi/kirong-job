@@ -7,7 +7,7 @@
 
 import {
   put,
-  head
+  get
 } from "@vercel/blob";
 
 import {
@@ -71,38 +71,36 @@ export async function getUser(userId) {
     userPath(id);
 
   try {
+    // ----------------------------------------------------------
+    // Private Blob stores require reading via get() (authenticated,
+    // streamed) — a plain public-URL fetch() will not work since
+    // private blob URLs reject unauthenticated requests.
+    // ----------------------------------------------------------
+
     const result =
-      await head(
+      await get(
         path,
         {
-          token: TOKEN
+          token: TOKEN,
+          access: "private",
+          useCache: false
         }
       );
 
-    if (!result?.url) {
+    if (!result || result.statusCode !== 200 || !result.stream) {
       return null;
     }
 
-    const response =
-      await fetch(
-        result.url,
-        {
-          cache: "no-store"
-        }
-      );
+    const text =
+      await new Response(result.stream).text();
 
-    if (!response.ok) {
-      if (response.status === 404) {
-        return null;
-      }
+    let user;
 
-      throw new Error(
-        `User storage returned ${response.status}.`
-      );
+    try {
+      user = JSON.parse(text);
+    } catch {
+      return null;
     }
-
-    const user =
-      await response.json();
 
     if (!user || typeof user !== "object") {
       return null;
@@ -141,7 +139,7 @@ export async function getUser(userId) {
     // --------------------------------------------------------
     // Missing user = normal condition
     // --------------------------------------------------------
-    // @vercel/blob's head() throws a BlobNotFoundError (message:
+    // @vercel/blob's get() throws a BlobNotFoundError (message:
     // "The requested blob does not exist") when the file isn't
     // there yet — e.g. a brand new user who has never been saved.
     // This is expected and should return null, NOT bubble up as
@@ -229,14 +227,20 @@ export async function saveUser(user) {
       {
         token: TOKEN,
 
-        access: "public",
+        // This store is configured as PRIVATE in the Vercel
+        // dashboard — access must match the store's mode or
+        // put() throws "Cannot use public access on a private store."
+        access: "private",
 
         contentType:
           "application/json",
 
         addRandomSuffix: false,
 
-        overwrite: true
+        // Current @vercel/blob SDK uses `allowOverwrite`
+        // (older versions used `overwrite`). Pass both is
+        // unnecessary — allowOverwrite is the current name.
+        allowOverwrite: true
       }
     );
 
