@@ -178,7 +178,15 @@ function addImageMessage(text,image,provider="",prompt=""){
   const m=document.createElement("div");m.className="message assistant-message";
   const b=document.createElement("div");b.className="messageBubble imageMessage";
   if(text){const i=document.createElement("div");i.className="messageContent";i.innerHTML=renderMarkdown(text);b.appendChild(i)}
-  const img=document.createElement("img");img.src=image;img.alt=prompt||"Generated";img.className="generatedImage";img.onclick=()=>window.open(image,"_blank");b.appendChild(img);
+  const img=document.createElement("img");img.src=image;img.alt=prompt||"Generated";img.className="generatedImage";img.onclick=()=>window.open(image,"_blank");
+  img.onerror=()=>{
+    img.replaceWith((()=>{
+      const errBox=document.createElement("div");errBox.className="messageContent";
+      errBox.innerHTML=`⚠️ Image failed to load. It may still be generating — try opening it directly: <a href="${image}" target="_blank" rel="noopener noreferrer">${escapeHTML(image)}</a>`;
+      return errBox;
+    })());
+  };
+  b.appendChild(img);
   const act=document.createElement("div");act.className="imageActions";
   const dl=document.createElement("button");dl.textContent="⬇️ Save";dl.onclick=()=>{const a=document.createElement("a");a.href=image;a.download=`kirong-${Date.now()}.png`;a.click();showToast("🖼️ Saved")};act.appendChild(dl);
   const cp=document.createElement("button");cp.textContent="📋 Copy";cp.onclick=()=>copyText(image);act.appendChild(cp);b.appendChild(act);
