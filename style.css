@@ -135,8 +135,11 @@ body{
 /* HISTORY */
 .historyList{padding:12px 18px;overflow-y:auto}
 .emptyText{color:var(--muted);font-size:13px;text-align:center;margin-top:40px}
-.histItem{padding:12px;border:1px solid var(--border);border-radius:12px;background:rgba(255,255,255,.03);margin-bottom:8px;cursor:pointer}
+.histItem{padding:12px;border:1px solid var(--border);border-radius:12px;background:rgba(255,255,255,.03);margin-bottom:8px;cursor:pointer;display:flex;align-items:center;justify-content:space-between;gap:10px;transition:.2s}
+.histItem:hover{border-color:var(--border2);background:rgba(139,92,246,.06)}
+.histItem.active{border-color:var(--purple);background:rgba(139,92,246,.1)}
 .histItem b{font-size:12px;display:block}.histItem small{font-size:11px;color:var(--muted)}
+.histItem button{background:none;border:none;color:var(--muted);cursor:pointer;font-size:14px}
 
 /* MOBILE */
 @media(max-width:640px){
@@ -153,3 +156,97 @@ body{
 .quickGrid{transition:all .5s ease; overflow:hidden; max-height:200px}
 .quickGrid.hide{opacity:0; transform:translateY(12px); max-height:0; pointer-events:none}
 #kirongWelcome.hideWelcome{opacity:0.3; transform:scale(0.95); transition:all .4s}
+
+
+/* ============================================================
+   🔥 UPGRADE LAYER — same design language, new pieces only.
+   Nothing above this line was changed. Everything below fills
+   in styling for elements app.js already creates/needs but that
+   had no CSS yet (messages content, toast, file chip, code
+   blocks, typing indicator) plus small a11y/mobile robustness.
+   ============================================================ */
+
+/* Accessible focus ring — matches the existing purple theme,
+   only shows for keyboard users (not on mouse click). */
+button:focus-visible,
+textarea:focus-visible,
+.iconBtn:focus-visible,
+.qBtn:focus-visible,
+.qa:focus-visible,
+.toolCard:focus-visible,
+.projectCard:focus-visible,
+.tabBtn:focus-visible{
+  outline:2px solid var(--purple);
+  outline-offset:2px;
+}
+
+/* Safe-area support for notch/home-indicator devices.
+   Falls back to the exact original padding when unsupported —
+   no visual change on regular devices. */
+.topBar{padding-top:env(safe-area-inset-top,0)}
+.inputWrap{padding-bottom:calc(12px + env(safe-area-inset-bottom,0))}
+.kirongToast{bottom:calc(90px + env(safe-area-inset-bottom,0))}
+
+/* Thin, theme-colored scrollbars (Chrome/Edge/Safari) */
+#chatBox::-webkit-scrollbar,.historyList::-webkit-scrollbar{width:6px}
+#chatBox::-webkit-scrollbar-thumb,.historyList::-webkit-scrollbar-thumb{background:rgba(139,92,246,.3);border-radius:999px}
+#chatBox,.historyList{scrollbar-width:thin;scrollbar-color:rgba(139,92,246,.3) transparent}
+
+/* Rich text inside message bubbles (headings/links/lists/inline code
+   from renderMarkdown) — .msg .bubble only had plain text sizing before */
+.msg .bubble a{color:#c4b5fd;text-decoration:underline;word-break:break-word}
+.msg .bubble h2,.msg .bubble h3,.msg .bubble h4{margin:10px 0 6px;font-weight:800;line-height:1.3}
+.msg .bubble h2{font-size:16px}.msg .bubble h3{font-size:14.5px}.msg .bubble h4{font-size:13.5px}
+.msg .bubble ul{margin:8px 0 8px 18px}
+.msg .bubble li{margin-bottom:4px}
+.msg .bubble code{background:rgba(255,255,255,.1);padding:2px 6px;border-radius:6px;font-size:12.5px;font-family:'SFMono-Regular',Consolas,monospace}
+.msg.user .bubble code{background:rgba(0,0,0,.2)}
+
+/* Fenced code blocks (```) rendered by renderMarkdown */
+.codeWrapper{position:relative;margin:10px 0;border:1px solid var(--border);border-radius:14px;overflow:hidden;background:var(--card)}
+.codeBlock{margin:0;padding:16px 14px;overflow-x:auto;font-size:12.5px;line-height:1.6;font-family:'SFMono-Regular',Consolas,monospace;color:#e5e2ff}
+.copyCodeBtn{position:absolute;top:8px;right:8px;height:26px;padding:0 10px;border-radius:8px;border:1px solid var(--border);background:rgba(255,255,255,.06);color:var(--muted);font-size:11px;font-weight:700;cursor:pointer;transition:.2s}
+.copyCodeBtn:hover{border-color:var(--border2);color:var(--text)}
+
+/* Copy button under each AI message */
+.copyMessageBtn{display:block;margin-top:8px;height:26px;padding:0 10px;border-radius:8px;border:1px solid var(--border);background:rgba(255,255,255,.05);color:var(--muted);font-size:11px;font-weight:700;cursor:pointer;transition:.2s}
+.copyMessageBtn:hover{border-color:var(--border2);color:var(--text)}
+
+/* A file the user attached, shown as a small chip inside their bubble */
+.attachedFile{display:flex;align-items:center;gap:6px;font-size:11.5px;font-weight:700;background:rgba(0,0,0,.18);border-radius:10px;padding:6px 10px;margin-bottom:8px}
+
+/* AI-generated image messages */
+.imageMessage{padding:10px}
+.generatedImage{width:100%;max-width:280px;border-radius:14px;margin-top:8px;cursor:zoom-in;display:block;border:1px solid var(--border)}
+.imageActions{display:flex;gap:8px;margin-top:10px}
+.imageActions button{height:30px;padding:0 12px;border-radius:999px;border:1px solid var(--border);background:rgba(255,255,255,.06);color:var(--text);font-size:11px;font-weight:700;cursor:pointer}
+.imageActions button:hover{border-color:var(--border2);background:rgba(139,92,246,.1)}
+
+/* Typing indicator (lives outside #chatBox, between chat and input) */
+.thinking{display:flex;align-items:center;gap:8px;padding:8px 20px;color:var(--muted);font-size:11px}
+.thinking.hidden{display:none}
+.thinkingDot{width:6px;height:6px;border-radius:999px;background:var(--purple);display:inline-block;animation:thinkingBounce 1.2s infinite ease-in-out}
+.thinkingDot:nth-child(2){animation-delay:.15s}
+.thinkingDot:nth-child(3){animation-delay:.3s}
+@keyframes thinkingBounce{0%,80%,100%{opacity:.3;transform:translateY(0)}40%{opacity:1;transform:translateY(-3px)}}
+
+/* Attach button + file preview chip in the input bar */
+.attachBtn{width:36px;height:36px;border-radius:10px;border:1px solid var(--border);background:rgba(255,255,255,.04);color:var(--muted);cursor:pointer;display:grid;place-items:center;flex-shrink:0;transition:.2s}
+.attachBtn:hover{border-color:var(--border2);color:var(--text)}
+.filePreview{display:flex;align-items:center;gap:8px;background:var(--card2);border:1px solid var(--border);border-radius:14px;padding:8px 12px;margin-bottom:8px;font-size:12px}
+.filePreview.hidden{display:none}
+.filePreviewName{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--muted)}
+.removeFileBtn{background:none;border:none;color:var(--muted);cursor:pointer;font-size:13px;padding:2px 4px}
+.removeFileBtn:hover{color:var(--text)}
+
+/* Toast (app.js creates/reuses #kirongToast) */
+.kirongToast{
+  position:fixed;left:50%;bottom:90px;transform:translateX(-50%) translateY(20px);
+  background:var(--card2);border:1px solid var(--border2);color:var(--text);
+  padding:10px 18px;border-radius:999px;font-size:12.5px;font-weight:700;
+  box-shadow:var(--purpleGlow);opacity:0;pointer-events:none;transition:.25s ease;z-index:50
+}
+.kirongToast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+/* Generic utility used by setSendingState/setThinking in app.js */
+.hidden{display:none !important}
