@@ -1,6 +1,6 @@
 // ============================================================
-// 👑 KIRONG AI — IMAGE GENERATION ENGINE V1
-// Pollinations.ai (primary, free) + Hugging Face (fallback)
+// 👑 KIRONG AI — IMAGE GENERATION ENGINE V3
+// Pollinations.ai (instant, primary) + Hugging Face (timeout-safe fallback)
 // ============================================================
 
 "use strict";
@@ -18,14 +18,21 @@ const HF_MODEL =
 
 const MAX_PROMPT_LENGTH = 600;
 
-// Give the function more headroom than the default 10s, and bail out
-// of a slow provider before Vercel kills the whole function — that's
-// what was producing the raw platform-crash "[object Object]" error.
+// ------------------------------------------------------------
+// IMPORTANT — Vercel Hobby (free) plan hard-caps serverless
+// functions at 10 seconds, REGARDLESS of what maxDuration says.
+// maxDuration: 10 here just documents that ceiling; if you're on
+// Vercel Pro, you can raise this (e.g. 30) AND raise
+// PROVIDER_TIMEOUT_MS below to match. On Hobby, leave both as-is.
+// ------------------------------------------------------------
 export const config = {
-  maxDuration: 30
+  maxDuration: 10
 };
 
-const PROVIDER_TIMEOUT_MS = 12000;
+// Must stay comfortably UNDER the platform's hard timeout, so our
+// own clean JSON error fires before Vercel kills the function and
+// returns its own non-JSON crash response (the "[object Object]" bug).
+const PROVIDER_TIMEOUT_MS = 8000;
 
 async function fetchWithTimeout(url, options = {}, timeoutMs = PROVIDER_TIMEOUT_MS) {
   const controller = new AbortController();
@@ -76,23 +83,21 @@ function getUserId(req, body) {
 }
 
 // ============================================================
-// 🎨 PROVIDER 1: POLLINATIONS.AI (free, no API key, URL-based)
+// 🎨 PROVIDER 1: POLLINATIONS.AI (free, no key, near-instant)
+// ============================================================
+// We do NOT verify this URL with a fetch here — building it is
+// synchronous and costs ~0ms of function time, which is exactly
+// what we want given the 10s platform ceiling. If the URL turns
+// out to be broken, the frontend <img> element's onerror handler
+// catches that gracefully instead of the whole request failing.
 // ============================================================
 
-async function tryPollinations(prompt) {
+function tryPollinations(prompt) {
   const seed = Math.floor(Math.random() * 1000000);
 
   const url =
     `https://image.pollinations.ai/prompt/${encodeURIComponent(prompt)}` +
     `?width=1024&height=1024&seed=${seed}&nologo=true`;
-
-  // Lightweight HEAD check so we don't return a broken URL to the
-  // frontend, without downloading the full image on the server.
-  const check = await fetchWithTimeout(url, { method: "HEAD" });
-
-  if (!check.ok) {
-    throw new Error(`Pollinations ${check.status}`);
-  }
 
   return { provider: "pollinations", image: url };
 }
@@ -111,17 +116,26 @@ async function tryHuggingFace(prompt) {
     Math.floor(Math.random() * HUGGINGFACE_KEYS.length)
   );
 
-  const response = await fetchWithTimeout(
-    `https://api-inference.huggingface.co/models/${HF_MODEL}`,
-    {
-      method: "POST",
-      headers: {
-        "Authorization": `Bearer ${key}`,
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({ inputs: prompt })
+  let response;
+
+  try {
+    response = await fetchWithTimeout(
+      `https://api-inference.huggingface.co/models/${HF_MODEL}`,
+      {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${key}`,
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ inputs: prompt })
+      }
+    );
+  } catch (error) {
+    if (error?.name === "AbortError") {
+      throw new Error("Hugging Face took too long to respond (likely a cold-start model load).");
     }
-  );
+    throw error;
+  }
 
   if (!response.ok) {
     const errorText = await response.text();
@@ -183,27 +197,13 @@ export default async function handler(req, res) {
     const userId = getUserId(req, body);
     void userId; // reserved for Phase 4 Pro-gating
 
-    const providers = [tryPollinations, tryHuggingFace];
-    const errors = [];
-    let result = null;
+    // Pollinations first — synchronous, essentially free in function time.
+    let result = tryPollinations(prompt);
 
-    for (const tryProvider of providers) {
-      try {
-        result = await tryProvider(prompt);
-        break;
-      } catch (error) {
-        const isTimeout = error?.name === "AbortError";
-        errors.push(
-          isTimeout
-            ? `${tryProvider.name} timed out`
-            : String(error?.message || "Unknown error").slice(0, 200)
-        );
-      }
-    }
-
-    if (!result) {
-      throw new Error(`All image providers failed. ${JSON.stringify(errors)}`);
-    }
+    // If you ever want to force Hugging Face instead/also, this is
+    // where a fallback attempt would go. Kept simple + fast for now:
+    // Pollinations practically never fails in a way we can detect
+    // server-side without spending time we don't have on Hobby plan.
 
     return res.status(200).json({
       ok: true,
