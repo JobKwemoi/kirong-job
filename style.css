@@ -59,6 +59,15 @@ body{
 }
 .iconBtn:hover{border-color:var(--border2);background:rgba(139,92,246,.1)}
 
+/* PLAN BADGE / UPGRADE (scaffolded — activates in a later phase) */
+.planBadge{
+  height:38px;padding:0 14px;border-radius:999px;border:1px solid var(--border2);
+  background:rgba(139,92,246,.1);color:var(--purple);font-size:11px;font-weight:800;
+  cursor:pointer;transition:.2s;white-space:nowrap
+}
+.planBadge:hover{background:rgba(139,92,246,.18)}
+.planBadge.pro{background:linear-gradient(135deg,var(--purple),var(--purple2));color:white;border-color:transparent;box-shadow:var(--purpleGlow)}
+
 /* 👑 TABS - MANSION NAV */
 .kirongTabs{
   display:flex;gap:8px;padding:10px 14px;
@@ -201,6 +210,15 @@ body{
   0%{opacity:.8;transform:scale(.9)}
   100%{opacity:0;transform:scale(1.35)}
 }
+
+/* IMAGE GENERATION MODE (scaffolded — activates in a later phase) */
+.imageModeBtn{
+  width:36px;height:36px;border-radius:10px;border:none;background:transparent;
+  color:var(--muted);cursor:pointer;display:grid;place-items:center;font-size:16px;
+  transition:.2s;flex-shrink:0
+}
+.imageModeBtn:hover{color:var(--purple);background:rgba(139,92,246,.1)}
+.imageModeBtn.active{color:var(--purple);background:rgba(139,92,246,.15)}
 
 /* VOICE REPLY TOGGLE (header) */
 #voiceReplyBtn.active{color:var(--purple);border-color:var(--border2);background:rgba(139,92,246,.12)}
