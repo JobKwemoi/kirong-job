@@ -250,6 +250,31 @@ body{
 .projectCard span{font-size:24px}.projectCard h3{font-size:13px;margin:10px 0 4px;font-weight:700}.projectCard p{font-size:11px;color:var(--muted)}
 .projectCard.new{border-style:dashed;opacity:.8}
 
+/* MODAL (used by Projects: new/edit dialogs) */
+.modalOverlay{
+  position:fixed;inset:0;background:rgba(0,0,0,.6);backdrop-filter:blur(4px);
+  display:flex;align-items:center;justify-content:center;z-index:1000;padding:20px
+}
+.modalBox{
+  width:100%;max-width:420px;max-height:85vh;overflow-y:auto;
+  background:var(--card2);border:1px solid var(--border2);border-radius:20px;
+  padding:20px;box-shadow:var(--purpleGlow)
+}
+.modalBox h3{font-size:15px;font-weight:800;margin-bottom:14px}
+.modalField{margin-bottom:12px}
+.modalField label{display:block;font-size:11px;color:var(--muted);margin-bottom:6px;font-weight:700}
+.modalField input,.modalField select,.modalField textarea{
+  width:100%;background:rgba(255,255,255,.04);border:1px solid var(--border);border-radius:10px;
+  padding:10px 12px;color:var(--text);font-size:13px;font-family:inherit;outline:none;transition:.2s
+}
+.modalField input:focus,.modalField select:focus,.modalField textarea:focus{border-color:var(--border2)}
+.modalField textarea{resize:vertical;min-height:140px;line-height:1.5}
+.modalActions{display:flex;flex-wrap:wrap;gap:8px;margin-top:16px;justify-content:flex-end}
+.modalActions button{height:36px;padding:0 16px;border-radius:999px;font-size:12px;font-weight:700;cursor:pointer;border:1px solid var(--border);background:transparent;color:var(--muted)}
+.modalActions .primaryBtn{background:var(--purple);color:white;border-color:transparent}
+.modalActions .dangerBtn{color:#f87171;border-color:rgba(248,113,113,.3)}
+.modalActions .dangerBtn:hover{background:rgba(248,113,113,.1)}
+
 /* TOOLS */
 .toolsGrid{display:grid;grid-template-columns:1fr 1fr;gap:12px;padding:18px}
 .toolCard{padding:16px;border:1px solid var(--border);border-radius:18px;background:rgba(255,255,255,.04);text-align:left;cursor:pointer;transition:.2s}
