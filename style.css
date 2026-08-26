@@ -79,14 +79,17 @@ body{
 .kirongTabs{
   display:flex;gap:8px;padding:10px 14px;
   background:rgba(0,0,0,.25);border-bottom:1px solid var(--border);
-  overflow-x:auto;scrollbar-width:none
+  overflow-x:auto;scrollbar-width:none;
+  scroll-behavior:smooth;-webkit-overflow-scrolling:touch;
+  scroll-snap-type:x proximity
 }
 .kirongTabs::-webkit-scrollbar{display:none}
 .tabBtn{
   height:36px;padding:0 16px;border:1px solid var(--border);
   border-radius:999px;background:rgba(255,255,255,.04);
   color:var(--muted);font-size:12px;font-weight:700;cursor:pointer;
-  white-space:nowrap;transition:.2s;flex-shrink:0
+  white-space:nowrap;transition:.2s;flex-shrink:0;
+  scroll-snap-align:start
 }
 .tabBtn.active{
   color:white;border-color:transparent;
@@ -111,6 +114,12 @@ body{
 #toolsTab{--tab-accent:#fbbf24;--tab-accent2:#b45309;--tab-accent-glow:rgba(251,191,36,.3)}
 #historyTab{--tab-accent:#f472b6;--tab-accent2:#be185d;--tab-accent-glow:rgba(244,114,182,.3)}
 #schoolTab{--tab-accent:#34d399;--tab-accent2:#047857;--tab-accent-glow:rgba(52,211,153,.3)}
+
+/* Instead of flat near-black, each tab gets a soft colored glow wash
+   behind its content — noticeably lighter/richer while staying dark-theme */
+#projectsTab,#toolsTab,#historyTab,#schoolTab{
+  background:radial-gradient(900px 500px at 50% -15%,var(--tab-accent-glow),transparent),var(--card)
+}
 
 .tabHeader{padding:18px 20px 10px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border)}
 .tabHeader h2{font-size:16px;font-weight:800}
@@ -198,6 +207,13 @@ body{
   color:var(--muted);font-size:10px;font-weight:700;cursor:pointer;transition:.2s
 }
 .retryMessageBtn:hover{border-color:var(--border2);color:var(--text)}
+
+.editMessageBtn{
+  height:26px;padding:0 10px;border-radius:999px;
+  border:1px solid rgba(255,255,255,.2);background:rgba(0,0,0,.15);
+  color:rgba(255,255,255,.85);font-size:10px;font-weight:700;cursor:pointer;transition:.2s
+}
+.editMessageBtn:hover{border-color:rgba(255,255,255,.4);background:rgba(0,0,0,.25)}
 
 /* GENERATED IMAGE MESSAGES */
 .imageMessage{padding:10px}
@@ -350,12 +366,12 @@ body{
 /* TOOLS */
 .toolsGrid{display:grid;grid-template-columns:1fr 1fr;gap:12px;padding:18px}
 .toolCard{
-  position:relative;padding:18px 16px;border:1px solid var(--border);border-radius:18px;
-  background:rgba(255,255,255,.04);text-align:left;cursor:pointer;
+  position:relative;padding:18px 16px;border:1px solid rgba(255,255,255,.14);border-radius:18px;
+  background:rgba(255,255,255,.08);text-align:left;cursor:pointer;
   transition:transform .25s cubic-bezier(.4,0,.2,1),box-shadow .25s,border-color .25s,background .25s
 }
 .toolCard:hover{
-  border-color:var(--tab-accent);background:rgba(255,255,255,.06);
+  border-color:var(--tab-accent);background:rgba(255,255,255,.13);
   transform:translateY(-4px);box-shadow:0 12px 28px var(--tab-accent-glow)
 }
 .toolCard:active{transform:translateY(-1px) scale(.98)}
@@ -367,7 +383,7 @@ body{
   display:inline-flex;align-items:center;justify-content:center;
   width:38px;height:38px;border-radius:12px;margin-bottom:10px;font-size:18px;
   background:linear-gradient(135deg,var(--tab-accent),var(--tab-accent2));
-  border:1px solid var(--border2);opacity:.9
+  border:1px solid rgba(255,255,255,.2);box-shadow:0 4px 14px var(--tab-accent-glow)
 }
 
 /* PRO tool cards get a subtle gradient outline + shimmering badge */
