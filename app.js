@@ -152,6 +152,8 @@ let isListening = false;
 
 let speechVoices = [];
 
+let activeMode = "chat";
+
 let imageModeOn =
   loadJSON(
     STORAGE_KEYS.imageMode,
@@ -1903,6 +1905,71 @@ if (imageModeBtn) {
 }
 
 /* ============================================================
+   🧰 TOOLS SUPER-MODES
+   ------------------------------------------------------------
+   chat.js already understands these modes and (via plans.js)
+   already gates the last four as Pro-only. This just wires the
+   Tools tab cards to actually set `mode` on outgoing requests —
+   previously buildFormData() never sent a mode field at all, so
+   these backend super-modes were dormant.
+============================================================ */
+
+const MODE_LABELS = {
+  content: { icon: "📝", label: "Content Factory" },
+  whatsapp: { icon: "📱", label: "WhatsApp Business" },
+  blog: { icon: "✍️", label: "Blog Engine" },
+  affiliate: { icon: "🤝", label: "Affiliate Engine" },
+  school: { icon: "🎓", label: "School Mode" }
+};
+
+const modeBanner = document.getElementById("modeBanner");
+
+function updateModeBanner() {
+  if (!modeBanner) return;
+
+  const info = MODE_LABELS[activeMode];
+
+  if (!info) {
+    modeBanner.classList.add("hidden");
+    modeBanner.innerHTML = "";
+    return;
+  }
+
+  modeBanner.classList.remove("hidden");
+  modeBanner.innerHTML =
+    `<span>${info.icon} ${escapeHTML(info.label)} active</span>` +
+    `<button type="button" id="exitModeBtn" aria-label="Exit ${escapeHTML(info.label)}">✕ Exit</button>`;
+
+  document
+    .getElementById("exitModeBtn")
+    ?.addEventListener("click", () => setActiveMode("chat"));
+}
+
+function setActiveMode(mode, starterPrompt) {
+  activeMode = MODE_LABELS[mode] ? mode : "chat";
+
+  updateModeBanner();
+
+  document.querySelector('.tabBtn[data-tab="chat"]')?.click();
+
+  if (starterPrompt && userInput) {
+    userInput.value = starterPrompt;
+    autoResizeInput();
+  }
+
+  userInput?.focus();
+}
+
+document.querySelectorAll(".toolCard[data-mode]").forEach((card) => {
+  card.addEventListener("click", () => {
+    const mode = card.dataset.mode || "chat";
+    const prompt = card.dataset.prompt || "";
+
+    setActiveMode(mode, prompt);
+  });
+});
+
+/* ============================================================
    💬 HISTORY
 ============================================================ */
 
@@ -2459,6 +2526,9 @@ function startNewChat() {
   selectedFile =
     null;
 
+  activeMode = "chat";
+  updateModeBanner();
+
   currentChatId =
     createChatId();
 
@@ -2532,6 +2602,11 @@ function buildFormData(
   form.append(
     "message",
     message
+  );
+
+  form.append(
+    "mode",
+    activeMode
   );
 
   form.append(
@@ -2671,7 +2746,7 @@ async function parseApiResponse(
         .catch(() => ({}));
 
     if (!response.ok) {
-      const error =
+      const errorMessage =
         typeof data?.error ===
         "string"
           ? data.error
@@ -2680,9 +2755,13 @@ async function parseApiResponse(
             ? data.text
             : `Server ${response.status}`;
 
-      throw new Error(
-        error
-      );
+      const error =
+        new Error(errorMessage);
+
+      error.code =
+        data?.code || null;
+
+      throw error;
     }
 
     return data;
@@ -3159,6 +3238,25 @@ async function sendMessage() {
 
     refreshUserData();
   } catch (error) {
+    if (error?.code === "PRO_FEATURE") {
+      const toolLabel =
+        MODE_LABELS[activeMode]?.label || "This feature";
+
+      addMessage(
+        "assistant",
+        `👑 ${toolLabel} is a Pro feature. Tap below to unlock it.`
+      );
+
+      addToHistory(
+        "assistant",
+        `Pro feature required: ${toolLabel}`
+      );
+
+      openProPaymentModal();
+
+      return;
+    }
+
     const message =
       friendlyError(
         error
