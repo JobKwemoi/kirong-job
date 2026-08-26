@@ -1,710 +1,256 @@
 // ============================================================
-// 👑 KIRONG AI — BILLING & USAGE PLANS V14
-// FREE + PRO
-// Server-side usage + subscription + feature protection
+// 👑 KIRONG AI — PLANS & USAGE ENGINE V1
+// Defines Free/Pro tiers, daily usage tracking, and feature gates
 // ============================================================
 
 "use strict";
 
-// ============================================================
-// 💰 PLAN DEFINITIONS
-// ============================================================
+export const PLAN_FREE = "free";
+export const PLAN_PRO = "pro";
 
-export const PLANS = {
-  free: {
-    id: "free",
-    name: "Free",
+// How long a single M-Pesa payment keeps Pro active for.
+export const PRO_DURATION_DAYS =
+  Number(process.env.KIRONG_PRO_DURATION_DAYS) || 30;
 
-    dailyMessages: 20,
-    dailyImages: 2,
-    dailyFiles: 3,
+// Price shown to the user and charged via STK Push (KES).
+export const PRO_PRICE_KES =
+  Number(process.env.KIRONG_PRO_PRICE_KES) || 199;
 
-    maxInputTokens: 4000,
-    maxOutputTokens: 1200,
-
-    dailyInputTokens: 50000,
-    dailyOutputTokens: 15000,
-
-    contentFactory: false,
-    whatsappBusiness: false,
-    blogEngine: false,
-    affiliateEngine: false,
-
-    priority: false,
-
-    price: 0,
-    currency: "KES",
-    durationDays: null
+const PLANS = {
+  [PLAN_FREE]: {
+    id: PLAN_FREE,
+    label: "Free",
+    maxInputTokens: 6000,
+    maxOutputTokens: 1024,
+    dailyMessageLimit: 30,
+    dailyImageLimit: 3,
+    dailyTokenLimit: 60000,
+    features: {
+      contentFactory: false,
+      whatsappBusiness: false,
+      blogEngine: false,
+      affiliateEngine: false,
+      imageGeneration: true
+    }
   },
 
-  pro: {
-    id: "pro",
-    name: "Pro",
-
-    dailyMessages: 200,
-    dailyImages: 30,
-    dailyFiles: 30,
-
-    maxInputTokens: 12000,
-    maxOutputTokens: 4000,
-
-    dailyInputTokens: 500000,
-    dailyOutputTokens: 150000,
-
-    contentFactory: true,
-    whatsappBusiness: true,
-    blogEngine: true,
-    affiliateEngine: true,
-
-    priority: true,
-
-    price: 299,
-    currency: "KES",
-    durationDays: 30
+  [PLAN_PRO]: {
+    id: PLAN_PRO,
+    label: "Pro",
+    maxInputTokens: 16000,
+    maxOutputTokens: 4096,
+    dailyMessageLimit: 300,
+    dailyImageLimit: 50,
+    dailyTokenLimit: 500000,
+    features: {
+      contentFactory: true,
+      whatsappBusiness: true,
+      blogEngine: true,
+      affiliateEngine: true,
+      imageGeneration: true
+    }
   }
 };
 
 // ============================================================
-// 📅 DATE
+// 📅 DAILY RESET HELPER
 // ============================================================
 
-export function getTodayKey() {
-  const now = new Date();
-
-  return [
-    now.getUTCFullYear(),
-    String(now.getUTCMonth() + 1).padStart(2, "0"),
-    String(now.getUTCDate()).padStart(2, "0")
-  ].join("-");
+function todayKey() {
+  // UTC date string, e.g. "2026-08-26" — resets usage once per day
+  return new Date().toISOString().slice(0, 10);
 }
 
 // ============================================================
-// 🧹 EMPTY USAGE
-// ============================================================
-
-export function createEmptyUsage() {
-  return {
-    date: getTodayKey(),
-
-    messages: 0,
-    images: 0,
-    files: 0,
-
-    inputTokens: 0,
-    outputTokens: 0,
-    totalTokens: 0
-  };
-}
-
-// ============================================================
-// 👤 DEFAULT USER
+// 👤 DEFAULT USER SHAPE
 // ============================================================
 
 export function createDefaultUser(userId) {
-  const now = new Date().toISOString();
-
   return {
-    userId: String(userId || "anonymous"),
-
-    plan: "free",
-
-    subscription: {
-      active: false,
-      startedAt: null,
-      expiresAt: null,
-      paymentReference: null,
-      phone: null
+    userId,
+    plan: PLAN_FREE,
+    subscription: null, // { startedAt, expiresAt, lastPaymentRef }
+    usage: {
+      date: todayKey(),
+      messages: 0,
+      images: 0,
+      inputTokens: 0,
+      outputTokens: 0
     },
-
-    usage: createEmptyUsage(),
-
-    createdAt: now,
-    updatedAt: now
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString()
   };
 }
 
 // ============================================================
-// 🔄 DAILY RESET
+// 🔄 RESET USAGE ON A NEW DAY
 // ============================================================
 
 export function resetDailyUsageIfNeeded(user) {
-  if (!user) return user;
-
-  const today = getTodayKey();
-
-  if (!user.usage) {
-    user.usage = createEmptyUsage();
-    return user;
+  if (!user.usage || user.usage.date !== todayKey()) {
+    user.usage = {
+      date: todayKey(),
+      messages: 0,
+      images: 0,
+      inputTokens: 0,
+      outputTokens: 0
+    };
   }
-
-  if (user.usage.date !== today) {
-    user.usage = createEmptyUsage();
-  }
-
-  return user;
 }
 
 // ============================================================
-// 👑 NORMALIZE PLAN
+// 🔽 DOWNGRADE EXPIRED PRO SUBSCRIPTIONS
 // ============================================================
 
 export function normalizePlan(user) {
-  if (!user) return "free";
+  if (user.plan === PLAN_PRO && user.subscription?.expiresAt) {
+    const expiresAt = new Date(user.subscription.expiresAt).getTime();
 
-  const subscription = user.subscription || {};
-
-  if (user.plan !== "pro") {
-    user.plan = "free";
-    return "free";
-  }
-
-  if (
-    subscription.active !== true ||
-    !subscription.expiresAt
-  ) {
-    user.plan = "free";
-
-    if (user.subscription) {
-      user.subscription.active = false;
+    if (Number.isFinite(expiresAt) && Date.now() > expiresAt) {
+      user.plan = PLAN_FREE;
     }
-
-    return "free";
   }
 
-  const expiry = new Date(
-    subscription.expiresAt
-  ).getTime();
-
-  if (!Number.isFinite(expiry) || expiry <= Date.now()) {
-    user.plan = "free";
-    user.subscription.active = false;
-
-    return "free";
+  if (!PLANS[user.plan]) {
+    user.plan = PLAN_FREE;
   }
 
-  return "pro";
+  return user.plan;
 }
 
 // ============================================================
-// 📦 GET PLAN
+// 📦 GET PLAN DEFINITION FOR A USER
 // ============================================================
 
 export function getUserPlan(user) {
-  const planId = normalizePlan(user);
-
-  return PLANS[planId] || PLANS.free;
+  const id = PLANS[user?.plan] ? user.plan : PLAN_FREE;
+  return PLANS[id];
 }
 
 // ============================================================
-// 🛡️ USAGE LIMIT
+// 🚦 FEATURE ACCESS CHECK
 // ============================================================
 
-export function checkUsageLimit(user, type = "message") {
-  if (!user) {
-    return {
-      allowed: false,
-      reason: "user_missing"
-    };
-  }
-
-  resetDailyUsageIfNeeded(user);
-
+export function canUseFeature(user, featureName) {
+  if (!featureName) return true;
   const plan = getUserPlan(user);
-  const usage = user.usage;
-
-  const map = {
-    message: ["messages", plan.dailyMessages],
-    image: ["images", plan.dailyImages],
-    file: ["files", plan.dailyFiles]
-  };
-
-  const item = map[type];
-
-  if (!item) {
-    return {
-      allowed: false,
-      reason: "unknown_usage_type"
-    };
-  }
-
-  const [key, limit] = item;
-
-  const current = Number(usage[key]) || 0;
-
-  return {
-    allowed: current < limit,
-
-    type,
-
-    current,
-
-    limit,
-
-    remaining: Math.max(
-      0,
-      limit - current
-    ),
-
-    plan: plan.id,
-
-    planName: plan.name
-  };
+  return Boolean(plan.features?.[featureName]);
 }
 
 // ============================================================
-// 🧠 TOKEN LIMIT
+// 🔢 DAILY MESSAGE / IMAGE LIMIT CHECK
 // ============================================================
 
-export function checkTokenLimit(
-  user,
-  {
-    inputTokens = 0,
-    outputTokens = 0
-  } = {}
-) {
-  if (!user) {
-    return {
-      allowed: false,
-      reason: "user_missing"
-    };
-  }
-
+export function checkUsageLimit(user, type) {
   resetDailyUsageIfNeeded(user);
-
   const plan = getUserPlan(user);
-  const usage = user.usage;
-
-  const input = Math.max(
-    0,
-    Number(inputTokens) || 0
-  );
-
-  const output = Math.max(
-    0,
-    Number(outputTokens) || 0
-  );
-
-  if (input > plan.maxInputTokens) {
-    return {
-      allowed: false,
-      reason: "input_token_limit",
-      current: input,
-      limit: plan.maxInputTokens,
-      plan: plan.id
-    };
-  }
-
-  if (output > plan.maxOutputTokens) {
-    return {
-      allowed: false,
-      reason: "output_token_limit",
-      current: output,
-      limit: plan.maxOutputTokens,
-      plan: plan.id
-    };
-  }
-
-  if (
-    usage.inputTokens + input >
-    plan.dailyInputTokens
-  ) {
-    return {
-      allowed: false,
-      reason: "daily_input_token_limit",
-      current: usage.inputTokens,
-      requested: input,
-      limit: plan.dailyInputTokens,
-      remaining: Math.max(
-        0,
-        plan.dailyInputTokens -
-        usage.inputTokens
-      ),
-      plan: plan.id
-    };
-  }
-
-  if (
-    usage.outputTokens + output >
-    plan.dailyOutputTokens
-  ) {
-    return {
-      allowed: false,
-      reason: "daily_output_token_limit",
-      current: usage.outputTokens,
-      requested: output,
-      limit: plan.dailyOutputTokens,
-      remaining: Math.max(
-        0,
-        plan.dailyOutputTokens -
-        usage.outputTokens
-      ),
-      plan: plan.id
-    };
-  }
-
-  return {
-    allowed: true,
-    plan: plan.id,
-    maxInputTokens: plan.maxInputTokens,
-    maxOutputTokens: plan.maxOutputTokens
-  };
-}
-
-// ============================================================
-// ➕ RECORD USAGE
-// ============================================================
-
-export function recordUsage(
-  user,
-  {
-    type = "message",
-    inputTokens = 0,
-    outputTokens = 0
-  } = {}
-) {
-  if (!user) return user;
-
-  resetDailyUsageIfNeeded(user);
-
-  const usage = user.usage;
 
   if (type === "message") {
-    usage.messages += 1;
+    const limit = plan.dailyMessageLimit;
+    const current = user.usage.messages || 0;
+
+    return {
+      allowed: current < limit,
+      limit,
+      current,
+      remaining: Math.max(0, limit - current)
+    };
   }
 
   if (type === "image") {
-    usage.images += 1;
-  }
+    const limit = plan.dailyImageLimit;
+    const current = user.usage.images || 0;
 
-  if (type === "file") {
-    usage.files += 1;
-  }
-
-  const input = Math.max(
-    0,
-    Number(inputTokens) || 0
-  );
-
-  const output = Math.max(
-    0,
-    Number(outputTokens) || 0
-  );
-
-  usage.inputTokens += input;
-  usage.outputTokens += output;
-
-  usage.totalTokens =
-    usage.inputTokens +
-    usage.outputTokens;
-
-  user.updatedAt =
-    new Date().toISOString();
-
-  return user;
-}
-
-// ============================================================
-// 🎯 FEATURE ACCESS
-// ============================================================
-
-export function canUseFeature(user, feature) {
-  if (!user || !feature) return false;
-
-  const plan = getUserPlan(user);
-
-  return Boolean(plan[feature]);
-}
-
-// ============================================================
-// 🚀 FEATURES
-// ============================================================
-
-export function getAvailableFeatures(user) {
-  const plan = getUserPlan(user);
-
-  return {
-    contentFactory: Boolean(plan.contentFactory),
-    whatsappBusiness: Boolean(plan.whatsappBusiness),
-    blogEngine: Boolean(plan.blogEngine),
-    affiliateEngine: Boolean(plan.affiliateEngine),
-    priority: Boolean(plan.priority)
-  };
-}
-
-// ============================================================
-// 💰 PRO PLAN
-// ============================================================
-
-export function getProPlan() {
-  const plan = PLANS.pro;
-
-  return {
-    id: plan.id,
-    name: plan.name,
-    price: plan.price,
-    currency: plan.currency,
-    durationDays: plan.durationDays,
-
-    dailyMessages: plan.dailyMessages,
-    dailyImages: plan.dailyImages,
-    dailyFiles: plan.dailyFiles,
-
-    maxInputTokens: plan.maxInputTokens,
-    maxOutputTokens: plan.maxOutputTokens,
-
-    features: getAvailableFeatures({
-      plan: "pro",
-      subscription: {
-        active: true,
-        expiresAt: new Date(
-          Date.now() + 86400000
-        ).toISOString()
-      }
-    })
-  };
-}
-
-// ============================================================
-// 👑 ACTIVATE PRO
-// ============================================================
-
-export function activatePro(
-  user,
-  {
-    paymentReference = null,
-    phone = null,
-    durationDays = PLANS.pro.durationDays
-  } = {}
-) {
-  if (!user) {
-    throw new Error("User is required.");
-  }
-
-  const days = Number(durationDays);
-
-  if (!Number.isFinite(days) || days <= 0) {
-    throw new Error(
-      "Invalid subscription duration."
-    );
-  }
-
-  const now = new Date();
-
-  const expires = new Date(now);
-
-  expires.setDate(
-    expires.getDate() + days
-  );
-
-  user.plan = "pro";
-
-  user.subscription = {
-    active: true,
-
-    startedAt:
-      now.toISOString(),
-
-    expiresAt:
-      expires.toISOString(),
-
-    paymentReference,
-
-    phone
-  };
-
-  user.updatedAt =
-    now.toISOString();
-
-  return user;
-}
-
-// ============================================================
-// 🔻 DOWNGRADE
-// ============================================================
-
-export function downgradeToFree(user) {
-  if (!user) return user;
-
-  user.plan = "free";
-
-  user.subscription = {
-    ...(user.subscription || {}),
-    active: false
-  };
-
-  user.updatedAt =
-    new Date().toISOString();
-
-  return user;
-}
-
-// ============================================================
-// ⏳ SUBSCRIPTION
-// ============================================================
-
-export function getSubscriptionStatus(user) {
-  if (!user) {
     return {
-      active: false,
-      plan: "free",
-      expiresAt: null,
-      remainingDays: 0
+      allowed: current < limit,
+      limit,
+      current,
+      remaining: Math.max(0, limit - current)
     };
   }
 
-  const planId = normalizePlan(user);
-  const subscription =
-    user.subscription || {};
-
-  if (
-    planId !== "pro" ||
-    !subscription.expiresAt
-  ) {
-    return {
-      active: false,
-      plan: "free",
-      expiresAt: null,
-      remainingDays: 0
-    };
-  }
-
-  const expiry =
-    new Date(
-      subscription.expiresAt
-    ).getTime();
-
-  const remainingMs =
-    Math.max(
-      0,
-      expiry - Date.now()
-    );
-
-  return {
-    active: remainingMs > 0,
-
-    plan: "pro",
-
-    expiresAt:
-      subscription.expiresAt,
-
-    remainingDays:
-      Math.ceil(
-        remainingMs /
-        (1000 * 60 * 60 * 24)
-      )
-  };
+  return { allowed: true, limit: Infinity, current: 0, remaining: Infinity };
 }
 
 // ============================================================
-// 📊 USAGE SNAPSHOT
+// 🔢 DAILY TOKEN LIMIT CHECK
+// ============================================================
+
+export function checkTokenLimit(user, { inputTokens = 0, outputTokens = 0 } = {}) {
+  resetDailyUsageIfNeeded(user);
+  const plan = getUserPlan(user);
+
+  const projected =
+    (user.usage.inputTokens || 0) +
+    (user.usage.outputTokens || 0) +
+    inputTokens +
+    outputTokens;
+
+  if (projected > plan.dailyTokenLimit) {
+    return { allowed: false, reason: "Daily AI token limit reached." };
+  }
+
+  return { allowed: true };
+}
+
+// ============================================================
+// ✍️ RECORD USAGE AFTER A SUCCESSFUL REQUEST
+// ============================================================
+
+export function recordUsage(user, { type, inputTokens = 0, outputTokens = 0 } = {}) {
+  resetDailyUsageIfNeeded(user);
+
+  if (type === "message") user.usage.messages = (user.usage.messages || 0) + 1;
+  if (type === "image") user.usage.images = (user.usage.images || 0) + 1;
+
+  user.usage.inputTokens = (user.usage.inputTokens || 0) + inputTokens;
+  user.usage.outputTokens = (user.usage.outputTokens || 0) + outputTokens;
+}
+
+// ============================================================
+// 📊 USAGE SNAPSHOT (for /api/user)
 // ============================================================
 
 export function getUsageSnapshot(user) {
-  if (!user) return null;
-
   resetDailyUsageIfNeeded(user);
-
   const plan = getUserPlan(user);
-  const usage = user.usage;
 
   return {
     plan: plan.id,
-    planName: plan.name,
-
-    date: usage.date,
-
-    messages: {
-      used: usage.messages,
-      limit: plan.dailyMessages,
-      remaining: Math.max(
-        0,
-        plan.dailyMessages -
-        usage.messages
-      )
-    },
-
-    images: {
-      used: usage.images,
-      limit: plan.dailyImages,
-      remaining: Math.max(
-        0,
-        plan.dailyImages -
-        usage.images
-      )
-    },
-
-    files: {
-      used: usage.files,
-      limit: plan.dailyFiles,
-      remaining: Math.max(
-        0,
-        plan.dailyFiles -
-        usage.files
-      )
-    },
-
+    messages: { used: user.usage.messages || 0, limit: plan.dailyMessageLimit },
+    images: { used: user.usage.images || 0, limit: plan.dailyImageLimit },
     tokens: {
-      input: usage.inputTokens,
-      output: usage.outputTokens,
-      total: usage.totalTokens,
-
-      inputLimit:
-        plan.dailyInputTokens,
-
-      outputLimit:
-        plan.dailyOutputTokens,
-
-      inputRemaining: Math.max(
-        0,
-        plan.dailyInputTokens -
-        usage.inputTokens
-      ),
-
-      outputRemaining: Math.max(
-        0,
-        plan.dailyOutputTokens -
-        usage.outputTokens
-      )
-    },
-
-    subscription:
-      getSubscriptionStatus(user),
-
-    features:
-      getAvailableFeatures(user)
+      used: (user.usage.inputTokens || 0) + (user.usage.outputTokens || 0),
+      limit: plan.dailyTokenLimit
+    }
   };
 }
 
 // ============================================================
-// 🌍 PUBLIC PLAN SUMMARY
+// 👑 ACTIVATE / EXTEND PRO SUBSCRIPTION (called after payment)
 // ============================================================
 
-export function getPublicPlanSummary(user) {
-  const plan = getUserPlan(user);
+export function activateProSubscription(user, { days = PRO_DURATION_DAYS, paymentRef = null } = {}) {
+  const now = Date.now();
 
-  return {
-    id: plan.id,
-    name: plan.name,
+  const currentExpiry =
+    user.subscription?.expiresAt
+      ? new Date(user.subscription.expiresAt).getTime()
+      : now;
 
-    price: plan.price,
-    currency: plan.currency,
+  // If they still have active Pro time left, extend from there
+  // instead of from "now" — renewing early doesn't waste days.
+  const base = Number.isFinite(currentExpiry) ? Math.max(now, currentExpiry) : now;
 
-    dailyMessages:
-      plan.dailyMessages,
+  const expiresAt = new Date(base + days * 24 * 60 * 60 * 1000).toISOString();
 
-    dailyImages:
-      plan.dailyImages,
+  user.plan = PLAN_PRO;
 
-    dailyFiles:
-      plan.dailyFiles,
-
-    maxInputTokens:
-      plan.maxInputTokens,
-
-    maxOutputTokens:
-      plan.maxOutputTokens,
-
-    features:
-      getAvailableFeatures(user)
+  user.subscription = {
+    startedAt: user.subscription?.startedAt || new Date().toISOString(),
+    expiresAt,
+    lastPaymentRef: paymentRef || user.subscription?.lastPaymentRef || null
   };
+
+  return user;
 }
