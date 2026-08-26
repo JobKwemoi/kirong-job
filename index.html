@@ -2,927 +2,154 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-
-  <meta
-    name="viewport"
-    content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"
-  />
-
-  <!-- =========================================================
-       👑 KIRONG AI — APP IDENTITY
-  ========================================================== -->
-
-  <title>Kirong AI — Built for Royalty</title>
-
-  <meta
-    name="description"
-    content="Kirong AI — an intelligent AI assistant built by Kirong Job Kwemoi for coding, learning, creativity and business."
-  />
-
-  <meta
-    name="author"
-    content="Kirong Job Kwemoi"
-  />
-
-  <meta
-    name="application-name"
-    content="Kirong AI"
-  />
-
-  <meta
-    name="keywords"
-    content="Kirong AI, AI assistant, coding AI, business AI, Kenya AI, productivity"
-  />
-
-  <!-- =========================================================
-       📱 PWA
-  ========================================================== -->
-
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Kirong AI - Built for Royalty</title>
   <link rel="manifest" href="/manifest.json" />
-
-  <meta
-    name="theme-color"
-    content="#6D28D9"
-  />
-
-  <meta
-    name="mobile-web-app-capable"
-    content="yes"
-  />
-
-  <meta
-    name="mobile-web-app-status-bar-style"
-    content="black-translucent"
-  />
-
-  <!-- =========================================================
-       🍎 IOS / APPLE
-  ========================================================== -->
-
-  <meta
-    name="apple-mobile-web-app-capable"
-    content="yes"
-  />
-
-  <meta
-    name="apple-mobile-web-app-status-bar-style"
-    content="black-translucent"
-  />
-
-  <meta
-    name="apple-mobile-web-app-title"
-    content="Kirong AI"
-  />
-
-  <link
-    rel="apple-touch-icon"
-    href="/icon-192.png"
-  />
-
-  <!-- =========================================================
-       🌐 ICONS
-  ========================================================== -->
-
-  <link
-    rel="icon"
-    type="image/png"
-    sizes="192x192"
-    href="/icon-192.png"
-  />
-
-  <link
-    rel="icon"
-    type="image/png"
-    sizes="512x512"
-    href="/icon-512.png"
-  />
-
-  <!-- =========================================================
-       🎨 APP CSS
-  ========================================================== -->
-
-  <link
-    rel="stylesheet"
-    href="/style.css"
-  />
-
-  <!-- Prevent a flash of incorrect theme on supported browsers -->
-  <script>
-    (function () {
-      try {
-        const savedTheme =
-          localStorage.getItem("kirong_ai_theme_v8");
-
-        if (savedTheme === "light") {
-          document.documentElement.dataset.theme = "light";
-        } else {
-          document.documentElement.dataset.theme = "dark";
-        }
-      } catch (_) {}
-    })();
-  </script>
+  <link rel="icon" href="/icon-192.png" />
+  <link rel="apple-touch-icon" href="/icon-192.png" />
+  <meta name="theme-color" content="#8b5cf6" />
+  <link rel="stylesheet" href="/style.css" />
 </head>
-
 <body>
-
-  <!-- =========================================================
-       👑 KIRONG AI APP
-  ========================================================== -->
-
-  <div
-    class="appShell"
-    id="app"
-  >
-
-    <!-- =======================================================
-         👑 TOP BAR
-    ======================================================== -->
-
-    <header
-      class="topBar"
-      role="banner"
-    >
-
+  <div class="appShell">
+    <!-- TOP BAR -->
+    <header class="topBar">
       <div class="brand">
-
-        <div
-          class="logo"
-          aria-hidden="true"
-        >
-          K
+        <div class="logo" aria-hidden="true">K</div>
+        <div>
+          <h1>Kirong AI</h1>
+          <div id="statusText"><span class="dot"></span> Royal Intelligence Active</div>
         </div>
-
-        <div class="brandText">
-
-          <h1>
-            Kirong AI
-          </h1>
-
-          <div
-            id="statusText"
-            aria-live="polite"
-          >
-            <span
-              class="dot"
-              aria-hidden="true"
-            ></span>
-
-            Royal Intelligence Active
-          </div>
-
-        </div>
-
       </div>
-
-
-      <div
-        class="headerActions"
-        aria-label="App controls"
-      >
-
-        <!-- PLAN -->
-
-        <button
-          class="planBadge"
-          id="planBadge"
-          type="button"
-          title="Your current plan"
-          aria-label="Current plan: Free, tap to upgrade"
-        >
-          👑 Free
-        </button>
-
-
-        <!-- VOICE -->
-
-        <button
-          class="iconBtn"
-          id="voiceReplyBtn"
-          type="button"
-          title="Toggle voice replies"
-          aria-label="Toggle voice replies"
-          aria-pressed="false"
-        >
-          🔇
-        </button>
-
-
-        <!-- EXPORT -->
-
-        <button
-          class="iconBtn"
-          id="exportChatBtn"
-          type="button"
-          title="Export Chat"
-          aria-label="Export chat"
-        >
-          📤
-        </button>
-
-
-        <!-- CLEAR -->
-
-        <button
-          class="iconBtn"
-          id="clearChatBtn"
-          type="button"
-          title="Clear Chat"
-          aria-label="Clear current chat"
-        >
-          🗑️
-        </button>
-
-
-        <!-- NEW CHAT -->
-
-        <button
-          class="iconBtn"
-          id="newChatBtn"
-          type="button"
-          title="New Chat"
-          aria-label="Start new chat"
-        >
-          ✨
-        </button>
-
+      <div class="headerActions">
+        <button class="planBadge" id="planBadge" title="Your plan — tap to upgrade" aria-label="Current plan: Free, tap to upgrade">👑 Free</button>
+        <button class="iconBtn" id="voiceReplyBtn" title="Toggle voice replies" aria-label="Toggle voice replies" aria-pressed="false">🔇</button>
+        <button class="iconBtn" id="exportChatBtn" title="Export Chat" aria-label="Export chat">📤</button>
+        <button class="iconBtn" id="clearChatBtn" title="Clear Chat" aria-label="Clear chat">🗑️</button>
+        <button class="iconBtn" id="newChatBtn" title="New Chat" aria-label="Start new chat">✨</button>
       </div>
-
     </header>
 
-
-    <!-- =======================================================
-         👑 ROYAL NAVIGATION
-    ======================================================== -->
-
-    <nav
-      class="kirongTabs"
-      role="tablist"
-      aria-label="Kirong AI sections"
-    >
-
-      <button
-        class="tabBtn active"
-        data-tab="chat"
-        type="button"
-        role="tab"
-        aria-selected="true"
-        aria-controls="chatTab"
-        id="chatTabButton"
-      >
-        💬 Chat
-      </button>
-
-
-      <button
-        class="tabBtn"
-        data-tab="projects"
-        type="button"
-        role="tab"
-        aria-selected="false"
-        aria-controls="projectsTab"
-        id="projectsTabButton"
-      >
-        📁 Projects
-      </button>
-
-
-      <button
-        class="tabBtn"
-        data-tab="tools"
-        type="button"
-        role="tab"
-        aria-selected="false"
-        aria-controls="toolsTab"
-        id="toolsTabButton"
-      >
-        🛠️ Tools
-      </button>
-
-
-      <button
-        class="tabBtn"
-        data-tab="history"
-        type="button"
-        role="tab"
-        aria-selected="false"
-        aria-controls="historyTab"
-        id="historyTabButton"
-      >
-        🕘 History
-      </button>
-
+    <!-- 👑 ROYAL TABS -->
+    <nav class="kirongTabs" role="tablist" aria-label="Kirong AI sections">
+      <button class="tabBtn active" data-tab="chat" role="tab" aria-selected="true">💬 Chat</button>
+      <button class="tabBtn" data-tab="projects" role="tab" aria-selected="false">📁 Projects</button>
+      <button class="tabBtn" data-tab="tools" role="tab" aria-selected="false">🛠️ Tools</button>
+      <button class="tabBtn" data-tab="history" role="tab" aria-selected="false">🕘 History</button>
+      <button class="tabBtn" data-tab="school" role="tab" aria-selected="false">🎓 School</button>
     </nav>
 
+    <!-- TAB: CHAT -->
+    <section class="tabContent active" id="chatTab">
+      <div id="chatBox" aria-live="polite">
+        <div class="kirongWelcome" id="kirongWelcome">
+          <div class="kirongWelcomeLogo" aria-hidden="true"><img src="/icon-192.png" alt="Kirong AI"></div>
+          <div class="welcomeEyebrow"><span></span>KIRONG AI CORE<span></span></div>
+          <h2>Welcome, <span>Kings & Queens!</span> 👑</h2>
+          <p>Hello 👋 I'm <strong>Kirong AI</strong>, your intelligent assistant for <strong>coding, writing, business</strong> and everyday tasks.<br><br>What can I help you with today?</p>
 
-    <!-- =======================================================
-         💬 CHAT TAB
-    ======================================================== -->
-
-    <section
-      class="tabContent active"
-      id="chatTab"
-      role="tabpanel"
-      aria-labelledby="chatTabButton"
-    >
-
-      <div
-        id="chatBox"
-        aria-live="polite"
-        aria-relevant="additions text"
-      >
-
-        <!-- WELCOME -->
-
-        <div
-          class="kirongWelcome"
-          id="kirongWelcome"
-        >
-
-          <div
-            class="kirongWelcomeLogo"
-            aria-hidden="true"
-          >
-
-            <img
-              src="/icon-192.png"
-              alt="Kirong AI"
-              width="96"
-              height="96"
-            />
-
+          <div class="quickGrid">
+            <button class="qBtn" data-prompt="Build me a modern portfolio website">💻 Build Website</button>
+            <button class="qBtn" data-prompt="Give me 3 business ideas with 10k in Kenya">💡 10K Biz Idea</button>
+            <button class="qBtn" data-prompt="Write me a professional CV for a software developer">📄 Pro CV</button>
+            <button class="qBtn" data-prompt="Explain Python like I'm 12 years old">📚 Learn Fast</button>
           </div>
-
-
-          <div class="welcomeEyebrow">
-
-            <span></span>
-
-            KIRONG AI CORE
-
-            <span></span>
-
-          </div>
-
-
-          <h2>
-            Welcome,
-            <span>Kings & Queens!</span>
-            👑
-          </h2>
-
-
-          <p>
-
-            Hello 👋 I'm
-            <strong>Kirong AI</strong>,
-
-            your intelligent assistant for
-            <strong>coding, writing, business</strong>
-            and everyday tasks.
-
-            <br><br>
-
-            What can I help you with today?
-
-          </p>
-
-
-          <!-- QUICK START -->
-
-          <div
-            class="quickGrid"
-            aria-label="Quick start prompts"
-          >
-
-            <button
-              class="qBtn"
-              type="button"
-              data-prompt="Build me a modern portfolio website"
-            >
-              💻 Build Website
-            </button>
-
-
-            <button
-              class="qBtn"
-              type="button"
-              data-prompt="Give me 3 business ideas with 10k in Kenya"
-            >
-              💡 10K Biz Idea
-            </button>
-
-
-            <button
-              class="qBtn"
-              type="button"
-              data-prompt="Write me a professional CV for a software developer"
-            >
-              📄 Pro CV
-            </button>
-
-
-            <button
-              class="qBtn"
-              type="button"
-              data-prompt="Explain Python like I'm 12 years old"
-            >
-              📚 Learn Fast
-            </button>
-
-          </div>
-
         </div>
-
       </div>
 
-
-      <!-- =====================================================
-           🧠 THINKING INDICATOR
-      ====================================================== -->
-
-      <div
-        class="thinking hidden"
-        id="thinking"
-        aria-live="polite"
-        aria-label="Kirong AI is thinking"
-      >
-
-        <span class="thinkingDot"></span>
-        <span class="thinkingDot"></span>
-        <span class="thinkingDot"></span>
-
-        <span class="thinkingLabel">
-          Kirong is thinking...
-        </span>
-
+      <!-- TYPING / THINKING INDICATOR -->
+      <div class="thinking hidden" id="thinking" aria-live="polite">
+        <span class="thinkingDot"></span><span class="thinkingDot"></span><span class="thinkingDot"></span>
+        <span class="thinkingLabel">Kirong is thinking...</span>
       </div>
-
-
-      <!-- =====================================================
-           ✍️ INPUT AREA
-      ====================================================== -->
 
       <div class="inputWrap">
-
-        <div
-          id="modeBanner"
-          class="modeBanner hidden"
-          aria-live="polite"
-        ></div>
-
-
+        <div id="modeBanner" class="modeBanner hidden"></div>
         <div class="inputBar">
-
-          <!-- FILE -->
-
-          <input
-            type="file"
-            id="fileInput"
-            hidden
-            accept=".txt,.md,.csv,.json,.js,.ts,.jsx,.tsx,.html,.css,.py,.java,.c,.cpp,.log,.yml,.yaml,.xml,.sql,image/*,application/pdf"
-          />
-
-
-          <button
-            class="attachBtn"
-            id="attachBtn"
-            type="button"
-            title="Attach file"
-            aria-label="Attach a file"
-          >
-            📎
-          </button>
-
-
-          <!-- MICROPHONE -->
-
-          <button
-            class="micBtn"
-            id="micBtn"
-            type="button"
-            title="Voice input"
-            aria-label="Speak your message"
-          >
-            🎙️
-          </button>
-
-
-          <!-- IMAGE -->
-
-          <button
-            class="imageModeBtn"
-            id="imageModeBtn"
-            type="button"
-            title="Generate an image"
-            aria-label="Toggle image generation mode"
-            aria-pressed="false"
-          >
-            🎨
-          </button>
-
-
-          <!-- MESSAGE -->
-
-          <textarea
-            id="userInput"
-            rows="1"
-            maxlength="12000"
-            placeholder="Ask Kirong anything..."
-            aria-label="Message Kirong AI"
-            autocomplete="off"
-            autocapitalize="sentences"
-            spellcheck="true"
-          ></textarea>
-
-
-          <!-- SEND -->
-
-          <button
-            class="sendBtn"
-            id="sendBtn"
-            type="button"
-            title="Send message"
-            aria-label="Send message"
-          >
-            🚀
-          </button>
-
+          <input type="file" id="fileInput" hidden
+            accept=".txt,.md,.csv,.json,.js,.ts,.jsx,.tsx,.html,.css,.py,.java,.c,.cpp,.log,.yml,.yaml,.xml,.sql,image/*,application/pdf" />
+          <button class="attachBtn" id="attachBtn" type="button" title="Attach file" aria-label="Attach a file">📎</button>
+          <button class="micBtn" id="micBtn" type="button" title="Voice input" aria-label="Speak your message">🎙️</button>
+          <button class="imageModeBtn" id="imageModeBtn" type="button" title="Generate an image" aria-label="Toggle image generation mode" aria-pressed="false">🎨</button>
+          <textarea id="userInput" rows="1" placeholder="Ask Kirong anything..." aria-label="Message Kirong AI"></textarea>
+          <button class="sendBtn" id="sendBtn" title="Send" aria-label="Send message">🚀</button>
         </div>
-
-
-        <!-- FILE PREVIEW -->
-
-        <div
-          class="filePreview hidden"
-          id="filePreview"
-          aria-live="polite"
-        ></div>
-
-
-        <!-- QUICK ACTIONS -->
-
-        <div
-          class="quickActions"
-          aria-label="Quick actions"
-        >
-
-          <button
-            class="qa"
-            type="button"
-            data-prompt="Write code for "
-          >
-            ⚡ Code
-          </button>
-
-
-          <button
-            class="qa"
-            type="button"
-            data-prompt="Write a "
-          >
-            ✍️ Write
-          </button>
-
-
-          <button
-            class="qa"
-            type="button"
-            data-prompt="Give me a business idea for "
-          >
-            💼 Business
-          </button>
-
-
-          <button
-            class="qa"
-            type="button"
-            data-prompt="Explain "
-          >
-            💡 Explain
-          </button>
-
+        <div class="filePreview hidden" id="filePreview"></div>
+        <div class="quickActions">
+          <button class="qa" data-prompt="Write code for ">⚡ Code</button>
+          <button class="qa" data-prompt="Write a ">✍️ Write</button>
+          <button class="qa" data-prompt="Give me a business idea for ">💼 Business</button>
+          <button class="qa" data-prompt="Explain ">💡 Explain</button>
         </div>
-
       </div>
-
     </section>
 
-
-    <!-- =======================================================
-         📁 PROJECTS TAB
-    ======================================================== -->
-
-    <section
-      class="tabContent"
-      id="projectsTab"
-      role="tabpanel"
-      aria-labelledby="projectsTabButton"
-    >
-
+    <!-- TAB: PROJECTS -->
+    <section class="tabContent" id="projectsTab">
       <div class="tabHeader">
-
         <div>
-
-          <h2>
-            Your Projects
-          </h2>
-
-          <p>
-            All your creations in one royal vault
-          </p>
-
+          <h2>Your Projects</h2>
+          <p>All your creations in one royal vault</p>
         </div>
-
-
-        <button
-          class="primaryBtn"
-          id="newProjectBtn"
-          type="button"
-        >
-          + New
-        </button>
-
+        <button class="primaryBtn" id="newProjectBtn">+ New</button>
       </div>
-
-
-      <div
-        class="projectsGrid"
-        id="projectsGrid"
-      >
-
-        <p class="emptyText">
-          Loading your projects...
-        </p>
-
+      <div class="projectsGrid" id="projectsGrid">
+        <p class="emptyText">Loading your projects...</p>
       </div>
-
     </section>
 
-
-    <!-- =======================================================
-         🛠️ TOOLS TAB
-    ======================================================== -->
-
-    <section
-      class="tabContent"
-      id="toolsTab"
-      role="tabpanel"
-      aria-labelledby="toolsTabButton"
-    >
-
+    <!-- TAB: TOOLS -->
+    <section class="tabContent" id="toolsTab">
       <div class="tabHeader">
-
-        <div>
-
-          <h2>
-            Royal Tools
-          </h2>
-
-          <p>
-            Superpowers for Kings & Queens
-          </p>
-
+        <div><h2>Royal Tools</h2><p>Superpowers for Kings & Queens</p></div>
+        <div style="display:flex;gap:8px">
+          <button class="ghostBtn" id="clearToolsBtn">🗑️ Clear</button>
+          <button class="primaryBtn" id="exportToolsBtn">📤 Export</button>
         </div>
-
-
-        <div
-          class="tabHeaderActions"
-          style="display:flex;gap:8px"
-        >
-
-          <button
-            class="ghostBtn"
-            id="clearToolsBtn"
-            type="button"
-          >
-            🗑️ Clear
-          </button>
-
-
-          <button
-            class="primaryBtn"
-            id="exportToolsBtn"
-            type="button"
-          >
-            📤 Export
-          </button>
-
-        </div>
-
       </div>
-
-
       <div class="toolsGrid">
+        <button class="toolCard" data-mode="chat" data-prompt="Write me a professional CV for a "><span class="toolIcon">📄</span><b>CV Builder</b><small>Create pro CV in 30s</small></button>
+        <button class="toolCard" data-mode="chat" data-prompt="Write code for "><span class="toolIcon">💻</span><b>Code Generator</b><small>Websites & apps</small></button>
+        <button class="toolCard" data-mode="chat" data-prompt="Write a professional email to "><span class="toolIcon">📧</span><b>Email Writer</b><small>Professional emails</small></button>
+        <button class="toolCard" data-mode="chat" data-prompt="Give me 3 business ideas for "><span class="toolIcon">💡</span><b>Biz Ideas</b><small>For Kenyan market</small></button>
 
-        <!-- FREE TOOLS -->
-
-        <button
-          class="toolCard"
-          type="button"
-          data-mode="chat"
-          data-prompt="Write me a professional CV for a "
-        >
-          <span class="toolIcon">📄</span>
-          <b>CV Builder</b>
-          <small>Create pro CV in 30s</small>
-        </button>
-
-
-        <button
-          class="toolCard"
-          type="button"
-          data-mode="chat"
-          data-prompt="Write code for "
-        >
-          <span class="toolIcon">💻</span>
-          <b>Code Generator</b>
-          <small>Websites & apps</small>
-        </button>
-
-
-        <button
-          class="toolCard"
-          type="button"
-          data-mode="chat"
-          data-prompt="Write a professional email to "
-        >
-          <span class="toolIcon">📧</span>
-          <b>Email Writer</b>
-          <small>Professional emails</small>
-        </button>
-
-
-        <button
-          class="toolCard"
-          type="button"
-          data-mode="chat"
-          data-prompt="Give me 3 business ideas for "
-        >
-          <span class="toolIcon">💡</span>
-          <b>Biz Ideas</b>
-          <small>For Kenyan market</small>
-        </button>
-
-
-        <!-- PRO TOOLS -->
-
-        <button
-          class="toolCard pro"
-          type="button"
-          data-mode="content"
-          data-prompt="Create a week's worth of Instagram captions for "
-        >
-          <span class="proBadge">PRO</span>
-          <span class="toolIcon">📝</span>
-          <b>Content Factory</b>
-          <small>Social posts, captions, ad copy</small>
-        </button>
-
-
-        <button
-          class="toolCard pro"
-          type="button"
-          data-mode="whatsapp"
-          data-prompt="Write a WhatsApp broadcast message announcing "
-        >
-          <span class="proBadge">PRO</span>
-          <span class="toolIcon">📱</span>
-          <b>WhatsApp Business</b>
-          <small>Customer replies & promos</small>
-        </button>
-
-
-        <button
-          class="toolCard pro"
-          type="button"
-          data-mode="blog"
-          data-prompt="Write a blog post about "
-        >
-          <span class="proBadge">PRO</span>
-          <span class="toolIcon">✍️</span>
-          <b>Blog Engine</b>
-          <small>SEO-ready articles</small>
-        </button>
-
-
-        <button
-          class="toolCard pro"
-          type="button"
-          data-mode="affiliate"
-          data-prompt="Write a comparison guide for "
-        >
-          <span class="proBadge">PRO</span>
-          <span class="toolIcon">🤝</span>
-          <b>Affiliate Engine</b>
-          <small>Buyer guides & reviews</small>
-        </button>
-
+        <button class="toolCard pro" data-mode="content" data-prompt="Create a week's worth of Instagram captions for "><span class="proBadge">PRO</span><span class="toolIcon">📝</span><b>Content Factory</b><small>Social posts, captions, ad copy</small></button>
+        <button class="toolCard pro" data-mode="whatsapp" data-prompt="Write a WhatsApp broadcast message announcing "><span class="proBadge">PRO</span><span class="toolIcon">📱</span><b>WhatsApp Business</b><small>Customer replies & promos</small></button>
+        <button class="toolCard pro" data-mode="blog" data-prompt="Write a blog post about "><span class="proBadge">PRO</span><span class="toolIcon">✍️</span><b>Blog Engine</b><small>SEO-ready articles</small></button>
+        <button class="toolCard pro" data-mode="affiliate" data-prompt="Write a comparison guide for "><span class="proBadge">PRO</span><span class="toolIcon">🤝</span><b>Affiliate Engine</b><small>Buyer guides & reviews</small></button>
       </div>
-
     </section>
 
-
-    <!-- =======================================================
-         🕘 HISTORY TAB
-    ======================================================== -->
-
-    <section
-      class="tabContent"
-      id="historyTab"
-      role="tabpanel"
-      aria-labelledby="historyTabButton"
-    >
-
+    <!-- TAB: HISTORY -->
+    <section class="tabContent" id="historyTab">
       <div class="tabHeader">
-
-        <div>
-
-          <h2>
-            Chat History
-          </h2>
-
-          <p>
-            Your conversations with Kirong
-          </p>
-
+        <div><h2>Chat History</h2><p>Your conversations with Kirong</p></div>
+        <div style="display:flex;gap:8px">
+          <button class="ghostBtn" id="clearHistoryBtn">🗑️ Clear All</button>
+          <button class="primaryBtn" id="exportHistoryBtn">📤 Export</button>
         </div>
-
-
-        <div
-          class="tabHeaderActions"
-          style="display:flex;gap:8px"
-        >
-
-          <button
-            class="ghostBtn"
-            id="clearHistoryBtn"
-            type="button"
-          >
-            🗑️ Clear All
-          </button>
-
-
-          <button
-            class="primaryBtn"
-            id="exportHistoryBtn"
-            type="button"
-          >
-            📤 Export
-          </button>
-
-        </div>
-
       </div>
-
-
-      <div
-        class="historyList"
-        id="historyList"
-        aria-live="polite"
-      >
-
-        <p class="emptyText">
-          No conversations yet. Start chatting!
-        </p>
-
+      <div class="historyList" id="historyList">
+        <p class="emptyText">No conversations yet. Start chatting!</p>
       </div>
+    </section>
 
+    <!-- TAB: SCHOOL -->
+    <section class="tabContent" id="schoolTab">
+      <div class="tabHeader">
+        <div><h2>School Mode</h2><p>Learn faster with step-by-step explanations</p></div>
+      </div>
+      <div class="toolsGrid">
+        <button class="toolCard" data-mode="school" data-prompt="Help me understand "><span class="toolIcon">🔢</span><b>Math Helper</b><small>Step-by-step solutions</small></button>
+        <button class="toolCard" data-mode="school" data-prompt="Explain the science behind "><span class="toolIcon">🔬</span><b>Science</b><small>Physics, Chemistry, Biology</small></button>
+        <button class="toolCard" data-mode="school" data-prompt="Help me write an essay about "><span class="toolIcon">📖</span><b>English & Essays</b><small>Writing & comprehension</small></button>
+        <button class="toolCard" data-mode="school" data-prompt="Explain the business studies concept of "><span class="toolIcon">💼</span><b>Business Studies</b><small>KCSE & college level</small></button>
+        <button class="toolCard" data-mode="school" data-prompt="Teach me how to "><span class="toolIcon">💻</span><b>Coding & ICT</b><small>Learn programming basics</small></button>
+        <button class="toolCard" data-mode="school" data-prompt="Give me practice questions on "><span class="toolIcon">📝</span><b>Exam Prep</b><small>Practice questions & revision</small></button>
+      </div>
     </section>
 
   </div>
-
-
-  <!-- =========================================================
-       👑 KIRONG AI SERVICE WORKER
-  ========================================================== -->
-
-  <script>
-    if ("serviceWorker" in navigator) {
-      window.addEventListener("load", () => {
-        navigator.serviceWorker
-          .register("/sw.js")
-          .then(() => {
-            console.log("👑 Kirong AI Service Worker ready");
-          })
-          .catch((error) => {
-            console.warn(
-              "Kirong AI Service Worker registration failed:",
-              error
-            );
-          });
-      });
-    }
-  </script>
-
-
-  <!-- =========================================================
-       ⚡ KIRONG AI ENGINE
-  ========================================================== -->
-
-  <script
-    src="/app.js"
-    defer
-  ></script>
-
+  <script src="/app.js"></script>
 </body>
 </html>
