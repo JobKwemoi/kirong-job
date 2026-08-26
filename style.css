@@ -130,7 +130,7 @@ body{
 .messageContent a{color:#c4b5fd;text-decoration:underline}
 
 .copyMessageBtn{
-  margin-top:8px;height:26px;padding:0 10px;border-radius:999px;
+  height:26px;padding:0 10px;border-radius:999px;
   border:1px solid var(--border);background:rgba(255,255,255,.05);
   color:var(--muted);font-size:10px;font-weight:700;cursor:pointer;transition:.2s
 }
@@ -138,15 +138,32 @@ body{
 
 .attachedFile{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--muted);margin-bottom:6px;opacity:.85}
 
-/* CODE BLOCKS (inside AI messages) */
+/* CODE BLOCKS (inside AI messages) — now uses a header bar
+   (language label + copy button) instead of an absolute-positioned
+   button, matching the V10 renderMarkdown() structure */
 .codeWrapper{position:relative;margin:10px 0;border-radius:12px;overflow:hidden;border:1px solid var(--border)}
+.codeHeader{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:6px 10px;background:rgba(255,255,255,.04);border-bottom:1px solid var(--border);
+  font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px
+}
 .codeBlock{background:#0a0912;padding:14px;overflow-x:auto;font-size:12px;font-family:'SFMono-Regular',Consolas,monospace;line-height:1.5}
 .copyCodeBtn{
-  position:absolute;top:8px;right:8px;height:24px;padding:0 10px;border-radius:999px;
-  border:1px solid var(--border);background:rgba(0,0,0,.5);color:var(--text);
-  font-size:10px;font-weight:700;cursor:pointer;transition:.2s
+  height:22px;padding:0 10px;border-radius:999px;
+  border:1px solid var(--border);background:rgba(255,255,255,.06);color:var(--text);
+  font-size:10px;font-weight:700;cursor:pointer;transition:.2s;text-transform:none;letter-spacing:0
 }
 .copyCodeBtn:hover{border-color:var(--border2)}
+
+/* MESSAGE ACTIONS ROW (copy / listen / retry, under assistant replies) */
+.messageActions{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
+.messageActions button{margin-top:0}
+.retryMessageBtn{
+  height:26px;padding:0 10px;border-radius:999px;
+  border:1px solid var(--border);background:rgba(255,255,255,.05);
+  color:var(--muted);font-size:10px;font-weight:700;cursor:pointer;transition:.2s
+}
+.retryMessageBtn:hover{border-color:var(--border2);color:var(--text)}
 
 /* GENERATED IMAGE MESSAGES */
 .imageMessage{padding:10px}
@@ -157,6 +174,7 @@ body{
   background:rgba(255,255,255,.05);color:var(--text);font-size:11px;font-weight:700;cursor:pointer;transition:.2s
 }
 .imageActions button:hover{border-color:var(--border2)}
+.imageProvider{display:block;margin-top:6px;font-size:10px;color:var(--muted);opacity:.7}
 
 /* TYPING / THINKING INDICATOR */
 .thinking{display:flex;align-items:center;gap:8px;padding:6px 20px 12px;font-size:12px;color:var(--muted)}
@@ -185,6 +203,7 @@ body{
 #userInput:disabled{opacity:.6;cursor:not-allowed}
 .sendBtn{width:40px;height:40px;border-radius:12px;border:none;background:linear-gradient(135deg,var(--purple),var(--purple2));color:white;cursor:pointer;display:grid;place-items:center;box-shadow:var(--purpleGlow);flex-shrink:0}
 .sendBtn:disabled{cursor:not-allowed}
+.attachBtn:disabled,.imageModeBtn:disabled,.micBtn:disabled{opacity:.4;cursor:not-allowed}
 
 /* ATTACH / FILE UPLOAD */
 .attachBtn{
@@ -225,7 +244,7 @@ body{
 
 /* SPEAK BUTTON ON ASSISTANT MESSAGES */
 .speakMessageBtn{
-  margin-top:8px;margin-left:6px;height:26px;padding:0 10px;border-radius:999px;
+  height:26px;padding:0 10px;border-radius:999px;
   border:1px solid var(--border);background:rgba(255,255,255,.05);
   color:var(--muted);font-size:10px;font-weight:700;cursor:pointer;transition:.2s
 }
@@ -263,19 +282,22 @@ body{
 .modalBox h3{font-size:15px;font-weight:800;margin-bottom:14px}
 
 /* IMAGE LIGHTBOX — a modalBox variant with no padding/card chrome,
-   used for viewing a generated image at full size (tap to close) */
+   used for viewing a generated image at full size (tap X to close) */
 .modalBox.imageLightboxBox{
   padding:0;background:transparent;border:none;box-shadow:none;
   max-width:92vw;max-height:90vh;position:relative
 }
+.imageLightboxWrap{position:relative;line-height:0}
 .imageLightboxBox img{
   width:100%;max-height:90vh;object-fit:contain;border-radius:16px;display:block
 }
 .imageLightboxClose{
-  position:absolute;top:-14px;right:-14px;width:32px;height:32px;border-radius:999px;
-  border:1px solid var(--border2);background:var(--card2);color:var(--text);
-  font-size:14px;cursor:pointer;display:grid;place-items:center;box-shadow:var(--purpleGlow)
+  position:absolute;top:10px;right:10px;width:36px;height:36px;border-radius:999px;
+  border:1px solid rgba(255,255,255,.25);background:rgba(0,0,0,.65);color:#fff;
+  font-size:15px;font-weight:700;cursor:pointer;display:grid;place-items:center;
+  backdrop-filter:blur(4px);transition:.2s
 }
+.imageLightboxClose:hover{background:rgba(0,0,0,.85);border-color:rgba(255,255,255,.4)}
 .modalField{margin-bottom:12px}
 .modalField label{display:block;font-size:11px;color:var(--muted);margin-bottom:6px;font-weight:700}
 .modalField input,.modalField select,.modalField textarea{
@@ -322,3 +344,20 @@ body{
 .quickGrid.hide{opacity:0;transform:translateY(12px);max-height:0;margin-top:0;pointer-events:none}
 .quickGrid.show{opacity:1;transform:translateY(0) scale(1);max-height:200px}
 #kirongWelcome.hideWelcome{opacity:0.3;transform:scale(0.95);transition:all .4s}
+
+/* PRO FEATURE LIST (inside the Pro upgrade modal) */
+.proFeatureList{display:flex;flex-direction:column;gap:8px;margin:14px 0}
+.proFeatureList div{
+  padding:10px 12px;border-radius:12px;background:rgba(139,92,246,.08);
+  border:1px solid var(--border);font-size:12px;color:var(--text)
+}
+
+/* OFFLINE INDICATOR — a thin banner across the top when the
+   network drops (toggled via document.body.classList "offline") */
+body.offline .topBar::after{
+  content:"🔴 You're offline — messages will fail until connection returns";
+  display:block;position:absolute;left:0;right:0;top:100%;
+  background:#7f1d1d;color:#fecaca;font-size:11px;font-weight:700;
+  text-align:center;padding:6px 10px;z-index:20
+}
+body.offline .topBar{position:relative}
