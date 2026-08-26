@@ -89,16 +89,33 @@ body{
   white-space:nowrap;transition:.2s;flex-shrink:0
 }
 .tabBtn.active{
-  background:linear-gradient(135deg,#8b5cf6,#6d28d9);color:white;
-  border-color:transparent;box-shadow:0 4px 18px rgba(124,58,237,.4)
+  color:white;border-color:transparent;
+  background:linear-gradient(135deg,#8b5cf6,#6d28d9);box-shadow:0 4px 18px rgba(124,58,237,.4)
 }
+/* Each tab gets its own signature nav color when active */
+.tabBtn[data-tab="chat"].active{background:linear-gradient(135deg,#8b5cf6,#6d28d9);box-shadow:0 4px 18px rgba(124,58,237,.4)}
+.tabBtn[data-tab="projects"].active{background:linear-gradient(135deg,#22d3ee,#0e7490);box-shadow:0 4px 18px rgba(34,211,238,.35)}
+.tabBtn[data-tab="tools"].active{background:linear-gradient(135deg,#fbbf24,#b45309);box-shadow:0 4px 18px rgba(251,191,36,.35)}
+.tabBtn[data-tab="history"].active{background:linear-gradient(135deg,#f472b6,#be185d);box-shadow:0 4px 18px rgba(244,114,182,.35)}
+.tabBtn[data-tab="school"].active{background:linear-gradient(135deg,#34d399,#047857);box-shadow:0 4px 18px rgba(52,211,153,.35)}
 
 /* TAB CONTENT */
 .tabContent{display:none;flex:1;flex-direction:column;overflow:hidden}
 .tabContent.active{display:flex}
+
+/* Signature accent color used by cards/buttons/badges INSIDE each tab.
+   Chat keeps the core purple brand color; other tabs get their own
+   identity so the app feels more like distinct "rooms". */
+#chatTab{--tab-accent:#8b5cf6;--tab-accent2:#6d28d9;--tab-accent-glow:rgba(139,92,246,.35)}
+#projectsTab{--tab-accent:#22d3ee;--tab-accent2:#0e7490;--tab-accent-glow:rgba(34,211,238,.3)}
+#toolsTab{--tab-accent:#fbbf24;--tab-accent2:#b45309;--tab-accent-glow:rgba(251,191,36,.3)}
+#historyTab{--tab-accent:#f472b6;--tab-accent2:#be185d;--tab-accent-glow:rgba(244,114,182,.3)}
+#schoolTab{--tab-accent:#34d399;--tab-accent2:#047857;--tab-accent-glow:rgba(52,211,153,.3)}
+
 .tabHeader{padding:18px 20px 10px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border)}
 .tabHeader h2{font-size:16px;font-weight:800}
 .tabHeader p{font-size:12px;color:var(--muted);margin-top:2px}
+.tabHeader .primaryBtn{background:linear-gradient(135deg,var(--tab-accent),var(--tab-accent2));box-shadow:0 4px 14px var(--tab-accent-glow)}
 .primaryBtn,.ghostBtn{
   height:34px;padding:0 14px;border-radius:999px;font-size:12px;font-weight:700;cursor:pointer;border:1px solid var(--border);
   transition:transform .15s ease,box-shadow .2s ease,background .2s ease
@@ -282,7 +299,7 @@ body{
 /* PROJECTS */
 .projectsGrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px;padding:18px}
 .projectCard{padding:18px;border:1px solid var(--border);border-radius:18px;background:rgba(255,255,255,.04);cursor:pointer;transition:transform .25s cubic-bezier(.4,0,.2,1),box-shadow .25s,border-color .25s,background .25s}
-.projectCard:hover{transform:translateY(-4px);border-color:var(--purple);background:rgba(139,92,246,.08);box-shadow:0 12px 28px rgba(124,58,237,.25)}
+.projectCard:hover{transform:translateY(-4px);border-color:var(--tab-accent);background:rgba(255,255,255,.06);box-shadow:0 12px 28px var(--tab-accent-glow)}
 .projectCard:active{transform:translateY(-1px) scale(.98)}
 .projectCard span{font-size:24px}.projectCard h3{font-size:13px;margin:10px 0 4px;font-weight:700}.projectCard p{font-size:11px;color:var(--muted)}
 .projectCard.new{border-style:dashed;opacity:.8}
@@ -338,19 +355,19 @@ body{
   transition:transform .25s cubic-bezier(.4,0,.2,1),box-shadow .25s,border-color .25s,background .25s
 }
 .toolCard:hover{
-  border-color:var(--purple);background:rgba(139,92,246,.1);
-  transform:translateY(-4px);box-shadow:0 12px 28px rgba(124,58,237,.25)
+  border-color:var(--tab-accent);background:rgba(255,255,255,.06);
+  transform:translateY(-4px);box-shadow:0 12px 28px var(--tab-accent-glow)
 }
 .toolCard:active{transform:translateY(-1px) scale(.98)}
 .toolCard b{display:block;font-size:13px;margin-bottom:4px;font-weight:800}
 .toolCard small{font-size:11px;color:var(--muted)}
 
-/* Premium gradient icon badge instead of a bare emoji */
+/* Premium gradient icon badge — tinted with the tab's accent color */
 .toolIcon{
   display:inline-flex;align-items:center;justify-content:center;
   width:38px;height:38px;border-radius:12px;margin-bottom:10px;font-size:18px;
-  background:linear-gradient(135deg,rgba(139,92,246,.25),rgba(109,40,217,.15));
-  border:1px solid var(--border2)
+  background:linear-gradient(135deg,var(--tab-accent),var(--tab-accent2));
+  border:1px solid var(--border2);opacity:.9
 }
 
 /* PRO tool cards get a subtle gradient outline + shimmering badge */
@@ -358,7 +375,7 @@ body{
   border-color:rgba(139,92,246,.35);
   background:linear-gradient(160deg,rgba(139,92,246,.08),rgba(255,255,255,.02))
 }
-.toolCard.pro:hover{box-shadow:0 12px 32px rgba(124,58,237,.4)}
+.toolCard.pro:hover{border-color:#8b5cf6;box-shadow:0 12px 32px rgba(124,58,237,.4)}
 .proBadge{
   position:absolute;top:12px;right:12px;padding:2px 8px;border-radius:999px;
   font-size:9px;font-weight:800;letter-spacing:.5px;color:#fff;
@@ -388,8 +405,8 @@ body{
   padding:12px;border:1px solid var(--border);border-radius:12px;background:rgba(255,255,255,.03);
   margin-bottom:8px;cursor:pointer;display:flex;align-items:center;justify-content:space-between;transition:.2s
 }
-.historyItem:hover{border-color:var(--border2);background:rgba(139,92,246,.06)}
-.historyItem.active{border-color:var(--purple);background:rgba(139,92,246,.1)}
+.historyItem:hover{border-color:var(--tab-accent);background:rgba(255,255,255,.06)}
+.historyItem.active{border-color:var(--tab-accent);background:rgba(255,255,255,.08);box-shadow:0 4px 16px var(--tab-accent-glow)}
 .historyItem b{font-size:12px;display:block}
 .historyItem small{font-size:11px;color:var(--muted)}
 .historyItem button{background:none;border:none;color:var(--muted);cursor:pointer;font-size:14px}
