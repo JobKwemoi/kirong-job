@@ -63,6 +63,7 @@
       </div>
 
       <div class="inputWrap">
+        <div id="modeBanner" class="modeBanner hidden"></div>
         <div class="inputBar">
           <input type="file" id="fileInput" hidden
             accept=".txt,.md,.csv,.json,.js,.ts,.jsx,.tsx,.html,.css,.py,.java,.c,.cpp,.log,.yml,.yaml,.xml,.sql,image/*,application/pdf" />
@@ -106,10 +107,15 @@
         </div>
       </div>
       <div class="toolsGrid">
-        <button class="toolCard"><span>📄</span><b>CV Builder</b><small>Create pro CV in 30s</small></button>
-        <button class="toolCard"><span>💻</span><b>Code Generator</b><small>Websites & apps</small></button>
-        <button class="toolCard"><span>📧</span><b>Email Writer</b><small>Professional emails</small></button>
-        <button class="toolCard"><span>💡</span><b>Biz Ideas</b><small>For Kenyan market</small></button>
+        <button class="toolCard" data-mode="chat" data-prompt="Write me a professional CV for a "><span class="toolIcon">📄</span><b>CV Builder</b><small>Create pro CV in 30s</small></button>
+        <button class="toolCard" data-mode="chat" data-prompt="Write code for "><span class="toolIcon">💻</span><b>Code Generator</b><small>Websites & apps</small></button>
+        <button class="toolCard" data-mode="chat" data-prompt="Write a professional email to "><span class="toolIcon">📧</span><b>Email Writer</b><small>Professional emails</small></button>
+        <button class="toolCard" data-mode="chat" data-prompt="Give me 3 business ideas for "><span class="toolIcon">💡</span><b>Biz Ideas</b><small>For Kenyan market</small></button>
+
+        <button class="toolCard pro" data-mode="content" data-prompt="Create a week's worth of Instagram captions for "><span class="proBadge">PRO</span><span class="toolIcon">📝</span><b>Content Factory</b><small>Social posts, captions, ad copy</small></button>
+        <button class="toolCard pro" data-mode="whatsapp" data-prompt="Write a WhatsApp broadcast message announcing "><span class="proBadge">PRO</span><span class="toolIcon">📱</span><b>WhatsApp Business</b><small>Customer replies & promos</small></button>
+        <button class="toolCard pro" data-mode="blog" data-prompt="Write a blog post about "><span class="proBadge">PRO</span><span class="toolIcon">✍️</span><b>Blog Engine</b><small>SEO-ready articles</small></button>
+        <button class="toolCard pro" data-mode="affiliate" data-prompt="Write a comparison guide for "><span class="proBadge">PRO</span><span class="toolIcon">🤝</span><b>Affiliate Engine</b><small>Buyer guides & reviews</small></button>
       </div>
     </section>
 
