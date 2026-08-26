@@ -1048,6 +1048,52 @@ function addMessage(
       bubble.appendChild(
         actions
       );
+    } else if (
+      role === "user"
+    ) {
+      const actions =
+        document.createElement(
+          "div"
+        );
+
+      actions.className =
+        "messageActions";
+
+      const editBtn =
+        document.createElement(
+          "button"
+        );
+
+      editBtn.className =
+        "editMessageBtn";
+
+      editBtn.textContent =
+        "✏️ Edit";
+
+      editBtn.addEventListener(
+        "click",
+        () => {
+          if (userInput) {
+            userInput.value =
+              text.replace(
+                /^Please analyze file:\s*/,
+                ""
+              );
+
+            autoResizeInput();
+
+            userInput.focus();
+          }
+        }
+      );
+
+      actions.appendChild(
+        editBtn
+      );
+
+      bubble.appendChild(
+        actions
+      );
     }
   }
 
