@@ -4431,82 +4431,189 @@ if (newProjectBtn) {
 }
 
 /* ============================================================
-   👑 PRO
+   👑 PRO — M-PESA PAYMENT
 ============================================================ */
 
-if (planBadge) {
-  planBadge.addEventListener(
-    "click",
-    () => {
-      const whatsapp =
-        `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(
-          WHATSAPP_MESSAGE
-        )}`;
+const PAYMENT_ENDPOINT = "/api/payment";
+const PAYMENT_STATUS_ENDPOINT = "/api/payment-status";
+const PRO_PRICE_DISPLAY = "KES 199"; // shown in the UI; the real
+                                       // charged amount is decided
+                                       // server-side by plans.js
 
-      /*
-       * Keep current Phase-4 scaffold.
-       * We do not pretend payment exists yet.
-       */
+function openProPaymentModal() {
+  const whatsapp =
+    `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(WHATSAPP_MESSAGE)}`;
 
-      openModal(
-        `
-          <h3>👑 Kirong AI Pro</h3>
+  openModal(
+    `
+      <h3>👑 Kirong AI Pro</h3>
 
-          <p>
-            Unlock the full Kirong AI experience.
-          </p>
+      <p>Unlock the full Kirong AI experience for ${PRO_PRICE_DISPLAY}/month.</p>
 
-          <div class="proFeatureList">
-            <div>⚡ Higher daily limits</div>
-            <div>🎨 More image generations</div>
-            <div>📁 More file analysis</div>
-            <div>💼 Business tools</div>
-            <div>📱 WhatsApp Business features</div>
-            <div>📝 Blog & content engine</div>
-          </div>
+      <div class="proFeatureList">
+        <div>⚡ Higher daily limits</div>
+        <div>🎨 More image generations</div>
+        <div>📁 More file analysis</div>
+        <div>💼 Business tools</div>
+        <div>📱 WhatsApp Business features</div>
+        <div>📝 Blog & content engine</div>
+      </div>
 
-          <div class="modalActions">
-            <button
-              id="proCloseBtn"
-            >
-              Maybe later
-            </button>
+      <div class="modalField">
+        <label>M-Pesa Number</label>
+        <input type="tel" id="proPhoneInput" placeholder="07XX XXX XXX" maxlength="13" />
+      </div>
 
-            <button
-              class="primaryBtn"
-              id="proWhatsappBtn"
-            >
-              💬 Talk to Kirong
-            </button>
-          </div>
-        `
+      <div id="proPaymentStatus" class="paymentStatus hidden"></div>
+
+      <div class="modalActions">
+        <button id="proCloseBtn">Maybe later</button>
+        <button class="primaryBtn" id="proPayBtn">📲 Pay with M-Pesa</button>
+      </div>
+
+      <p class="proWhatsappFallback">
+        Prefer to talk first?
+        <a href="${whatsapp}" target="_blank" rel="noopener noreferrer">Chat with Kirong on WhatsApp</a>
+      </p>
+    `
+  );
+
+  document.getElementById("proCloseBtn")?.addEventListener("click", closeModal);
+  document.getElementById("proPhoneInput")?.focus();
+
+  document.getElementById("proPayBtn")?.addEventListener("click", initiateProPayment);
+}
+
+async function initiateProPayment() {
+  const phoneInput = document.getElementById("proPhoneInput");
+  const payBtn = document.getElementById("proPayBtn");
+  const statusBox = document.getElementById("proPaymentStatus");
+
+  const phone = phoneInput?.value.trim();
+
+  if (!phone) {
+    showToast("⚠️ Enter your M-Pesa number");
+    return;
+  }
+
+  if (payBtn) {
+    payBtn.disabled = true;
+    payBtn.textContent = "Sending request...";
+  }
+
+  if (statusBox) {
+    statusBox.classList.remove("hidden");
+    statusBox.className = "paymentStatus pending";
+    statusBox.textContent = "📲 Sending payment request...";
+  }
+
+  try {
+    const response = await fetch(PAYMENT_ENDPOINT, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Accept: "application/json",
+        "X-Kirong-User-Id": DEVICE_USER_ID
+      },
+      body: JSON.stringify({ phone, userId: DEVICE_USER_ID })
+    });
+
+    const data = await response.json().catch(() => ({}));
+
+    if (!response.ok || !data.ok) {
+      throw new Error(data?.error || `Server ${response.status}`);
+    }
+
+    if (statusBox) {
+      statusBox.textContent = "📱 Check your phone and enter your M-Pesa PIN...";
+    }
+
+    if (payBtn) {
+      payBtn.textContent = "Waiting for confirmation...";
+    }
+
+    await pollPaymentStatus(data.checkoutRequestId, statusBox, payBtn);
+  } catch (error) {
+    if (statusBox) {
+      statusBox.className = "paymentStatus failed";
+      statusBox.textContent = `⚠️ ${friendlyError(error)}`;
+    }
+
+    if (payBtn) {
+      payBtn.disabled = false;
+      payBtn.textContent = "📲 Pay with M-Pesa";
+    }
+  }
+}
+
+async function pollPaymentStatus(checkoutRequestId, statusBox, payBtn) {
+  const maxAttempts = 30; // ~90 seconds at 3s intervals
+  const intervalMs = 3000;
+
+  for (let attempt = 0; attempt < maxAttempts; attempt++) {
+    await new Promise((resolve) => setTimeout(resolve, intervalMs));
+
+    try {
+      const response = await fetch(
+        `${PAYMENT_STATUS_ENDPOINT}?checkoutRequestId=${encodeURIComponent(checkoutRequestId)}`,
+        {
+          headers: { Accept: "application/json", "X-Kirong-User-Id": DEVICE_USER_ID },
+          cache: "no-store"
+        }
       );
 
-      document
-        .getElementById(
-          "proCloseBtn"
-        )
-        ?.addEventListener(
-          "click",
-          closeModal
-        );
+      const data = await response.json().catch(() => ({}));
 
-      document
-        .getElementById(
-          "proWhatsappBtn"
-        )
-        ?.addEventListener(
-          "click",
-          () => {
-            window.open(
-              whatsapp,
-              "_blank",
-              "noopener,noreferrer"
-            );
-          }
-        );
+      if (!response.ok || !data.ok) continue; // transient — keep polling
+
+      if (data.status === "completed") {
+        if (statusBox) {
+          statusBox.className = "paymentStatus success";
+          statusBox.textContent = "✅ Payment received! You're now Pro 👑";
+        }
+
+        showToast("👑 Welcome to Kirong AI Pro!");
+        await refreshUserData();
+
+        setTimeout(closeModal, 1800);
+        return;
+      }
+
+      if (data.status === "failed") {
+        if (statusBox) {
+          statusBox.className = "paymentStatus failed";
+          statusBox.textContent = `⚠️ ${data.failureReason || "Payment was not completed."}`;
+        }
+
+        if (payBtn) {
+          payBtn.disabled = false;
+          payBtn.textContent = "📲 Try again";
+        }
+
+        return;
+      }
+
+      // still "pending" — keep polling
+    } catch {
+      // network hiccup — keep polling, don't abort the whole flow
     }
-  );
+  }
+
+  // Timed out waiting
+  if (statusBox) {
+    statusBox.className = "paymentStatus failed";
+    statusBox.textContent =
+      "⏱️ We didn't hear back in time. If you completed payment on your phone, it may still go through — check back shortly.";
+  }
+
+  if (payBtn) {
+    payBtn.disabled = false;
+    payBtn.textContent = "📲 Pay with M-Pesa";
+  }
+}
+
+if (planBadge) {
+  planBadge.addEventListener("click", openProPaymentModal);
 }
 
 /* ============================================================
