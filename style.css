@@ -121,7 +121,7 @@ body{
   background:radial-gradient(900px 500px at 50% -15%,var(--tab-accent-glow),transparent),var(--card)
 }
 
-.tabHeader{padding:18px 20px 10px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border)}
+.tabHeader{padding:18px 20px 10px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border);flex-shrink:0}
 .tabHeader h2{font-size:16px;font-weight:800}
 .tabHeader p{font-size:12px;color:var(--muted);margin-top:2px}
 .tabHeader .primaryBtn{background:linear-gradient(135deg,var(--tab-accent),var(--tab-accent2));box-shadow:0 4px 14px var(--tab-accent-glow)}
@@ -313,7 +313,7 @@ body{
 .qa{height:32px;padding:0 12px;border-radius:999px;border:1px solid var(--border);background:rgba(255,255,255,.04);color:var(--muted);font-size:11px;font-weight:700;cursor:pointer;white-space:nowrap}
 
 /* PROJECTS */
-.projectsGrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px;padding:18px}
+.projectsGrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px;padding:18px;flex:1;overflow-y:auto;min-height:0;-webkit-overflow-scrolling:touch}
 .projectCard{padding:18px;border:1px solid var(--border);border-radius:18px;background:rgba(255,255,255,.04);cursor:pointer;transition:transform .25s cubic-bezier(.4,0,.2,1),box-shadow .25s,border-color .25s,background .25s}
 .projectCard:hover{transform:translateY(-4px);border-color:var(--tab-accent);background:rgba(255,255,255,.06);box-shadow:0 12px 28px var(--tab-accent-glow)}
 .projectCard:active{transform:translateY(-1px) scale(.98)}
@@ -364,7 +364,7 @@ body{
 .modalActions .dangerBtn:hover{background:rgba(248,113,113,.1)}
 
 /* TOOLS */
-.toolsGrid{display:grid;grid-template-columns:1fr 1fr;gap:12px;padding:18px}
+.toolsGrid{display:grid;grid-template-columns:1fr 1fr;gap:12px;padding:18px;flex:1;overflow-y:auto;min-height:0;-webkit-overflow-scrolling:touch}
 .toolCard{
   position:relative;padding:18px 16px;border:1px solid rgba(255,255,255,.14);border-radius:18px;
   background:rgba(255,255,255,.08);text-align:left;cursor:pointer;
@@ -415,7 +415,7 @@ body{
 
 /* HISTORY — renamed from .histItem to .historyItem to match the
    class name app.js actually creates (renderHistoryList) */
-.historyList{padding:12px 18px;overflow-y:auto}
+.historyList{padding:12px 18px;overflow-y:auto;flex:1;min-height:0;-webkit-overflow-scrolling:touch}
 .emptyText{color:var(--muted);font-size:13px;text-align:center;margin-top:40px}
 .historyItem{
   padding:12px;border:1px solid var(--border);border-radius:12px;background:rgba(255,255,255,.03);
