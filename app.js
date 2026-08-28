@@ -1655,6 +1655,31 @@ if (
     loadSpeechVoices;
 }
 
+/* Kirong replies in whichever language the user used (per its
+   system prompt), so speech output must match the actual TEXT,
+   not a fixed setting. This checks for common Swahili function
+   words to decide which voice/lang to use for text-to-speech. */
+function detectSpeechLanguage(text) {
+  const t = " " + String(text || "").toLowerCase() + " ";
+
+  const swahiliMarkers = [
+    " ni ", " na ", " kwa ", " ya ", " wa ", " hii ", " hiyo ",
+    " karibu ", " habari ", " asante ", " tafadhali ", " unaweza ",
+    " nini ", " vipi ", " sana ", " bado ", " kila ", " kutoka ",
+    " mpaka ", " kwamba ", " kuhusu ", " lakini ", " kwenye ",
+    " ndio ", " hapana ", " leo ", " sasa ", " tena ", " pia "
+  ];
+
+  let hits = 0;
+
+  for (const marker of swahiliMarkers) {
+    if (t.includes(marker)) hits++;
+    if (hits >= 2) return "sw-KE";
+  }
+
+  return "en-US";
+}
+
 function stripMarkdownForSpeech(
   text
 ) {
@@ -1746,17 +1771,33 @@ function speakText(
       )
     );
 
-  const preferred =
-    speechVoices.find(
-      (voice) =>
-        voice.lang.startsWith(
-          "en"
+  const detectedLang =
+    detectSpeechLanguage(text);
+
+  utterance.lang =
+    detectedLang;
+
+  // Try to find a voice that actually matches the detected
+  // language (e.g. "sw-KE" or "sw"). Many devices don't ship a
+  // Swahili voice at all — in that case we deliberately do NOT
+  // force an English voice onto Swahili text (that's what caused
+  // the "spelling out letters" bug), and instead leave utterance.voice
+  // unset so the browser picks its own best-effort default for
+  // the language we told it via utterance.lang.
+  const matchingVoice =
+    speechVoices.find((voice) =>
+      voice.lang
+        .toLowerCase()
+        .startsWith(
+          detectedLang
+            .slice(0, 2)
+            .toLowerCase()
         )
     );
 
-  if (preferred) {
+  if (matchingVoice) {
     utterance.voice =
-      preferred;
+      matchingVoice;
   }
 
   utterance.rate =
@@ -4572,6 +4613,481 @@ if (newProjectBtn) {
     "click",
     openNewProjectModal
   );
+}
+
+/* ============================================================
+   🖼️ PHOTO EDITOR (client-side, canvas-based — no backend)
+   ------------------------------------------------------------
+   peBaseCanvas holds the current "baked" pixel state (after any
+   applied rotate/crop/resize). Brightness/contrast/saturation and
+   filter presets are applied live via ctx.filter at render time
+   (non-destructive) until the user downloads, at which point the
+   final render — base canvas + live filter + text overlays — is
+   exported as the actual PNG.
+============================================================ */
+
+const MAX_EDITOR_DIMENSION = 1600;
+
+const photoEditorFileInput = document.getElementById("photoEditorFileInput");
+const photoEditorCard = document.getElementById("photoEditorCard");
+const visionToolCard = document.getElementById("visionToolCard");
+
+let peOriginalDataUrl = null;
+let peBaseCanvas = null;
+let peLive = { brightness: 100, contrast: 100, saturation: 100, preset: "none" };
+let peTexts = [];
+let peCropRect = null;
+let peDragStart = null;
+let peIsDragging = false;
+let peTextPlacementArmed = false;
+
+function peFilterCss() {
+  const presetCss = {
+    none: "",
+    grayscale: "grayscale(100%)",
+    sepia: "sepia(100%)",
+    invert: "invert(100%)"
+  }[peLive.preset] || "";
+
+  return (
+    `brightness(${peLive.brightness}%) ` +
+    `contrast(${peLive.contrast}%) ` +
+    `saturate(${peLive.saturation}%) ` +
+    presetCss
+  ).trim();
+}
+
+function peCreateCanvas(w, h) {
+  const c = document.createElement("canvas");
+  c.width = Math.max(1, Math.round(w));
+  c.height = Math.max(1, Math.round(h));
+  return c;
+}
+
+function loadImageIntoEditor(file) {
+  if (!file || !file.type.startsWith("image/")) {
+    showToast("⚠️ Choose an image file");
+    return;
+  }
+
+  const reader = new FileReader();
+
+  reader.onload = () => {
+    const img = new Image();
+
+    img.onload = () => {
+      let w = img.naturalWidth;
+      let h = img.naturalHeight;
+
+      if (Math.max(w, h) > MAX_EDITOR_DIMENSION) {
+        const scale = MAX_EDITOR_DIMENSION / Math.max(w, h);
+        w = Math.round(w * scale);
+        h = Math.round(h * scale);
+      }
+
+      peOriginalDataUrl = reader.result;
+      peBaseCanvas = peCreateCanvas(w, h);
+      peBaseCanvas.getContext("2d").drawImage(img, 0, 0, w, h);
+
+      peLive = { brightness: 100, contrast: 100, saturation: 100, preset: "none" };
+      peTexts = [];
+      peCropRect = null;
+
+      openPhotoEditorModal();
+    };
+
+    img.onerror = () => showToast("⚠️ Could not load that image");
+    img.src = reader.result;
+  };
+
+  reader.onerror = () => showToast("⚠️ Could not read that file");
+  reader.readAsDataURL(file);
+}
+
+if (photoEditorCard) {
+  photoEditorCard.addEventListener("click", () => photoEditorFileInput?.click());
+}
+
+if (photoEditorFileInput) {
+  photoEditorFileInput.addEventListener("change", () => {
+    const file = photoEditorFileInput.files?.[0];
+    if (file) loadImageIntoEditor(file);
+    photoEditorFileInput.value = "";
+  });
+}
+
+function getCanvasPoint(canvas, evt) {
+  const rect = canvas.getBoundingClientRect();
+  const scaleX = canvas.width / rect.width;
+  const scaleY = canvas.height / rect.height;
+  const point = evt.touches ? evt.touches[0] : evt;
+
+  return {
+    x: (point.clientX - rect.left) * scaleX,
+    y: (point.clientY - rect.top) * scaleY
+  };
+}
+
+function renderPhotoEditor() {
+  const canvas = document.getElementById("peCanvas");
+  if (!canvas || !peBaseCanvas) return;
+
+  canvas.width = peBaseCanvas.width;
+  canvas.height = peBaseCanvas.height;
+
+  const ctx = canvas.getContext("2d");
+  ctx.filter = peFilterCss();
+  ctx.drawImage(peBaseCanvas, 0, 0);
+  ctx.filter = "none";
+
+  // Text overlays (always crisp, unaffected by filters)
+  peTexts.forEach((t) => {
+    ctx.font = `${t.size}px 'Plus Jakarta Sans', sans-serif`;
+    ctx.fillStyle = t.color;
+    ctx.textBaseline = "top";
+    ctx.fillText(t.text, t.xFrac * canvas.width, t.yFrac * canvas.height);
+  });
+
+  // Live crop selection overlay
+  if (peCropRect) {
+    ctx.save();
+    ctx.strokeStyle = "#8b5cf6";
+    ctx.lineWidth = Math.max(2, canvas.width * 0.003);
+    ctx.setLineDash([8, 6]);
+    ctx.strokeRect(peCropRect.x, peCropRect.y, peCropRect.w, peCropRect.h);
+    ctx.fillStyle = "rgba(139,92,246,.12)";
+    ctx.fillRect(peCropRect.x, peCropRect.y, peCropRect.w, peCropRect.h);
+    ctx.restore();
+  }
+
+  const cropActions = document.getElementById("peCropActions");
+  if (cropActions) {
+    cropActions.classList.toggle("hidden", !peCropRect || peCropRect.w < 4 || peCropRect.h < 4);
+  }
+}
+
+function peBindCanvasEvents() {
+  const canvas = document.getElementById("peCanvas");
+  if (!canvas) return;
+
+  const start = (evt) => {
+    if (!document.getElementById("peCropModeActive")?.checked) {
+      if (peTextPlacementArmed) {
+        const p = getCanvasPoint(canvas, evt);
+        const text = document.getElementById("peTextInput")?.value.trim();
+
+        if (text) {
+          peTexts.push({
+            text,
+            xFrac: p.x / canvas.width,
+            yFrac: p.y / canvas.height,
+            size: Number(document.getElementById("peTextSize")?.value) || 32,
+            color: document.getElementById("peTextColor")?.value || "#ffffff"
+          });
+
+          peTextPlacementArmed = false;
+          canvas.classList.remove("placingText");
+          renderPhotoEditor();
+        }
+      }
+
+      return;
+    }
+
+    evt.preventDefault();
+    peIsDragging = true;
+    peDragStart = getCanvasPoint(canvas, evt);
+    peCropRect = { x: peDragStart.x, y: peDragStart.y, w: 0, h: 0 };
+  };
+
+  const move = (evt) => {
+    if (!peIsDragging) return;
+    evt.preventDefault();
+
+    const p = getCanvasPoint(canvas, evt);
+
+    peCropRect = {
+      x: Math.min(peDragStart.x, p.x),
+      y: Math.min(peDragStart.y, p.y),
+      w: Math.abs(p.x - peDragStart.x),
+      h: Math.abs(p.y - peDragStart.y)
+    };
+
+    renderPhotoEditor();
+  };
+
+  const end = () => {
+    peIsDragging = false;
+  };
+
+  canvas.addEventListener("mousedown", start);
+  canvas.addEventListener("mousemove", move);
+  window.addEventListener("mouseup", end);
+
+  canvas.addEventListener("touchstart", start, { passive: false });
+  canvas.addEventListener("touchmove", move, { passive: false });
+  canvas.addEventListener("touchend", end);
+}
+
+function openPhotoEditorModal() {
+  openModal(
+    `
+      <h3>🖼️ Photo Editor</h3>
+
+      <div class="peCanvasWrap">
+        <canvas id="peCanvas"></canvas>
+      </div>
+
+      <div class="peSection">
+        <div class="peRow">
+          <button id="peRotateLeft" type="button">↺ Rotate</button>
+          <button id="peRotateRight" type="button">↻ Rotate</button>
+          <button id="peResetBtn" type="button">Reset</button>
+        </div>
+      </div>
+
+      <div class="peSection">
+        <label class="peLabel">Brightness</label>
+        <input type="range" id="peBrightness" min="0" max="200" value="100" />
+        <label class="peLabel">Contrast</label>
+        <input type="range" id="peContrast" min="0" max="200" value="100" />
+        <label class="peLabel">Saturation</label>
+        <input type="range" id="peSaturation" min="0" max="200" value="100" />
+      </div>
+
+      <div class="peSection">
+        <div class="peRow peFilterRow">
+          <button class="peFilterBtn active" data-preset="none" type="button">None</button>
+          <button class="peFilterBtn" data-preset="grayscale" type="button">B&W</button>
+          <button class="peFilterBtn" data-preset="sepia" type="button">Sepia</button>
+          <button class="peFilterBtn" data-preset="invert" type="button">Invert</button>
+        </div>
+      </div>
+
+      <div class="peSection">
+        <label class="peLabel">Crop — drag on the image</label>
+        <div class="peRow">
+          <label class="peCheckLabel"><input type="checkbox" id="peCropModeActive" /> Crop mode</label>
+        </div>
+        <div class="peRow hidden" id="peCropActions">
+          <button class="primaryBtn" id="peApplyCrop" type="button">✂️ Apply Crop</button>
+          <button id="peCancelCrop" type="button">Cancel</button>
+        </div>
+      </div>
+
+      <div class="peSection">
+        <label class="peLabel">Add Text</label>
+        <input type="text" id="peTextInput" placeholder="Type text, then tap the image to place it" />
+        <div class="peRow">
+          <input type="number" id="peTextSize" value="32" min="10" max="120" title="Size" />
+          <input type="color" id="peTextColor" value="#ffffff" title="Color" />
+          <button id="peArmText" type="button">📍 Place Text</button>
+        </div>
+      </div>
+
+      <div class="peSection">
+        <label class="peLabel">Resize</label>
+        <div class="peRow">
+          <input type="number" id="peResizeW" placeholder="Width" />
+          <input type="number" id="peResizeH" placeholder="Height" />
+          <button id="peApplyResize" type="button">Apply</button>
+        </div>
+      </div>
+
+      <div class="modalActions">
+        <button id="peCloseBtn">Close</button>
+        <button class="primaryBtn" id="peDownloadBtn">⬇️ Download</button>
+      </div>
+    `,
+    "photoEditorBox"
+  );
+
+  renderPhotoEditor();
+  peBindCanvasEvents();
+
+  document.getElementById("peCloseBtn")?.addEventListener("click", closeModal);
+
+  document.getElementById("peRotateLeft")?.addEventListener("click", () => peRotate(-90));
+  document.getElementById("peRotateRight")?.addEventListener("click", () => peRotate(90));
+
+  document.getElementById("peResetBtn")?.addEventListener("click", () => {
+    if (!peOriginalDataUrl) return;
+
+    const img = new Image();
+
+    img.onload = () => {
+      let w = img.naturalWidth;
+      let h = img.naturalHeight;
+
+      if (Math.max(w, h) > MAX_EDITOR_DIMENSION) {
+        const scale = MAX_EDITOR_DIMENSION / Math.max(w, h);
+        w = Math.round(w * scale);
+        h = Math.round(h * scale);
+      }
+
+      peBaseCanvas = peCreateCanvas(w, h);
+      peBaseCanvas.getContext("2d").drawImage(img, 0, 0, w, h);
+      peLive = { brightness: 100, contrast: 100, saturation: 100, preset: "none" };
+      peTexts = [];
+      peCropRect = null;
+
+      document.querySelectorAll(".peFilterBtn").forEach((b) => b.classList.toggle("active", b.dataset.preset === "none"));
+      ["peBrightness", "peContrast", "peSaturation"].forEach((id) => {
+        const el = document.getElementById(id);
+        if (el) el.value = 100;
+      });
+
+      renderPhotoEditor();
+      showToast("↩️ Reset to original");
+    };
+
+    img.src = peOriginalDataUrl;
+  });
+
+  ["peBrightness", "peContrast", "peSaturation"].forEach((id) => {
+    document.getElementById(id)?.addEventListener("input", (e) => {
+      const key = id.replace("pe", "").toLowerCase();
+      peLive[key] = Number(e.target.value);
+      renderPhotoEditor();
+    });
+  });
+
+  document.querySelectorAll(".peFilterBtn").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      peLive.preset = btn.dataset.preset;
+      document.querySelectorAll(".peFilterBtn").forEach((b) => b.classList.remove("active"));
+      btn.classList.add("active");
+      renderPhotoEditor();
+    });
+  });
+
+  document.getElementById("peCropModeActive")?.addEventListener("change", (e) => {
+    if (!e.target.checked) {
+      peCropRect = null;
+      renderPhotoEditor();
+    }
+  });
+
+  document.getElementById("peApplyCrop")?.addEventListener("click", () => {
+    if (!peCropRect || peCropRect.w < 4 || peCropRect.h < 4 || !peBaseCanvas) return;
+
+    const cropped = peCreateCanvas(peCropRect.w, peCropRect.h);
+    cropped.getContext("2d").drawImage(
+      peBaseCanvas,
+      peCropRect.x, peCropRect.y, peCropRect.w, peCropRect.h,
+      0, 0, peCropRect.w, peCropRect.h
+    );
+
+    peBaseCanvas = cropped;
+    peCropRect = null;
+
+    const cropCheckbox = document.getElementById("peCropModeActive");
+    if (cropCheckbox) cropCheckbox.checked = false;
+
+    renderPhotoEditor();
+    showToast("✂️ Cropped");
+  });
+
+  document.getElementById("peCancelCrop")?.addEventListener("click", () => {
+    peCropRect = null;
+    renderPhotoEditor();
+  });
+
+  document.getElementById("peArmText")?.addEventListener("click", () => {
+    const text = document.getElementById("peTextInput")?.value.trim();
+    if (!text) {
+      showToast("⚠️ Type some text first");
+      return;
+    }
+
+    peTextPlacementArmed = true;
+    document.getElementById("peCanvas")?.classList.add("placingText");
+    showToast("📍 Tap the image where you want the text");
+  });
+
+  document.getElementById("peApplyResize")?.addEventListener("click", () => {
+    const targetW = Number(document.getElementById("peResizeW")?.value);
+    const targetH = Number(document.getElementById("peResizeH")?.value);
+
+    if (!targetW && !targetH) {
+      showToast("⚠️ Enter a width or height");
+      return;
+    }
+
+    if (!peBaseCanvas) return;
+
+    const aspect = peBaseCanvas.width / peBaseCanvas.height;
+    const finalW = targetW || Math.round(targetH * aspect);
+    const finalH = targetH || Math.round(targetW / aspect);
+
+    const resized = peCreateCanvas(finalW, finalH);
+    resized.getContext("2d").drawImage(peBaseCanvas, 0, 0, finalW, finalH);
+    peBaseCanvas = resized;
+
+    renderPhotoEditor();
+    showToast(`↔️ Resized to ${finalW}×${finalH}`);
+  });
+
+  document.getElementById("peDownloadBtn")?.addEventListener("click", () => {
+    const canvas = document.getElementById("peCanvas");
+    if (!canvas) return;
+
+    canvas.toBlob((blob) => {
+      if (!blob) {
+        showToast("⚠️ Could not export image");
+        return;
+      }
+
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `kirong-edit-${Date.now()}.png`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+
+      showToast("💾 Downloaded");
+    }, "image/png");
+  });
+}
+
+function peRotate(degrees) {
+  if (!peBaseCanvas) return;
+
+  const swap = Math.abs(degrees) === 90;
+  const w = swap ? peBaseCanvas.height : peBaseCanvas.width;
+  const h = swap ? peBaseCanvas.width : peBaseCanvas.height;
+
+  const rotated = peCreateCanvas(w, h);
+  const ctx = rotated.getContext("2d");
+
+  ctx.translate(w / 2, h / 2);
+  ctx.rotate((degrees * Math.PI) / 180);
+  ctx.drawImage(peBaseCanvas, -peBaseCanvas.width / 2, -peBaseCanvas.height / 2);
+
+  peBaseCanvas = rotated;
+  peCropRect = null;
+  renderPhotoEditor();
+}
+
+/* ============================================================
+   👁️ "ASK ABOUT A PHOTO" — reuses the existing chat attach flow,
+   which now supports vision on the backend for image files.
+============================================================ */
+
+if (visionToolCard) {
+  visionToolCard.addEventListener("click", () => {
+    document.querySelector('.tabBtn[data-tab="chat"]')?.click();
+
+    if (userInput) {
+      userInput.value = "What's in this photo?";
+      autoResizeInput();
+    }
+
+    showToast("📎 Attach a photo, then send");
+    fileInput?.click();
+  });
 }
 
 /* ============================================================
