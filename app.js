@@ -5496,3 +5496,19 @@ if (
 } else {
   init();
 }
+
+/* ============================================================
+   🛠️ SERVICE WORKER — registered on "load" (not before) so it
+   never competes with the initial page render for bandwidth/CPU.
+   sw.js itself bypasses /api/* and uses stale-while-revalidate
+   for the app shell, so updates roll out automatically.
+============================================================ */
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", () => {
+    navigator.serviceWorker
+      .register("/sw.js")
+      .catch((error) => {
+        console.error("Service worker registration failed:", error);
+      });
+  });
+}
