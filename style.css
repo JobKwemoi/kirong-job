@@ -1,5 +1,8 @@
 /* 👑 KIRONG AI - ROYAL MANSION CSS - FULL VAST */
-@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap');
+/* Font is loaded via <link> in index.html <head> (with preconnect)
+   instead of @import here — @import forced the browser to wait for
+   this whole file to download before even starting the font
+   request. Loading it in parallel from HTML is faster. */
 
 :root{
   --bg:#06050b;
