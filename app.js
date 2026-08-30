@@ -1,19 +1,41 @@
 /* ============================================================
-   👑 KIRONG AI — FRONTEND ENGINE V10.1
-   FULL MANSION UPGRADE (BUG FIXES APPLIED)
+   👑 KIRONG AI — FRONTEND ENGINE V10
+   FULL MANSION UPGRADE
    ------------------------------------------------------------
-   Keeps everything from V10 Mansion Upgrade.
+   Keeps:
+   • Chat / Projects / Tools / History tabs
+   • Persistent device user ID
+   • Vercel backend compatibility
+   • Chat history
+   • File attachments
+   • Image generation
+   • Voice input/output
+   • Copy buttons
+   • Export
+   • Projects CRUD
+   • Pro badge scaffold
+   • Royal guidelines
+   • Safe error handling
 
-   FIXES in this version:
-   • openChat() now falls back to legacy (v8) chat storage, same
-     as restoreChat()/saveCurrentChat()/renderHistoryList() already
-     did. Previously, tapping an old chat in History silently did
-     nothing if it only existed in the legacy key.
-   • Photo Editor: text overlays placed with peArmText are now
-     re-mapped into the new coordinate frame when a crop is
-     applied, so text no longer visually "jumps" to the wrong
-     spot after cropping. Text that falls entirely outside the
-     new crop is dropped instead of floating off-canvas.
+   Adds:
+   • Better API error handling
+   • Abort / timeout protection
+   • Request state protection
+   • Safer localStorage handling
+   • Better image detection
+   • Better file handling
+   • Usage / plan synchronization
+   • Backend user usage endpoint support
+   • Better project refresh
+   • Keyboard shortcuts
+   • Auto-resizing textarea
+   • Better welcome handling
+   • Message retry
+   • Chat rename
+   • Safer markdown rendering
+   • Modal escape handling
+   • Network status indicator
+   • Improved voice language handling
 ============================================================ */
 
 "use strict";
@@ -111,6 +133,21 @@ const imageModeBtn =
 
 const planBadge =
   document.getElementById("planBadge");
+
+const languageBtn =
+  document.getElementById("languageBtn");
+
+const onboardingOverlay =
+  document.getElementById("onboardingOverlay");
+
+const onboardingNameInput =
+  document.getElementById("onboardingName");
+
+const finishOnboardingBtn =
+  document.getElementById("finishOnboarding");
+
+const skipOnboardingBtn =
+  document.getElementById("skipOnboarding");
 
 /* ============================================================
    🧠 STATE
@@ -1451,91 +1488,111 @@ const SpeechRecognitionAPI =
   window.SpeechRecognition ||
   window.webkitSpeechRecognition;
 
+// True when we're using the Hugging Face Whisper fallback instead
+// of the browser's native SpeechRecognition (e.g. desktop Firefox,
+// which has never supported the Web Speech API).
+let usingWhisperFallback = false;
+
+let mediaRecorder = null;
+let recordedAudioChunks = [];
+
 function initSpeechRecognition() {
-  if (!SpeechRecognitionAPI) {
-    if (micBtn) {
-      micBtn.style.display =
-        "none";
-    }
+  if (SpeechRecognitionAPI) {
+    recognition =
+      new SpeechRecognitionAPI();
+
+    recognition.continuous =
+      false;
+
+    recognition.interimResults =
+      true;
+
+    recognition.lang =
+      getRecognitionLanguage();
+
+    recognition.onresult =
+      (event) => {
+        let transcript =
+          "";
+
+        for (
+          let i = 0;
+          i <
+          event.results.length;
+          i++
+        ) {
+          transcript +=
+            event.results[i][0]
+              .transcript;
+        }
+
+        if (userInput) {
+          userInput.value =
+            transcript;
+
+          autoResizeInput();
+        }
+      };
+
+    recognition.onerror =
+      (event) => {
+        isListening =
+          false;
+
+        micBtn?.classList.remove(
+          "listening"
+        );
+
+        if (
+          event.error ===
+            "not-allowed" ||
+          event.error ===
+            "service-not-allowed"
+        ) {
+          showToast(
+            "⚠️ Microphone access denied"
+          );
+        } else if (
+          event.error !==
+            "no-speech" &&
+          event.error !==
+            "aborted"
+        ) {
+          showToast(
+            "⚠️ Voice input error"
+          );
+        }
+      };
+
+    recognition.onend =
+      () => {
+        isListening =
+          false;
+
+        micBtn?.classList.remove(
+          "listening"
+        );
+      };
 
     return;
   }
 
-  recognition =
-    new SpeechRecognitionAPI();
+  // No native SpeechRecognition — try the Whisper fallback instead
+  // of just hiding the mic. This covers desktop Firefox and any
+  // browser that has never implemented the Web Speech API.
+  if (
+    navigator.mediaDevices &&
+    navigator.mediaDevices.getUserMedia &&
+    window.MediaRecorder
+  ) {
+    usingWhisperFallback = true;
+    return;
+  }
 
-  recognition.continuous =
-    false;
-
-  recognition.interimResults =
-    true;
-
-  recognition.lang =
-    getRecognitionLanguage();
-
-  recognition.onresult =
-    (event) => {
-      let transcript =
-        "";
-
-      for (
-        let i = 0;
-        i <
-        event.results.length;
-        i++
-      ) {
-        transcript +=
-          event.results[i][0]
-            .transcript;
-      }
-
-      if (userInput) {
-        userInput.value =
-          transcript;
-
-        autoResizeInput();
-      }
-    };
-
-  recognition.onerror =
-    (event) => {
-      isListening =
-        false;
-
-      micBtn?.classList.remove(
-        "listening"
-      );
-
-      if (
-        event.error ===
-          "not-allowed" ||
-        event.error ===
-          "service-not-allowed"
-      ) {
-        showToast(
-          "⚠️ Microphone access denied"
-        );
-      } else if (
-        event.error !==
-          "no-speech" &&
-        event.error !==
-          "aborted"
-      ) {
-        showToast(
-          "⚠️ Voice input error"
-        );
-      }
-    };
-
-  recognition.onend =
-    () => {
-      isListening =
-        false;
-
-      micBtn?.classList.remove(
-        "listening"
-      );
-    };
+  // Truly nothing we can do (very old browser) — hide the mic.
+  if (micBtn) {
+    micBtn.style.display = "none";
+  }
 }
 
 function getRecognitionLanguage() {
@@ -1560,6 +1617,11 @@ function getRecognitionLanguage() {
 }
 
 function toggleListening() {
+  if (usingWhisperFallback) {
+    toggleWhisperRecording();
+    return;
+  }
+
   if (!recognition) {
     showToast(
       "⚠️ Voice input is not supported"
@@ -1596,6 +1658,111 @@ function toggleListening() {
       "listening"
     );
   } catch {}
+}
+
+/* ============================================================
+   🎙️ WHISPER FALLBACK — records audio via MediaRecorder and
+   sends it to /api/stt for transcription (Hugging Face Whisper).
+   Used only when the browser has no native SpeechRecognition.
+============================================================ */
+
+async function toggleWhisperRecording() {
+  if (isListening) {
+    try {
+      mediaRecorder?.stop();
+    } catch {}
+
+    return; // onstop handler below finishes the flow
+  }
+
+  try {
+    const stream =
+      await navigator.mediaDevices.getUserMedia({ audio: true });
+
+    recordedAudioChunks = [];
+
+    mediaRecorder = new MediaRecorder(stream);
+
+    mediaRecorder.ondataavailable = (event) => {
+      if (event.data && event.data.size > 0) {
+        recordedAudioChunks.push(event.data);
+      }
+    };
+
+    mediaRecorder.onstop = async () => {
+      isListening = false;
+      micBtn?.classList.remove("listening");
+
+      stream.getTracks().forEach((track) => track.stop());
+
+      const blob = new Blob(
+        recordedAudioChunks,
+        { type: mediaRecorder.mimeType || "audio/webm" }
+      );
+
+      recordedAudioChunks = [];
+
+      if (blob.size > 0) {
+        await transcribeRecording(blob);
+      }
+    };
+
+    mediaRecorder.start();
+
+    isListening = true;
+    micBtn?.classList.add("listening");
+
+    showToast("🎤 Recording... tap the mic again to stop");
+  } catch {
+    showToast("⚠️ Microphone access denied");
+  }
+}
+
+function blobToBase64(blob) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onloadend = () => resolve(reader.result);
+    reader.onerror = reject;
+    reader.readAsDataURL(blob);
+  });
+}
+
+async function transcribeRecording(blob) {
+  showToast("📝 Transcribing...");
+
+  try {
+    const base64Audio = await blobToBase64(blob);
+
+    const response = await fetch("/api/stt", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "X-Kirong-User-Id": DEVICE_USER_ID
+      },
+      body: JSON.stringify({
+        audio: base64Audio,
+        mimeType: blob.type
+      })
+    });
+
+    const data = await response.json().catch(() => ({}));
+
+    if (!response.ok || !data.ok) {
+      throw new Error(data?.error || `Server ${response.status}`);
+    }
+
+    if (userInput) {
+      userInput.value = data.text || "";
+      autoResizeInput();
+      userInput.focus();
+    }
+
+    if (!data.text) {
+      showToast("⚠️ Didn't catch that — try again");
+    }
+  } catch (error) {
+    showToast(`⚠️ ${friendlyError(error)}`);
+  }
 }
 
 if (micBtn) {
@@ -1689,7 +1856,7 @@ function stripMarkdownForSpeech(
     .trim();
 }
 
-function speakText(
+function speakTextBrowser(
   text,
   button
 ) {
@@ -1819,6 +1986,104 @@ function speakText(
 }
 
 /* ============================================================
+   🎧 HD VOICE (Hugging Face TTS) — now the DEFAULT for speech
+   output. Falls back silently to the browser's built-in voice
+   (speakTextBrowser above) if HD voice is unavailable, times out,
+   or isn't configured — voice output should never just break.
+============================================================ */
+
+let currentHDAudio = null;
+
+function stopAllSpeech() {
+  if (currentHDAudio) {
+    currentHDAudio.pause();
+    currentHDAudio.currentTime = 0;
+    currentHDAudio = null;
+  }
+
+  if ("speechSynthesis" in window) {
+    window.speechSynthesis.cancel();
+  }
+
+  document
+    .querySelectorAll(".speakMessageBtn.speaking")
+    .forEach((btn) => {
+      btn.classList.remove("speaking");
+      btn.textContent = "🔊 Listen";
+    });
+}
+
+async function speakText(text, button) {
+  // Toggle off if this exact button is already playing something.
+  if (button && button.classList.contains("speaking")) {
+    stopAllSpeech();
+    return;
+  }
+
+  stopAllSpeech();
+
+  if (button) {
+    button.classList.add("speaking");
+    button.textContent = "⏳ Loading voice...";
+  }
+
+  const cleanedText = stripMarkdownForSpeech(text);
+  const detectedLang = detectSpeechLanguage(text);
+  const hfLang = detectedLang.startsWith("sw") ? "sw" : "en";
+
+  try {
+    const response = await fetch("/api/tts", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "X-Kirong-User-Id": DEVICE_USER_ID
+      },
+      body: JSON.stringify({ text: cleanedText, lang: hfLang })
+    });
+
+    const data = await response.json().catch(() => ({}));
+
+    if (!response.ok || !data.ok || !data.audio) {
+      throw new Error(data?.error || `Server ${response.status}`);
+    }
+
+    const audio = new Audio(data.audio);
+    currentHDAudio = audio;
+
+    if (button) {
+      button.textContent = "⏸️ Stop";
+    }
+
+    audio.onended = () => {
+      if (currentHDAudio === audio) currentHDAudio = null;
+      if (button) {
+        button.classList.remove("speaking");
+        button.textContent = "🔊 Listen";
+      }
+    };
+
+    audio.onerror = () => {
+      if (currentHDAudio === audio) currentHDAudio = null;
+      if (button) {
+        button.classList.remove("speaking");
+        button.textContent = "🔊 Listen";
+      }
+    };
+
+    await audio.play();
+  } catch (error) {
+    // HD voice failed (not configured, timed out, cold-starting) —
+    // fall back to the browser's built-in voice so speech output
+    // still works, just without the HD quality upgrade.
+    if (button) {
+      button.classList.remove("speaking");
+      button.textContent = "🔊 Listen";
+    }
+    speakTextBrowser(text, button);
+  }
+}
+
+/* ============================================================
    🔊 AUTO VOICE REPLIES
 ============================================================ */
 
@@ -1866,12 +2131,8 @@ if (voiceReplyBtn) {
 
       updateVoiceReplyBtn();
 
-      if (
-        !voiceRepliesEnabled &&
-        "speechSynthesis" in
-          window
-      ) {
-        window.speechSynthesis.cancel();
+      if (!voiceRepliesEnabled) {
+        stopAllSpeech();
       }
 
       showToast(
@@ -1971,6 +2232,12 @@ if (imageModeBtn) {
 
 /* ============================================================
    🧰 TOOLS SUPER-MODES
+   ------------------------------------------------------------
+   chat.js already understands these modes and (via plans.js)
+   already gates the last four as Pro-only. This just wires the
+   Tools tab cards to actually set `mode` on outgoing requests —
+   previously buildFormData() never sent a mode field at all, so
+   these backend super-modes were dormant.
 ============================================================ */
 
 const MODE_LABELS = {
@@ -2399,6 +2666,8 @@ function showWelcome() {
   bindQuickButtons();
 
   initRoyalGuidelines();
+
+  applyTranslations();
 }
 
 function bindQuickButtons() {
@@ -2511,27 +2780,17 @@ function renderHistoryList() {
 
 /* ============================================================
    💬 OPEN CHAT
-   ------------------------------------------------------------
-   FIX: this now mirrors restoreChat()/saveCurrentChat() and
-   falls back to the legacy (v8) chat store when the v10 store
-   doesn't have the requested chat. Previously this used only
-   STORAGE_KEYS.chats, so any chat that only existed under the
-   legacy key silently failed to open when tapped in History.
 ============================================================ */
 
 function openChat(id) {
   let chats =
     loadJSON(
       STORAGE_KEYS.chats,
-      null
+      []
     );
 
   if (!Array.isArray(chats)) {
-    chats =
-      loadJSON(
-        STORAGE_KEYS.legacyChats,
-        []
-      );
+    chats = [];
   }
 
   const chat =
@@ -2541,10 +2800,6 @@ function openChat(id) {
     );
 
   if (!chat) {
-    showToast(
-      "⚠️ Couldn't find that chat"
-    );
-
     return;
   }
 
@@ -3163,7 +3418,21 @@ async function sendMessage() {
     }
 
     /* ========================================================
-       💬 NORMAL CHAT REQUEST
+       💬 NORMAL CHAT REQUEST — STREAMED
+       ------------------------------------------------------
+       The backend responds with newline-delimited JSON (NDJSON):
+       one {"type":"chunk","text":...} line per segment as Kirong
+       writes the answer, then a final {"type":"done",...} or
+       {"type":"error",...} line. Early rejections (limits, Pro
+       gate, bad request) instead come back as a single JSON
+       object with no "type" wrapper (e.g. {"ok":false,"error":...}
+       or the older {"text":...} shape).
+
+       IMPORTANT: we do NOT branch on the response's Content-Type
+       header here — on some hosts/proxies it doesn't reliably
+       reach the browser as set server-side. Instead we always
+       read the body as a stream and parse it line-by-line,
+       inferring what we got from the parsed JSON's own shape.
     ======================================================== */
 
     const form =
@@ -3183,7 +3452,7 @@ async function sendMessage() {
 
           headers: {
             Accept:
-              "application/json",
+              "application/x-ndjson, application/json",
 
             "X-Kirong-User-Id":
               DEVICE_USER_ID
@@ -3194,121 +3463,196 @@ async function sendMessage() {
         }
       );
 
-    const data =
-      await parseApiResponse(
-        response
-      );
-
-    if (
-      data?.type ===
-      "error"
-    ) {
-      throw new Error(
-        extractApiError(
-          data
-        )
-      );
+    if (!response.ok && (!response.body || !response.body.getReader)) {
+      // No streaming support at all AND a non-2xx status — treat
+      // exactly like the old single-JSON error path.
+      const data = await parseApiResponse(response);
+      throw new Error(extractApiError(data));
     }
 
-    if (
-      data?.ok === false
-    ) {
-      throw new Error(
-        extractApiError(
-          data
-        )
-      );
-    }
+    let accumulatedText = "";
+    let sawChunk = false;
+    let imageEvent = null;
+    let legacyEvent = null;
+    let errorMessage = null;
+    let errorCode = null;
+    let liveMessageEl = null;
+    let liveContentEl = null;
 
-    /* ========================================================
-       🖼️ IMAGE RESPONSE FROM CHAT API
-    ======================================================== */
+    const ensureLiveMessage = () => {
+      if (liveMessageEl) return;
 
-    if (
-      data?.type ===
-        "image" &&
-      data?.image
-    ) {
-      addImageMessage(
-        data.text ||
-          "🎨 Here is your image!",
-        data.image,
-        data.provider ||
-          "",
-        data.prompt ||
-          visibleMessage
-      );
+      liveMessageEl = addMessage("assistant", "");
+      liveContentEl = liveMessageEl?.querySelector(".messageContent") || null;
+    };
 
-      addToHistory(
-        "assistant",
-        data.text ||
-          "Generated image",
-        {
-          image:
-            data.image,
+    const handleEvent = (event) => {
+      if (!event || typeof event !== "object") return;
 
-          imagePrompt:
-            data.prompt ||
-            visibleMessage,
+      if (event.type === "chunk" && typeof event.text === "string") {
+        sawChunk = true;
+        accumulatedText += event.text;
 
-          provider:
-            data.provider
+        ensureLiveMessage();
+
+        if (liveContentEl) {
+          liveContentEl.innerHTML = renderMarkdown(accumulatedText);
         }
-      );
+
+        scrollToBottom();
+        return;
+      }
+
+      if (event.type === "done") {
+        return; // metadata only (provider/usage) — nothing to render
+      }
+
+      if (event.type === "error" || event.ok === false) {
+        errorMessage = extractApiError(event);
+        errorCode = event.code || null;
+        return;
+      }
+
+      if (event.type === "image" && event.image) {
+        imageEvent = event;
+        return;
+      }
+
+      // No "type" field at all — the older single-shot response
+      // shape ({text}/{message}/{reply}), or an unrecognized object.
+      if (!event.type) {
+        legacyEvent = event;
+      }
+    };
+
+    if (response.body && response.body.getReader) {
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+
+      let buffer = "";
+
+      while (true) {
+        const { value, done } = await reader.read();
+        if (done) break;
+
+        buffer += decoder.decode(value, { stream: true });
+
+        const lines = buffer.split("\n");
+        buffer = lines.pop() || "";
+
+        for (const line of lines) {
+          if (!line.trim()) continue;
+
+          let event;
+          try {
+            event = JSON.parse(line);
+          } catch {
+            continue; // skip malformed/partial lines
+          }
+
+          handleEvent(event);
+        }
+      }
+
+      // Flush any trailing content left in the buffer with no
+      // final newline.
+      if (buffer.trim()) {
+        try {
+          handleEvent(JSON.parse(buffer));
+        } catch {
+          /* ignore trailing partial line */
+        }
+      }
     } else {
-      /* ======================================================
-         🤖 NORMAL AI RESPONSE
-      ====================================================== */
+      // No streaming reader available — read the whole body once
+      // and process it the same way, just without live updates.
+      const wholeText = await response.text();
 
-      const answer =
-        String(
-          data?.text ||
-            data?.message ||
-            data?.reply ||
-            "No response received."
-        );
+      wholeText
+        .split("\n")
+        .filter((line) => line.trim())
+        .forEach((line) => {
+          try {
+            handleEvent(JSON.parse(line));
+          } catch {
+            /* ignore malformed line */
+          }
+        });
+    }
 
-      addMessage(
-        "assistant",
-        answer
-      );
+    // ----------------------------------------------------------
+    // RESOLVE WHAT WE GOT
+    // ----------------------------------------------------------
 
-      addToHistory(
-        "assistant",
-        answer
-      );
+    if (errorMessage && !sawChunk && !imageEvent && !legacyEvent) {
+      liveMessageEl?.remove();
+      const err = new Error(errorMessage);
+      if (errorCode) err.code = errorCode;
+      throw err;
+    }
 
-      if (
-        voiceRepliesEnabled
-      ) {
-        const lastAssistant =
-          chatBox?.querySelector(
-            ".message.assistant-message:last-child .speakMessageBtn"
-          );
-
-        speakText(
-          answer,
-          lastAssistant
-        );
+    if (errorMessage && sawChunk) {
+      // Partial answer was shown, then the stream failed — keep
+      // what was written and append a short note instead of
+      // discarding it.
+      accumulatedText += "\n\n⚠️ *(connection dropped — response may be incomplete)*";
+      if (liveContentEl) {
+        liveContentEl.innerHTML = renderMarkdown(accumulatedText);
       }
     }
 
-    selectedFile =
-      null;
+    if (imageEvent) {
+      liveMessageEl?.remove();
 
-    if (fileInput) {
-      fileInput.value =
-        "";
+      addImageMessage(
+        imageEvent.text || "🎨 Here is your image!",
+        imageEvent.image,
+        imageEvent.provider || "",
+        imageEvent.prompt || visibleMessage
+      );
+
+      addToHistory("assistant", imageEvent.text || "Generated image", {
+        image: imageEvent.image,
+        imagePrompt: imageEvent.prompt || visibleMessage,
+        provider: imageEvent.provider
+      });
+    } else if (sawChunk) {
+      // Re-render once more through the full addMessage() markup so
+      // the finished bubble gets its Copy/Listen/Retry actions, same
+      // as any other assistant message.
+      liveMessageEl?.remove();
+      addMessage("assistant", accumulatedText || "No response received.");
+      addToHistory("assistant", accumulatedText || "No response received.");
+
+      if (voiceRepliesEnabled && accumulatedText) {
+        const lastAssistant = chatBox?.querySelector(
+          ".message.assistant-message:last-child .speakMessageBtn"
+        );
+        speakText(accumulatedText, lastAssistant);
+      }
+    } else if (legacyEvent) {
+      const answer = String(
+        legacyEvent.text || legacyEvent.message || legacyEvent.reply || "No response received."
+      );
+
+      addMessage("assistant", answer);
+      addToHistory("assistant", answer);
+
+      if (voiceRepliesEnabled) {
+        const lastAssistant = chatBox?.querySelector(
+          ".message.assistant-message:last-child .speakMessageBtn"
+        );
+        speakText(answer, lastAssistant);
+      }
+    } else {
+      addMessage("assistant", "No response received.");
+      addToHistory("assistant", "No response received.");
     }
 
+    selectedFile = null;
+    if (fileInput) fileInput.value = "";
     renderFilePreview();
-
     saveCurrentChat();
-
-    /*
-     * Optional usage refresh.
-     */
-
     refreshUserData();
   } catch (error) {
     if (error?.code === "PRO_FEATURE") {
@@ -4603,6 +4947,13 @@ if (newProjectBtn) {
 
 /* ============================================================
    🖼️ PHOTO EDITOR (client-side, canvas-based — no backend)
+   ------------------------------------------------------------
+   peBaseCanvas holds the current "baked" pixel state (after any
+   applied rotate/crop/resize). Brightness/contrast/saturation and
+   filter presets are applied live via ctx.filter at render time
+   (non-destructive) until the user downloads, at which point the
+   final render — base canvas + live filter + text overlays — is
+   exported as the actual PNG.
 ============================================================ */
 
 const MAX_EDITOR_DIMENSION = 1600;
@@ -4950,34 +5301,12 @@ function openPhotoEditorModal() {
   document.getElementById("peApplyCrop")?.addEventListener("click", () => {
     if (!peCropRect || peCropRect.w < 4 || peCropRect.h < 4 || !peBaseCanvas) return;
 
-    const oldW = peBaseCanvas.width;
-    const oldH = peBaseCanvas.height;
-
     const cropped = peCreateCanvas(peCropRect.w, peCropRect.h);
     cropped.getContext("2d").drawImage(
       peBaseCanvas,
       peCropRect.x, peCropRect.y, peCropRect.w, peCropRect.h,
       0, 0, peCropRect.w, peCropRect.h
     );
-
-    /* FIX: re-map each text overlay's fractional position from the
-       old (pre-crop) canvas frame into the new cropped frame, so
-       text doesn't visually jump after cropping. Text that falls
-       entirely outside the new crop area is dropped rather than
-       left floating off-canvas. */
-    peTexts = peTexts
-      .map((t) => ({
-        ...t,
-        xFrac: ((t.xFrac * oldW) - peCropRect.x) / peCropRect.w,
-        yFrac: ((t.yFrac * oldH) - peCropRect.y) / peCropRect.h
-      }))
-      .filter(
-        (t) =>
-          t.xFrac >= 0 &&
-          t.xFrac <= 1 &&
-          t.yFrac >= 0 &&
-          t.yFrac <= 1
-      );
 
     peBaseCanvas = cropped;
     peCropRect = null;
@@ -5073,7 +5402,8 @@ function peRotate(degrees) {
 }
 
 /* ============================================================
-   👁️ "ASK ABOUT A PHOTO"
+   👁️ "ASK ABOUT A PHOTO" — reuses the existing chat attach flow,
+   which now supports vision on the backend for image files.
 ============================================================ */
 
 if (visionToolCard) {
@@ -5096,7 +5426,9 @@ if (visionToolCard) {
 
 const PAYMENT_ENDPOINT = "/api/payment";
 const PAYMENT_STATUS_ENDPOINT = "/api/payment-status";
-const PRO_PRICE_DISPLAY = "KES 199";
+const PRO_PRICE_DISPLAY = "KES 199"; // shown in the UI; the real
+                                       // charged amount is decided
+                                       // server-side by plans.js
 
 function openProPaymentModal() {
   const whatsapp =
@@ -5205,7 +5537,7 @@ async function initiateProPayment() {
 }
 
 async function pollPaymentStatus(checkoutRequestId, statusBox, payBtn) {
-  const maxAttempts = 30;
+  const maxAttempts = 30; // ~90 seconds at 3s intervals
   const intervalMs = 3000;
 
   for (let attempt = 0; attempt < maxAttempts; attempt++) {
@@ -5222,7 +5554,7 @@ async function pollPaymentStatus(checkoutRequestId, statusBox, payBtn) {
 
       const data = await response.json().catch(() => ({}));
 
-      if (!response.ok || !data.ok) continue;
+      if (!response.ok || !data.ok) continue; // transient — keep polling
 
       if (data.status === "completed") {
         if (statusBox) {
@@ -5250,11 +5582,14 @@ async function pollPaymentStatus(checkoutRequestId, statusBox, payBtn) {
 
         return;
       }
+
+      // still "pending" — keep polling
     } catch {
-      // network hiccup — keep polling
+      // network hiccup — keep polling, don't abort the whole flow
     }
   }
 
+  // Timed out waiting
   if (statusBox) {
     statusBox.className = "paymentStatus failed";
     statusBox.textContent =
@@ -5324,6 +5659,10 @@ if (userInput) {
 document.addEventListener(
   "keydown",
   (event) => {
+    /*
+     * Ctrl/Cmd + Enter
+     */
+
     if (
       (event.ctrlKey ||
         event.metaKey) &&
@@ -5338,6 +5677,10 @@ document.addEventListener(
         sendMessage();
       }
     }
+
+    /*
+     * Escape cancels current request.
+     */
 
     if (
       event.key ===
@@ -5436,10 +5779,426 @@ updateVoiceReplyBtn();
 updateNetworkStatus();
 
 /* ============================================================
+   🌍 I18N — 5 CORE LANGUAGES (English, Swahili, French,
+   Spanish, Hindi). These match the languages already used by
+   getRecognitionLanguage() for voice input — restoring them
+   here too, instead of the earlier EN/SW-only toggle.
+============================================================ */
+
+const LANGUAGE_NAMES = {
+  English: "English",
+  Swahili: "Kiswahili",
+  French: "Français",
+  Spanish: "Español",
+  Hindi: "हिन्दी"
+};
+
+const LANGUAGE_FLAGS = {
+  English: "🇬🇧",
+  Swahili: "🇰🇪",
+  French: "🇫🇷",
+  Spanish: "🇪🇸",
+  Hindi: "🇮🇳"
+};
+
+const TRANSLATIONS = {
+  English: {
+    statusActive: "Royal Intelligence Active",
+    tabChat: "💬 Chat",
+    tabProjects: "📁 Projects",
+    tabTools: "🛠️ Tools",
+    tabHistory: "🕘 History",
+    tabSchool: "🎓 School",
+    coreLabel: "KIRONG AI CORE",
+    welcomePrefix: "Welcome,",
+    welcomeAudience: "Kings & Queens!",
+    quickWebsite: "💻 Build Website",
+    quickBusiness: "💡 10K Biz Idea",
+    quickCv: "📄 Pro CV",
+    quickLearn: "📚 Learn Fast",
+    thinking: "Kirong is thinking...",
+    projectsTitle: "Your Projects",
+    projectsSubtitle: "All your creations in one royal vault",
+    newProject: "+ New",
+    toolsTitle: "Royal Tools",
+    toolsSubtitle: "Superpowers for Kings & Queens",
+    historyTitle: "Chat History",
+    historySubtitle: "Your conversations with Kirong",
+    schoolTitle: "School Mode",
+    schoolSubtitle: "Learn faster with step-by-step explanations",
+    actionCode: "⚡ Code",
+    actionWrite: "✍️ Write",
+    actionBusiness: "💼 Business",
+    actionExplain: "💡 Explain",
+    onboardingSkip: "Skip",
+    onboardingEyebrow: "MAKE KIRONG YOURS",
+    onboardingTitle: "Welcome to your royal workspace",
+    onboardingSubtitle: "Choose what you want to do first. We'll use it to shape your starting experience.",
+    onboardingNameLabel: "What should Kirong call you?",
+    onboardingChoose: "What brings you here today?",
+    roleBusiness: "Business",
+    roleBusinessDesc: "Ideas, marketing & customers",
+    roleSchool: "School",
+    roleSchoolDesc: "Learn, revise & understand",
+    roleCoding: "Coding",
+    roleCodingDesc: "Build apps & solve bugs",
+    roleWriting: "Writing",
+    roleWritingDesc: "CVs, emails & content",
+    onboardingContinue: "Enter Kirong →",
+    inputPlaceholder: "Ask Kirong anything...",
+    onboardingNamePlaceholder: "Your name",
+    languagePickerTitle: "🌍 Choose your language"
+  },
+
+  Swahili: {
+    statusActive: "Akili ya Kifalme Inatumika",
+    tabChat: "💬 Ongea",
+    tabProjects: "📁 Miradi",
+    tabTools: "🛠️ Zana",
+    tabHistory: "🕘 Historia",
+    tabSchool: "🎓 Shule",
+    coreLabel: "KIRONG AI CORE",
+    welcomePrefix: "Karibu,",
+    welcomeAudience: "Wafalme na Malkia!",
+    quickWebsite: "💻 Jenga Tovuti",
+    quickBusiness: "💡 Wazo la Biashara 10K",
+    quickCv: "📄 CV ya Kitaalamu",
+    quickLearn: "📚 Jifunze Haraka",
+    thinking: "Kirong anafikiri...",
+    projectsTitle: "Miradi Yako",
+    projectsSubtitle: "Kazi zako zote sehemu moja",
+    newProject: "+ Mpya",
+    toolsTitle: "Zana za Kifalme",
+    toolsSubtitle: "Uwezo maalum kwa Wafalme na Malkia",
+    historyTitle: "Historia ya Mazungumzo",
+    historySubtitle: "Mazungumzo yako na Kirong",
+    schoolTitle: "Hali ya Shule",
+    schoolSubtitle: "Jifunze haraka kwa maelezo ya hatua kwa hatua",
+    actionCode: "⚡ Code",
+    actionWrite: "✍️ Andika",
+    actionBusiness: "💼 Biashara",
+    actionExplain: "💡 Eleza",
+    onboardingSkip: "Ruka",
+    onboardingEyebrow: "FANYA KIRONG IWE YAKO",
+    onboardingTitle: "Karibu kwenye nafasi yako ya kifalme",
+    onboardingSubtitle: "Chagua unachotaka kufanya kwanza. Tutatumia hilo kuandaa mwanzo wako.",
+    onboardingNameLabel: "Kirong akuite nani?",
+    onboardingChoose: "Umekuja hapa kwa nini leo?",
+    roleBusiness: "Biashara",
+    roleBusinessDesc: "Mawazo, uuzaji na wateja",
+    roleSchool: "Shule",
+    roleSchoolDesc: "Jifunze, rudia na elewa",
+    roleCoding: "Kuandika Code",
+    roleCodingDesc: "Jenga apps na tatua matatizo",
+    roleWriting: "Kuandika",
+    roleWritingDesc: "CV, barua pepe na maudhui",
+    onboardingContinue: "Ingia Kirong →",
+    inputPlaceholder: "Uliza Kirong chochote...",
+    onboardingNamePlaceholder: "Jina lako",
+    languagePickerTitle: "🌍 Chagua lugha yako"
+  },
+
+  French: {
+    statusActive: "Intelligence Royale Active",
+    tabChat: "💬 Discuter",
+    tabProjects: "📁 Projets",
+    tabTools: "🛠️ Outils",
+    tabHistory: "🕘 Historique",
+    tabSchool: "🎓 École",
+    coreLabel: "KIRONG AI CORE",
+    welcomePrefix: "Bienvenue,",
+    welcomeAudience: "Rois & Reines !",
+    quickWebsite: "💻 Créer un site web",
+    quickBusiness: "💡 Idée d'affaires 10K",
+    quickCv: "📄 CV Pro",
+    quickLearn: "📚 Apprendre vite",
+    thinking: "Kirong réfléchit...",
+    projectsTitle: "Vos Projets",
+    projectsSubtitle: "Toutes vos créations dans un coffre royal",
+    newProject: "+ Nouveau",
+    toolsTitle: "Outils Royaux",
+    toolsSubtitle: "Super-pouvoirs pour Rois & Reines",
+    historyTitle: "Historique des discussions",
+    historySubtitle: "Vos conversations avec Kirong",
+    schoolTitle: "Mode École",
+    schoolSubtitle: "Apprenez plus vite avec des explications étape par étape",
+    actionCode: "⚡ Code",
+    actionWrite: "✍️ Écrire",
+    actionBusiness: "💼 Affaires",
+    actionExplain: "💡 Expliquer",
+    onboardingSkip: "Passer",
+    onboardingEyebrow: "PERSONNALISEZ KIRONG",
+    onboardingTitle: "Bienvenue dans votre espace royal",
+    onboardingSubtitle: "Choisissez ce que vous voulez faire d'abord. Nous l'utiliserons pour adapter votre départ.",
+    onboardingNameLabel: "Comment Kirong doit-il vous appeler ?",
+    onboardingChoose: "Qu'est-ce qui vous amène ici aujourd'hui ?",
+    roleBusiness: "Affaires",
+    roleBusinessDesc: "Idées, marketing & clients",
+    roleSchool: "École",
+    roleSchoolDesc: "Apprendre, réviser & comprendre",
+    roleCoding: "Programmation",
+    roleCodingDesc: "Créer des apps & résoudre des bugs",
+    roleWriting: "Écriture",
+    roleWritingDesc: "CV, e-mails & contenu",
+    onboardingContinue: "Entrer chez Kirong →",
+    inputPlaceholder: "Demandez n'importe quoi à Kirong...",
+    onboardingNamePlaceholder: "Votre nom",
+    languagePickerTitle: "🌍 Choisissez votre langue"
+  },
+
+  Spanish: {
+    statusActive: "Inteligencia Real Activa",
+    tabChat: "💬 Chat",
+    tabProjects: "📁 Proyectos",
+    tabTools: "🛠️ Herramientas",
+    tabHistory: "🕘 Historial",
+    tabSchool: "🎓 Escuela",
+    coreLabel: "KIRONG AI CORE",
+    welcomePrefix: "Bienvenido,",
+    welcomeAudience: "¡Reyes y Reinas!",
+    quickWebsite: "💻 Crear sitio web",
+    quickBusiness: "💡 Idea de negocio 10K",
+    quickCv: "📄 CV Profesional",
+    quickLearn: "📚 Aprende rápido",
+    thinking: "Kirong está pensando...",
+    projectsTitle: "Tus Proyectos",
+    projectsSubtitle: "Todas tus creaciones en una bóveda real",
+    newProject: "+ Nuevo",
+    toolsTitle: "Herramientas Reales",
+    toolsSubtitle: "Superpoderes para Reyes y Reinas",
+    historyTitle: "Historial de Chat",
+    historySubtitle: "Tus conversaciones con Kirong",
+    schoolTitle: "Modo Escuela",
+    schoolSubtitle: "Aprende más rápido con explicaciones paso a paso",
+    actionCode: "⚡ Código",
+    actionWrite: "✍️ Escribir",
+    actionBusiness: "💼 Negocio",
+    actionExplain: "💡 Explicar",
+    onboardingSkip: "Omitir",
+    onboardingEyebrow: "HAZ KIRONG TUYO",
+    onboardingTitle: "Bienvenido a tu espacio real",
+    onboardingSubtitle: "Elige qué quieres hacer primero. Lo usaremos para dar forma a tu inicio.",
+    onboardingNameLabel: "¿Cómo debería llamarte Kirong?",
+    onboardingChoose: "¿Qué te trae por aquí hoy?",
+    roleBusiness: "Negocio",
+    roleBusinessDesc: "Ideas, marketing y clientes",
+    roleSchool: "Escuela",
+    roleSchoolDesc: "Aprende, repasa y comprende",
+    roleCoding: "Programación",
+    roleCodingDesc: "Crea apps y resuelve errores",
+    roleWriting: "Escritura",
+    roleWritingDesc: "CVs, correos y contenido",
+    onboardingContinue: "Entrar a Kirong →",
+    inputPlaceholder: "Pregúntale a Kirong lo que sea...",
+    onboardingNamePlaceholder: "Tu nombre",
+    languagePickerTitle: "🌍 Elige tu idioma"
+  },
+
+  Hindi: {
+    statusActive: "शाही बुद्धिमत्ता सक्रिय",
+    tabChat: "💬 चैट",
+    tabProjects: "📁 प्रोजेक्ट्स",
+    tabTools: "🛠️ टूल्स",
+    tabHistory: "🕘 इतिहास",
+    tabSchool: "🎓 स्कूल",
+    coreLabel: "KIRONG AI CORE",
+    welcomePrefix: "स्वागत है,",
+    welcomeAudience: "राजाओं और रानियों!",
+    quickWebsite: "💻 वेबसाइट बनाएं",
+    quickBusiness: "💡 10K व्यापार विचार",
+    quickCv: "📄 प्रो सीवी",
+    quickLearn: "📚 तेज़ी से सीखें",
+    thinking: "किरोंग सोच रहा है...",
+    projectsTitle: "आपके प्रोजेक्ट्स",
+    projectsSubtitle: "आपकी सभी रचनाएं एक शाही तिजोरी में",
+    newProject: "+ नया",
+    toolsTitle: "शाही टूल्स",
+    toolsSubtitle: "राजाओं और रानियों के लिए महाशक्तियां",
+    historyTitle: "चैट इतिहास",
+    historySubtitle: "किरोंग के साथ आपकी बातचीत",
+    schoolTitle: "स्कूल मोड",
+    schoolSubtitle: "चरण-दर-चरण स्पष्टीकरण के साथ तेज़ी से सीखें",
+    actionCode: "⚡ कोड",
+    actionWrite: "✍️ लिखें",
+    actionBusiness: "💼 व्यापार",
+    actionExplain: "💡 समझाएं",
+    onboardingSkip: "छोड़ें",
+    onboardingEyebrow: "किरोंग को अपना बनाएं",
+    onboardingTitle: "आपके शाही कार्यक्षेत्र में स्वागत है",
+    onboardingSubtitle: "पहले क्या करना चाहते हैं चुनें। हम इसका उपयोग आपकी शुरुआत तय करने के लिए करेंगे।",
+    onboardingNameLabel: "किरोंग आपको क्या कहकर बुलाए?",
+    onboardingChoose: "आज आप यहां क्यों आए हैं?",
+    roleBusiness: "व्यापार",
+    roleBusinessDesc: "विचार, मार्केटिंग और ग्राहक",
+    roleSchool: "स्कूल",
+    roleSchoolDesc: "सीखें, दोहराएं और समझें",
+    roleCoding: "कोडिंग",
+    roleCodingDesc: "ऐप्स बनाएं और बग ठीक करें",
+    roleWriting: "लेखन",
+    roleWritingDesc: "सीवी, ईमेल और सामग्री",
+    onboardingContinue: "किरोंग में प्रवेश करें →",
+    inputPlaceholder: "किरोंग से कुछ भी पूछें...",
+    onboardingNamePlaceholder: "आपका नाम",
+    languagePickerTitle: "🌍 अपनी भाषा चुनें"
+  }
+};
+
+function getCurrentLanguage() {
+  const lang = loadJSON(STORAGE_KEYS.language, "English");
+  return TRANSLATIONS[lang] ? lang : "English";
+}
+
+function applyTranslations() {
+  const lang = getCurrentLanguage();
+  const dict = TRANSLATIONS[lang];
+
+  document.querySelectorAll("[data-i18n]").forEach((el) => {
+    const key = el.dataset.i18n;
+    if (dict[key]) {
+      el.textContent = dict[key];
+    }
+  });
+
+  document.documentElement.lang =
+    { English: "en", Swahili: "sw", French: "fr", Spanish: "es", Hindi: "hi" }[lang] || "en";
+
+  if (languageBtn) {
+    languageBtn.title = dict.languagePickerTitle;
+  }
+
+  if (userInput && !imageModeOn) {
+    userInput.placeholder = dict.inputPlaceholder;
+  }
+
+  if (onboardingNameInput) {
+    onboardingNameInput.placeholder = dict.onboardingNamePlaceholder;
+  }
+}
+
+function openLanguagePicker() {
+  const currentLang = getCurrentLanguage();
+  const dict = TRANSLATIONS[currentLang];
+
+  const optionsHtml = Object.keys(LANGUAGE_NAMES)
+    .map((lang) => {
+      const isActive = lang === currentLang;
+      return (
+        `<button class="languageOption${isActive ? " active" : ""}" data-lang="${lang}" type="button">` +
+        `<span>${LANGUAGE_FLAGS[lang]}</span>` +
+        `<span>${escapeHTML(LANGUAGE_NAMES[lang])}</span>` +
+        (isActive ? `<span class="languageCheck">✓</span>` : "") +
+        `</button>`
+      );
+    })
+    .join("");
+
+  openModal(
+    `<h3>${escapeHTML(dict.languagePickerTitle)}</h3><div class="languageOptionsList">${optionsHtml}</div>`
+  );
+
+  document.querySelectorAll(".languageOption").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const lang = btn.dataset.lang;
+      saveJSON(STORAGE_KEYS.language, lang);
+      applyTranslations();
+      closeModal();
+      showToast(`${LANGUAGE_FLAGS[lang]} ${LANGUAGE_NAMES[lang]}`);
+    });
+  });
+}
+
+if (languageBtn) {
+  languageBtn.addEventListener("click", openLanguagePicker);
+}
+
+/* ============================================================
+   👑 FIRST-RUN ONBOARDING
+============================================================ */
+
+const ONBOARDING_DONE_KEY = "kirong_onboarding_done_v1";
+const ONBOARDING_NAME_KEY = "kirong_user_name_v1";
+const ONBOARDING_ROLE_KEY = "kirong_user_role_v1";
+
+let selectedOnboardingRole = null;
+
+function loadStoredName() {
+  try {
+    return localStorage.getItem(ONBOARDING_NAME_KEY) || "";
+  } catch {
+    return "";
+  }
+}
+
+function closeOnboarding() {
+  if (!onboardingOverlay) return;
+  onboardingOverlay.classList.add("hidden");
+  try {
+    localStorage.setItem(ONBOARDING_DONE_KEY, "true");
+  } catch {}
+}
+
+function initOnboarding() {
+  if (!onboardingOverlay) return;
+
+  const alreadyDone = localStorage.getItem(ONBOARDING_DONE_KEY);
+  if (alreadyDone) return;
+
+  onboardingOverlay.classList.remove("hidden");
+
+  document.querySelectorAll(".onboardingOption").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      document
+        .querySelectorAll(".onboardingOption")
+        .forEach((b) => b.classList.remove("selected"));
+
+      btn.classList.add("selected");
+      selectedOnboardingRole = btn.dataset.onboardingRole;
+
+      if (finishOnboardingBtn) {
+        finishOnboardingBtn.disabled = false;
+      }
+    });
+  });
+
+  skipOnboardingBtn?.addEventListener("click", closeOnboarding);
+
+  finishOnboardingBtn?.addEventListener("click", () => {
+    const name = onboardingNameInput?.value.trim();
+
+    if (name) {
+      try {
+        localStorage.setItem(ONBOARDING_NAME_KEY, name);
+      } catch {}
+    }
+
+    if (selectedOnboardingRole) {
+      try {
+        localStorage.setItem(ONBOARDING_ROLE_KEY, selectedOnboardingRole);
+      } catch {}
+    }
+
+    closeOnboarding();
+
+    if (selectedOnboardingRole === "school") {
+      setActiveMode("school");
+    }
+
+    const savedName = loadStoredName();
+    if (savedName) {
+      showToast(`👑 ${savedName}, karibu Kirong AI!`);
+    }
+  });
+}
+
+/* ============================================================
    🚀 INITIALIZATION
 ============================================================ */
 
 function init() {
+  applyTranslations();
+
+  initOnboarding();
+
   initTabs();
 
   restoreChat();
@@ -5459,7 +6218,7 @@ function init() {
   refreshUserData();
 
   console.log(
-    "⚡ KIRONG AI V10.1 MANSION READY (bug fixes applied)"
+    "⚡ KIRONG AI V11 MANSION READY"
   );
 
   console.log(
@@ -5468,7 +6227,7 @@ function init() {
   );
 
   console.log(
-    "👑 Chat + Projects + History + Files + Images + Voice + Pro"
+    "👑 Chat + Projects + History + Files + Images + Voice + Pro + i18n + Onboarding"
   );
 }
 
@@ -5485,7 +6244,10 @@ if (
 }
 
 /* ============================================================
-   🛠️ SERVICE WORKER
+   🛠️ SERVICE WORKER — registered on "load" (not before) so it
+   never competes with the initial page render for bandwidth/CPU.
+   sw.js itself bypasses /api/* and uses stale-while-revalidate
+   for the app shell, so updates roll out automatically.
 ============================================================ */
 if ("serviceWorker" in navigator) {
   window.addEventListener("load", () => {
