@@ -227,40 +227,6 @@ export function getUsageSnapshot(user) {
 }
 
 // ============================================================
-// 📋 PUBLIC PLAN / SUBSCRIPTION DATA
-// Used by the frontend account badge and upgrade flow.
-// Keep private limits and payment internals out of this response.
-// ============================================================
-
-export function getPublicPlanSummary(user) {
-  const plan = getUserPlan(user);
-
-  return {
-    id: plan.id,
-    label: plan.label,
-    dailyMessageLimit: plan.dailyMessageLimit,
-    dailyImageLimit: plan.dailyImageLimit,
-    features: { ...plan.features }
-  };
-}
-
-export function getSubscriptionStatus(user) {
-  const subscription = user?.subscription || null;
-  const expiresAt = subscription?.expiresAt || null;
-  const expiresAtMs = expiresAt ? new Date(expiresAt).getTime() : NaN;
-
-  return {
-    active: user?.plan === PLAN_PRO &&
-      Number.isFinite(expiresAtMs) &&
-      expiresAtMs > Date.now(),
-    plan: user?.plan || PLAN_FREE,
-    startedAt: subscription?.startedAt || null,
-    expiresAt,
-    lastPaymentRef: subscription?.lastPaymentRef || null
-  };
-}
-
-// ============================================================
 // 👑 ACTIVATE / EXTEND PRO SUBSCRIPTION (called after payment)
 // ============================================================
 
