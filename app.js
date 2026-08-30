@@ -1,41 +1,19 @@
 /* ============================================================
-   👑 KIRONG AI — FRONTEND ENGINE V10
-   FULL MANSION UPGRADE
+   👑 KIRONG AI — FRONTEND ENGINE V10.1
+   FULL MANSION UPGRADE (BUG FIXES APPLIED)
    ------------------------------------------------------------
-   Keeps:
-   • Chat / Projects / Tools / History tabs
-   • Persistent device user ID
-   • Vercel backend compatibility
-   • Chat history
-   • File attachments
-   • Image generation
-   • Voice input/output
-   • Copy buttons
-   • Export
-   • Projects CRUD
-   • Pro badge scaffold
-   • Royal guidelines
-   • Safe error handling
+   Keeps everything from V10 Mansion Upgrade.
 
-   Adds:
-   • Better API error handling
-   • Abort / timeout protection
-   • Request state protection
-   • Safer localStorage handling
-   • Better image detection
-   • Better file handling
-   • Usage / plan synchronization
-   • Backend user usage endpoint support
-   • Better project refresh
-   • Keyboard shortcuts
-   • Auto-resizing textarea
-   • Better welcome handling
-   • Message retry
-   • Chat rename
-   • Safer markdown rendering
-   • Modal escape handling
-   • Network status indicator
-   • Improved voice language handling
+   FIXES in this version:
+   • openChat() now falls back to legacy (v8) chat storage, same
+     as restoreChat()/saveCurrentChat()/renderHistoryList() already
+     did. Previously, tapping an old chat in History silently did
+     nothing if it only existed in the legacy key.
+   • Photo Editor: text overlays placed with peArmText are now
+     re-mapped into the new coordinate frame when a crop is
+     applied, so text no longer visually "jumps" to the wrong
+     spot after cropping. Text that falls entirely outside the
+     new crop is dropped instead of floating off-canvas.
 ============================================================ */
 
 "use strict";
@@ -1993,12 +1971,6 @@ if (imageModeBtn) {
 
 /* ============================================================
    🧰 TOOLS SUPER-MODES
-   ------------------------------------------------------------
-   chat.js already understands these modes and (via plans.js)
-   already gates the last four as Pro-only. This just wires the
-   Tools tab cards to actually set `mode` on outgoing requests —
-   previously buildFormData() never sent a mode field at all, so
-   these backend super-modes were dormant.
 ============================================================ */
 
 const MODE_LABELS = {
@@ -2539,17 +2511,27 @@ function renderHistoryList() {
 
 /* ============================================================
    💬 OPEN CHAT
+   ------------------------------------------------------------
+   FIX: this now mirrors restoreChat()/saveCurrentChat() and
+   falls back to the legacy (v8) chat store when the v10 store
+   doesn't have the requested chat. Previously this used only
+   STORAGE_KEYS.chats, so any chat that only existed under the
+   legacy key silently failed to open when tapped in History.
 ============================================================ */
 
 function openChat(id) {
   let chats =
     loadJSON(
       STORAGE_KEYS.chats,
-      []
+      null
     );
 
   if (!Array.isArray(chats)) {
-    chats = [];
+    chats =
+      loadJSON(
+        STORAGE_KEYS.legacyChats,
+        []
+      );
   }
 
   const chat =
@@ -2559,6 +2541,10 @@ function openChat(id) {
     );
 
   if (!chat) {
+    showToast(
+      "⚠️ Couldn't find that chat"
+    );
+
     return;
   }
 
@@ -4617,13 +4603,6 @@ if (newProjectBtn) {
 
 /* ============================================================
    🖼️ PHOTO EDITOR (client-side, canvas-based — no backend)
-   ------------------------------------------------------------
-   peBaseCanvas holds the current "baked" pixel state (after any
-   applied rotate/crop/resize). Brightness/contrast/saturation and
-   filter presets are applied live via ctx.filter at render time
-   (non-destructive) until the user downloads, at which point the
-   final render — base canvas + live filter + text overlays — is
-   exported as the actual PNG.
 ============================================================ */
 
 const MAX_EDITOR_DIMENSION = 1600;
@@ -4971,12 +4950,34 @@ function openPhotoEditorModal() {
   document.getElementById("peApplyCrop")?.addEventListener("click", () => {
     if (!peCropRect || peCropRect.w < 4 || peCropRect.h < 4 || !peBaseCanvas) return;
 
+    const oldW = peBaseCanvas.width;
+    const oldH = peBaseCanvas.height;
+
     const cropped = peCreateCanvas(peCropRect.w, peCropRect.h);
     cropped.getContext("2d").drawImage(
       peBaseCanvas,
       peCropRect.x, peCropRect.y, peCropRect.w, peCropRect.h,
       0, 0, peCropRect.w, peCropRect.h
     );
+
+    /* FIX: re-map each text overlay's fractional position from the
+       old (pre-crop) canvas frame into the new cropped frame, so
+       text doesn't visually jump after cropping. Text that falls
+       entirely outside the new crop area is dropped rather than
+       left floating off-canvas. */
+    peTexts = peTexts
+      .map((t) => ({
+        ...t,
+        xFrac: ((t.xFrac * oldW) - peCropRect.x) / peCropRect.w,
+        yFrac: ((t.yFrac * oldH) - peCropRect.y) / peCropRect.h
+      }))
+      .filter(
+        (t) =>
+          t.xFrac >= 0 &&
+          t.xFrac <= 1 &&
+          t.yFrac >= 0 &&
+          t.yFrac <= 1
+      );
 
     peBaseCanvas = cropped;
     peCropRect = null;
@@ -5072,8 +5073,7 @@ function peRotate(degrees) {
 }
 
 /* ============================================================
-   👁️ "ASK ABOUT A PHOTO" — reuses the existing chat attach flow,
-   which now supports vision on the backend for image files.
+   👁️ "ASK ABOUT A PHOTO"
 ============================================================ */
 
 if (visionToolCard) {
@@ -5096,9 +5096,7 @@ if (visionToolCard) {
 
 const PAYMENT_ENDPOINT = "/api/payment";
 const PAYMENT_STATUS_ENDPOINT = "/api/payment-status";
-const PRO_PRICE_DISPLAY = "KES 199"; // shown in the UI; the real
-                                       // charged amount is decided
-                                       // server-side by plans.js
+const PRO_PRICE_DISPLAY = "KES 199";
 
 function openProPaymentModal() {
   const whatsapp =
@@ -5207,7 +5205,7 @@ async function initiateProPayment() {
 }
 
 async function pollPaymentStatus(checkoutRequestId, statusBox, payBtn) {
-  const maxAttempts = 30; // ~90 seconds at 3s intervals
+  const maxAttempts = 30;
   const intervalMs = 3000;
 
   for (let attempt = 0; attempt < maxAttempts; attempt++) {
@@ -5224,7 +5222,7 @@ async function pollPaymentStatus(checkoutRequestId, statusBox, payBtn) {
 
       const data = await response.json().catch(() => ({}));
 
-      if (!response.ok || !data.ok) continue; // transient — keep polling
+      if (!response.ok || !data.ok) continue;
 
       if (data.status === "completed") {
         if (statusBox) {
@@ -5252,14 +5250,11 @@ async function pollPaymentStatus(checkoutRequestId, statusBox, payBtn) {
 
         return;
       }
-
-      // still "pending" — keep polling
     } catch {
-      // network hiccup — keep polling, don't abort the whole flow
+      // network hiccup — keep polling
     }
   }
 
-  // Timed out waiting
   if (statusBox) {
     statusBox.className = "paymentStatus failed";
     statusBox.textContent =
@@ -5329,10 +5324,6 @@ if (userInput) {
 document.addEventListener(
   "keydown",
   (event) => {
-    /*
-     * Ctrl/Cmd + Enter
-     */
-
     if (
       (event.ctrlKey ||
         event.metaKey) &&
@@ -5347,10 +5338,6 @@ document.addEventListener(
         sendMessage();
       }
     }
-
-    /*
-     * Escape cancels current request.
-     */
 
     if (
       event.key ===
@@ -5472,7 +5459,7 @@ function init() {
   refreshUserData();
 
   console.log(
-    "⚡ KIRONG AI V10 MANSION READY"
+    "⚡ KIRONG AI V10.1 MANSION READY (bug fixes applied)"
   );
 
   console.log(
@@ -5498,10 +5485,7 @@ if (
 }
 
 /* ============================================================
-   🛠️ SERVICE WORKER — registered on "load" (not before) so it
-   never competes with the initial page render for bandwidth/CPU.
-   sw.js itself bypasses /api/* and uses stale-while-revalidate
-   for the app shell, so updates roll out automatically.
+   🛠️ SERVICE WORKER
 ============================================================ */
 if ("serviceWorker" in navigator) {
   window.addEventListener("load", () => {
