@@ -21,7 +21,7 @@
         <div class="logo" aria-hidden="true">K</div>
         <div>
           <h1>Kirong AI</h1>
-          <div id="statusText"><span class="dot"></span> Royal Intelligence Active</div>
+          <div id="statusText"><span class="dot"></span><span data-i18n="statusActive">Royal Intelligence Active</span></div>
         </div>
       </div>
       <div class="headerActions">
@@ -30,16 +30,17 @@
         <button class="iconBtn" id="exportChatBtn" title="Export Chat" aria-label="Export chat">📤</button>
         <button class="iconBtn" id="clearChatBtn" title="Clear Chat" aria-label="Clear chat">🗑️</button>
         <button class="iconBtn" id="newChatBtn" title="New Chat" aria-label="Start new chat">✨</button>
+        <button class="languageBtn" id="languageBtn" title="Switch to Swahili" aria-label="Switch language">SW</button>
       </div>
     </header>
 
     <!-- 👑 ROYAL TABS -->
     <nav class="kirongTabs" role="tablist" aria-label="Kirong AI sections">
-      <button class="tabBtn active" data-tab="chat" role="tab" aria-selected="true">💬 Chat</button>
-      <button class="tabBtn" data-tab="projects" role="tab" aria-selected="false">📁 Projects</button>
-      <button class="tabBtn" data-tab="tools" role="tab" aria-selected="false">🛠️ Tools</button>
-      <button class="tabBtn" data-tab="history" role="tab" aria-selected="false">🕘 History</button>
-      <button class="tabBtn" data-tab="school" role="tab" aria-selected="false">🎓 School</button>
+      <button class="tabBtn active" data-tab="chat" role="tab" aria-selected="true"><span data-i18n="tabChat">💬 Chat</span></button>
+      <button class="tabBtn" data-tab="projects" role="tab" aria-selected="false"><span data-i18n="tabProjects">📁 Projects</span></button>
+      <button class="tabBtn" data-tab="tools" role="tab" aria-selected="false"><span data-i18n="tabTools">🛠️ Tools</span></button>
+      <button class="tabBtn" data-tab="history" role="tab" aria-selected="false"><span data-i18n="tabHistory">🕘 History</span></button>
+      <button class="tabBtn" data-tab="school" role="tab" aria-selected="false"><span data-i18n="tabSchool">🎓 School</span></button>
     </nav>
 
     <!-- TAB: CHAT -->
@@ -47,15 +48,15 @@
       <div id="chatBox" aria-live="polite">
         <div class="kirongWelcome" id="kirongWelcome">
           <div class="kirongWelcomeLogo" aria-hidden="true"><img src="/icon-192.png" alt="Kirong AI"></div>
-          <div class="welcomeEyebrow"><span></span>KIRONG AI CORE<span></span></div>
-          <h2>Welcome, <span>Kings & Queens!</span> 👑</h2>
-          <p>Hello 👋 I'm <strong>Kirong AI</strong>, your intelligent assistant for <strong>coding, writing, business</strong> and everyday tasks.<br><br>What can I help you with today?</p>
+          <div class="welcomeEyebrow"><span></span><span data-i18n="coreLabel">KIRONG AI CORE</span><span></span></div>
+          <h2><span data-i18n="welcomePrefix">Welcome,</span> <span data-i18n="welcomeAudience">Kings & Queens!</span> 👑</h2>
+          <p id="welcomeDescription">Hello 👋 I'm <strong>Kirong AI</strong>, your intelligent assistant for <strong>coding, writing, business</strong> and everyday tasks.<br><br>What can I help you with today?</p>
 
           <div class="quickGrid">
-            <button class="qBtn" data-prompt="Build me a modern portfolio website">💻 Build Website</button>
-            <button class="qBtn" data-prompt="Give me 3 business ideas with 10k in Kenya">💡 10K Biz Idea</button>
-            <button class="qBtn" data-prompt="Write me a professional CV for a software developer">📄 Pro CV</button>
-            <button class="qBtn" data-prompt="Explain Python like I'm 12 years old">📚 Learn Fast</button>
+            <button class="qBtn" data-prompt="Build me a modern portfolio website" data-i18n="quickWebsite">💻 Build Website</button>
+            <button class="qBtn" data-prompt="Give me 3 business ideas with 10k in Kenya" data-i18n="quickBusiness">💡 10K Biz Idea</button>
+            <button class="qBtn" data-prompt="Write me a professional CV for a software developer" data-i18n="quickCv">📄 Pro CV</button>
+            <button class="qBtn" data-prompt="Explain Python like I'm 12 years old" data-i18n="quickLearn">📚 Learn Fast</button>
           </div>
         </div>
       </div>
@@ -63,7 +64,7 @@
       <!-- TYPING / THINKING INDICATOR -->
       <div class="thinking hidden" id="thinking" aria-live="polite">
         <span class="thinkingDot"></span><span class="thinkingDot"></span><span class="thinkingDot"></span>
-        <span class="thinkingLabel">Kirong is thinking...</span>
+        <span class="thinkingLabel" data-i18n="thinking">Kirong is thinking...</span>
       </div>
 
       <div class="inputWrap">
@@ -79,10 +80,10 @@
         </div>
         <div class="filePreview hidden" id="filePreview"></div>
         <div class="quickActions">
-          <button class="qa" data-prompt="Write code for ">⚡ Code</button>
-          <button class="qa" data-prompt="Write a ">✍️ Write</button>
-          <button class="qa" data-prompt="Give me a business idea for ">💼 Business</button>
-          <button class="qa" data-prompt="Explain ">💡 Explain</button>
+          <button class="qa" data-prompt="Write code for " data-i18n="actionCode">⚡ Code</button>
+          <button class="qa" data-prompt="Write a " data-i18n="actionWrite">✍️ Write</button>
+          <button class="qa" data-prompt="Give me a business idea for " data-i18n="actionBusiness">💼 Business</button>
+          <button class="qa" data-prompt="Explain " data-i18n="actionExplain">💡 Explain</button>
         </div>
       </div>
     </section>
@@ -91,10 +92,10 @@
     <section class="tabContent" id="projectsTab">
       <div class="tabHeader">
         <div>
-          <h2>Your Projects</h2>
-          <p>All your creations in one royal vault</p>
+          <h2 data-i18n="projectsTitle">Your Projects</h2>
+          <p data-i18n="projectsSubtitle">All your creations in one royal vault</p>
         </div>
-        <button class="primaryBtn" id="newProjectBtn">+ New</button>
+          <button class="primaryBtn" id="newProjectBtn" data-i18n="newProject">+ New</button>
       </div>
       <div class="projectsGrid" id="projectsGrid">
         <p class="emptyText">Loading your projects...</p>
@@ -103,7 +104,7 @@
     <!-- TAB: TOOLS -->
     <section class="tabContent" id="toolsTab">
       <div class="tabHeader">
-        <div><h2>Royal Tools</h2><p>Superpowers for Kings & Queens</p></div>
+        <div><h2 data-i18n="toolsTitle">Royal Tools</h2><p data-i18n="toolsSubtitle">Superpowers for Kings & Queens</p></div>
         <div style="display:flex;gap:8px">
           <button class="ghostBtn" id="clearToolsBtn">🗑️ Clear</button>
           <button class="primaryBtn" id="exportToolsBtn">📤 Export</button>
@@ -194,7 +195,7 @@
     <!-- TAB: HISTORY -->
     <section class="tabContent" id="historyTab">
       <div class="tabHeader">
-        <div><h2>Chat History</h2><p>Your conversations with Kirong</p></div>
+        <div><h2 data-i18n="historyTitle">Chat History</h2><p data-i18n="historySubtitle">Your conversations with Kirong</p></div>
         <div style="display:flex;gap:8px">
           <button class="ghostBtn" id="clearHistoryBtn">🗑️ Clear All</button>
           <button class="primaryBtn" id="exportHistoryBtn">📤 Export</button>
@@ -207,8 +208,8 @@
 
     <!-- TAB: SCHOOL -->
     <section class="tabContent" id="schoolTab">
-      <div class="tabHeader">
-        <div><h2>School Mode</h2><p>Learn faster with step-by-step explanations</p></div>
+        <div class="tabHeader">
+          <div><h2 data-i18n="schoolTitle">School Mode</h2><p data-i18n="schoolSubtitle">Learn faster with step-by-step explanations</p></div>
       </div>
       <div class="toolsGrid">
         <button class="toolCard" data-mode="school" data-prompt="Help me understand "><span class="toolIcon">🔢</span><b>Math Helper</b><small>Step-by-step solutions</small></button>
@@ -223,6 +224,38 @@
   </div>
 
   <input type="file" id="photoEditorFileInput" accept="image/*" hidden />
+
+  <!-- FIRST-RUN ONBOARDING -->
+  <div class="onboardingOverlay hidden" id="onboardingOverlay" role="dialog" aria-modal="true" aria-labelledby="onboardingTitle">
+    <div class="onboardingCard">
+      <button class="onboardingSkip" id="skipOnboarding" type="button" data-i18n="onboardingSkip">Skip</button>
+      <div class="onboardingCrown">👑</div>
+      <div class="welcomeEyebrow"><span></span><span data-i18n="onboardingEyebrow">MAKE KIRONG YOURS</span><span></span></div>
+      <h2 id="onboardingTitle" data-i18n="onboardingTitle">Welcome to your royal workspace</h2>
+      <p data-i18n="onboardingSubtitle">Choose what you want to do first. We’ll use it to shape your starting experience.</p>
+
+      <label class="onboardingNameLabel" for="onboardingName" data-i18n="onboardingNameLabel">What should Kirong call you? <span>(optional)</span></label>
+      <input id="onboardingName" class="onboardingNameInput" type="text" maxlength="40" autocomplete="given-name" placeholder="Your name" />
+
+      <p class="onboardingChoose" data-i18n="onboardingChoose">What brings you here today?</p>
+      <div class="onboardingOptions">
+        <button class="onboardingOption" type="button" data-onboarding-role="business">
+          <span>💼</span><b data-i18n="roleBusiness">Business</b><small data-i18n="roleBusinessDesc">Ideas, marketing & customers</small>
+        </button>
+        <button class="onboardingOption" type="button" data-onboarding-role="school">
+          <span>🎓</span><b data-i18n="roleSchool">School</b><small data-i18n="roleSchoolDesc">Learn, revise & understand</small>
+        </button>
+        <button class="onboardingOption" type="button" data-onboarding-role="coding">
+          <span>💻</span><b data-i18n="roleCoding">Coding</b><small data-i18n="roleCodingDesc">Build apps & solve bugs</small>
+        </button>
+        <button class="onboardingOption" type="button" data-onboarding-role="writing">
+          <span>✍️</span><b data-i18n="roleWriting">Writing</b><small data-i18n="roleWritingDesc">CVs, emails & content</small>
+        </button>
+      </div>
+
+      <button class="primaryBtn onboardingContinue" id="finishOnboarding" type="button" disabled data-i18n="onboardingContinue">Enter Kirong →</button>
+    </div>
+  </div>
 
   <script src="/app.js"></script>
 </body>
