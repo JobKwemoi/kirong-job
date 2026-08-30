@@ -5,13 +5,13 @@
 
 import {
   getOrCreateUser
-} from "../lib/users.js";
+} from "../users.js";
 
 import {
   getUsageSnapshot,
   getPublicPlanSummary,
   getSubscriptionStatus
-} from "../lib/plans.js";
+} from "../plans.js";
 
 function getUserId(req) {
   const header =
