@@ -1,82 +1,58 @@
 // ============================================================
-// 👑 KIRONG AI — USER API V1
-// Profile + usage + subscription
+// 👑 KIRONG AI — USER / PLAN BRIDGE V1
+// Exposes plan + usage info to the frontend (plan badge, limits)
 // ============================================================
 
-import {
-  getOrCreateUser
-} from "../users.js";
+"use strict";
 
-import {
-  getUsageSnapshot,
-  getPublicPlanSummary,
-  getSubscriptionStatus
-} from "../plans.js";
+import { getOrCreateUser } from "../users.js";
+import { getUsageSnapshot, getUserPlan } from "../plans.js";
+
+function setCors(res) {
+  res.setHeader("Access-Control-Allow-Origin", "*");
+  res.setHeader("Access-Control-Allow-Methods", "GET, OPTIONS");
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type, X-Kirong-User-Id");
+  res.setHeader("Content-Type", "application/json; charset=utf-8");
+}
 
 function getUserId(req) {
-  const header =
-    req.headers["x-kirong-user-id"];
-
-  const query =
-    req.query?.userId;
-
-  return String(
-    header ||
-    query ||
-    ""
-  ).trim();
+  const fromQuery = req.query?.userId;
+  const fromHeader = req.headers["x-kirong-user-id"];
+  return String(fromQuery || fromHeader || "anonymous").trim().slice(0, 100);
 }
 
 export default async function handler(req, res) {
+  setCors(res);
+
+  if (req.method === "OPTIONS") {
+    return res.status(204).end();
+  }
+
+  if (req.method !== "GET") {
+    return res.status(405).json({ ok: false, error: "Method not allowed." });
+  }
+
   try {
-    if (req.method !== "GET") {
-      return res.status(405).json({
-        ok: false,
-        error: "Method not allowed"
-      });
-    }
-
-    const userId =
-      getUserId(req);
-
-    if (!userId) {
-      return res.status(400).json({
-        ok: false,
-        error: "Missing user ID"
-      });
-    }
-
-    const user =
-      await getOrCreateUser(userId);
+    const userId = getUserId(req);
+    const user = await getOrCreateUser(userId);
+    const plan = getUserPlan(user);
+    const usage = getUsageSnapshot(user);
 
     return res.status(200).json({
       ok: true,
-
-      user: {
-        userId: user.userId,
-        plan: user.plan,
-        createdAt: user.createdAt
-      },
-
-      plan:
-        getPublicPlanSummary(user),
-
-      usage:
-        getUsageSnapshot(user),
-
-      subscription:
-        getSubscriptionStatus(user)
+      userId: user.userId,
+      plan: plan.id,
+      planLabel: plan.label,
+      usage,
+      subscription: user.subscription || null
     });
-
   } catch (error) {
-    console.error(
-      "USER API ERROR:",
-      error
-    );
+    console.error("KIRONG USER ERROR:", error);
 
     return res.status(500).json({
       ok: false,
-      error: "Unable to load user profile"
+      error: "Could not load account info.",
+      code: "USER_SERVER_ERROR"
     });
   }
 }
