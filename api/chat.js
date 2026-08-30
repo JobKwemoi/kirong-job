@@ -1,22 +1,6 @@
 // ============================================================
-// 👑 KIRONG AI — CHAT ENGINE V12.1
+// 👑 KIRONG AI — CHAT ENGINE V12
 // Production AI Router + Plans + Usage + Files + Vision + History
-// ------------------------------------------------------------
-// FIX (this version): restores the missing `export default
-// async function handler(req, res)` that Vercel requires. The
-// previous deploy failed at runtime with:
-//   "Invalid export found in module /var/task/api/chat.js.
-//    The default export must be a function or server."
-// causing every /api/chat request to return 500.
-//
-// ⚠️ IMPORTANT: this handler calls checkUsageLimit, checkTokenLimit,
-// recordUsage, getUserPlan, getUsageSnapshot, canUseFeature (from
-// plans.js) and getOrCreateUser/saveUser (from users.js) using the
-// signatures implied by their names and how app.js/plans.js were
-// referenced elsewhere. I do not have your actual plans.js/users.js
-// source, so double-check these calls match your real function
-// signatures — if a shape doesn't match, adjust the call, not your
-// plans.js file.
 // ============================================================
 
 "use strict";
@@ -114,6 +98,13 @@ const TEXT_FILE_EXTENSIONS = [
   ".log", ".yml", ".yaml", ".xml", ".sql", ".sh", ".bat", ".php",
   ".go", ".rs", ".swift", ".kt"
 ];
+
+// ------------------------------------------------------------
+// 👁️ VISION — images we can actually SEND to a vision-capable
+// model (OpenAI / OpenRouter's gpt-4o-mini). Kept well under the
+// provider's own limits, and comfortably inside a single request
+// on Vercel Hobby's execution/body constraints.
+// ------------------------------------------------------------
 
 const IMAGE_FILE_EXTENSIONS = [
   ".jpg", ".jpeg", ".png", ".webp", ".gif"
@@ -680,309 +671,500 @@ function sanitizeHistory(history) {
 }
 
 // ============================================================
-// 🤖 CALL A SINGLE PROVIDER
-// ------------------------------------------------------------
-// Tries one provider/key pair. Throws on failure so the caller
-// can fall through to the next provider.
+// 🧠 BUILD AI MESSAGES
+// ============================================================
+// When an image is attached and readable, the LAST user message
+// becomes a multimodal content array (text + image_url) instead
+// of a plain string — this is the format vision-capable models
+// (OpenAI / OpenRouter's gpt-4o-mini) expect. Groq/Cerebras never
+// receive this shape (see needsVision routing below).
 // ============================================================
 
-async function callGroq(apiKey, systemPrompt, chatMessages) {
-  const client = new Groq({ apiKey });
+function buildMessages({ systemPrompt, message, history = [], imageDataUrl = null }) {
+  const messages = [{ role: "system", content: systemPrompt }];
 
-  const response = await client.chat.completions.create({
+  for (const item of history) {
+    messages.push({ role: item.role, content: item.content });
+  }
+
+  if (imageDataUrl) {
+    messages.push({
+      role: "user",
+      content: [
+        { type: "text", text: message },
+        { type: "image_url", image_url: { url: imageDataUrl } }
+      ]
+    });
+  } else {
+    messages.push({ role: "user", content: message });
+  }
+
+  return messages;
+}
+
+// ============================================================
+// 🔥 GROQ
+// ============================================================
+
+async function callGroq(messages, maxTokens) {
+  if (!GROQ_KEYS.length) throw new Error("Groq unavailable.");
+
+  const key = getRandomKey(GROQ_KEYS);
+  const client = new Groq({ apiKey: key });
+
+  const completion = await client.chat.completions.create({
     model: MODELS.groq,
-    messages: [{ role: "system", content: systemPrompt }, ...chatMessages],
-    temperature: 0.7,
-    max_tokens: 2048
+    messages,
+    max_tokens: maxTokens,
+    temperature: 0.7
   });
 
-  const text = response?.choices?.[0]?.message?.content;
-  if (!text) throw new Error("Groq returned an empty response");
-  return text;
+  const text = completion?.choices?.[0]?.message?.content || "";
+  if (!text) throw new Error("Groq returned an empty response.");
+
+  return { provider: "groq", model: MODELS.groq, text, usage: completion.usage || {} };
 }
 
-async function callOpenAI(apiKey, systemPrompt, chatMessages, baseURL) {
-  const client = new OpenAI({ apiKey, baseURL });
+// ============================================================
+// 🤖 OPENAI (vision-capable)
+// ============================================================
 
-  const response = await client.chat.completions.create({
-    model: baseURL ? MODELS.openrouter : MODELS.openai,
-    messages: [{ role: "system", content: systemPrompt }, ...chatMessages],
-    temperature: 0.7,
-    max_tokens: 2048
+async function callOpenAI(messages, maxTokens) {
+  if (!OPENAI_KEYS.length) throw new Error("OpenAI unavailable.");
+
+  const key = getRandomKey(OPENAI_KEYS);
+  const client = new OpenAI({ apiKey: key });
+
+  const completion = await client.chat.completions.create({
+    model: MODELS.openai,
+    messages,
+    max_tokens: maxTokens,
+    temperature: 0.7
   });
 
-  const text = response?.choices?.[0]?.message?.content;
-  if (!text) throw new Error("OpenAI-compatible provider returned an empty response");
-  return text;
+  const text = completion?.choices?.[0]?.message?.content || "";
+  if (!text) throw new Error("OpenAI returned an empty response.");
+
+  return { provider: "openai", model: MODELS.openai, text, usage: completion.usage || {} };
 }
 
-async function callCerebras(apiKey, systemPrompt, chatMessages) {
-  const response = await fetchWithTimeout("https://api.cerebras.ai/v1/chat/completions", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${apiKey}`
-    },
-    body: JSON.stringify({
-      model: MODELS.cerebras,
-      messages: [{ role: "system", content: systemPrompt }, ...chatMessages],
-      temperature: 0.7,
-      max_tokens: 2048
-    })
-  });
+// ============================================================
+// 🧠 CEREBRAS
+// ============================================================
+
+async function callCerebras(messages, maxTokens) {
+  if (!CEREBRAS_KEYS.length) throw new Error("Cerebras unavailable.");
+
+  const key = getRandomKey(CEREBRAS_KEYS);
+
+  const response = await fetchWithTimeout(
+    "https://api.cerebras.ai/v1/chat/completions",
+    {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${key}`,
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        model: MODELS.cerebras,
+        messages,
+        max_tokens: maxTokens,
+        temperature: 0.7
+      })
+    }
+  );
 
   if (!response.ok) {
-    const errText = await response.text().catch(() => "");
-    throw new Error(`Cerebras ${response.status}: ${errText.slice(0, 200)}`);
+    const errorText = await response.text();
+    throw new Error(`Cerebras ${response.status}: ${errorText.slice(0, 300)}`);
   }
 
   const data = await response.json();
-  const text = data?.choices?.[0]?.message?.content;
-  if (!text) throw new Error("Cerebras returned an empty response");
-  return text;
+  const text = data?.choices?.[0]?.message?.content || "";
+  if (!text) throw new Error("Cerebras returned an empty response.");
+
+  return { provider: "cerebras", model: MODELS.cerebras, text, usage: data.usage || {} };
 }
 
 // ============================================================
-// 🔀 PROVIDER FALLBACK CHAIN
-// ------------------------------------------------------------
-// Tries providers in order (Groq → OpenAI → Cerebras →
-// OpenRouter), rotating a random key from each pool, and falls
-// through to the next provider on any failure. Throws only if
-// every configured provider fails.
+// 🌐 OPENROUTER (vision-capable — model is openai/gpt-4o-mini)
 // ============================================================
 
-async function generateAIReply(systemPrompt, chatMessages) {
-  const attempts = [];
+async function callOpenRouter(messages, maxTokens) {
+  if (!OPENROUTER_KEYS.length) throw new Error("OpenRouter unavailable.");
 
-  if (GROQ_KEYS.length) {
-    const key = getRandomKey(GROQ_KEYS);
-    attempts.push({
-      name: "groq",
-      run: () => callGroq(key, systemPrompt, chatMessages)
-    });
+  const key = getRandomKey(OPENROUTER_KEYS);
+
+  const response = await fetchWithTimeout(
+    "https://openrouter.ai/api/v1/chat/completions",
+    {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${key}`,
+        "Content-Type": "application/json",
+        "HTTP-Referer": "https://kirongjob.vercel.app",
+        "X-Title": "Kirong AI"
+      },
+      body: JSON.stringify({
+        model: MODELS.openrouter,
+        messages,
+        max_tokens: maxTokens,
+        temperature: 0.7
+      })
+    }
+  );
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(`OpenRouter ${response.status}: ${errorText.slice(0, 300)}`);
   }
 
-  if (OPENAI_KEYS.length) {
-    const key = getRandomKey(OPENAI_KEYS);
-    attempts.push({
-      name: "openai",
-      run: () => callOpenAI(key, systemPrompt, chatMessages)
-    });
+  const data = await response.json();
+  const text = data?.choices?.[0]?.message?.content || "";
+  if (!text) throw new Error("OpenRouter returned an empty response.");
+
+  return { provider: "openrouter", model: MODELS.openrouter, text, usage: data.usage || {} };
+}
+
+// ============================================================
+// 🧠 AI PROVIDER ROUTER
+// ============================================================
+// needsVision=true restricts routing to ONLY the two providers
+// whose configured model actually accepts image_url content
+// (OpenAI direct, and OpenRouter's openai/gpt-4o-mini). Sending
+// multimodal content to Groq/Cerebras's plain-text llama models
+// would just fail or silently ignore the image.
+// ============================================================
+
+async function generateAIResponse({ messages, maxTokens, isPro, needsVision = false }) {
+  const providers = [];
+
+  if (needsVision) {
+    providers.push(["openai", callOpenAI], ["openrouter", callOpenRouter]);
+  } else if (isPro) {
+    providers.push(
+      ["cerebras", callCerebras],
+      ["groq", callGroq],
+      ["openai", callOpenAI],
+      ["openrouter", callOpenRouter]
+    );
+  } else {
+    providers.push(
+      ["groq", callGroq],
+      ["cerebras", callCerebras],
+      ["openrouter", callOpenRouter],
+      ["openai", callOpenAI]
+    );
   }
 
-  if (CEREBRAS_KEYS.length) {
-    const key = getRandomKey(CEREBRAS_KEYS);
-    attempts.push({
-      name: "cerebras",
-      run: () => callCerebras(key, systemPrompt, chatMessages)
-    });
-  }
+  const errors = [];
 
-  if (OPENROUTER_KEYS.length) {
-    const key = getRandomKey(OPENROUTER_KEYS);
-    attempts.push({
-      name: "openrouter",
-      run: () =>
-        callOpenAI(key, systemPrompt, chatMessages, "https://openrouter.ai/api/v1")
-    });
-  }
-
-  if (!attempts.length) {
-    throw new Error("No AI provider is configured (missing API keys).");
-  }
-
-  let lastError = null;
-
-  for (const attempt of attempts) {
+  for (const [name, fn] of providers) {
     try {
-      const text = await attempt.run();
-      return { text, provider: attempt.name };
+      return await fn(messages, maxTokens);
     } catch (error) {
-      console.error(`${attempt.name.toUpperCase()} FAILED:`, error?.message);
-      lastError = error;
+      console.error(`${name.toUpperCase()} FAILED:`, error?.message);
+      errors.push({
+        provider: name,
+        message: String(error?.message || "Unknown provider error").slice(0, 250)
+      });
     }
   }
 
-  throw lastError || new Error("All AI providers failed.");
+  if (needsVision) {
+    throw new Error(
+      "Image analysis isn't available right now — no vision-capable AI provider (OpenAI/OpenRouter) is configured or reachable."
+    );
+  }
+
+  throw new Error(`All AI providers failed. ${JSON.stringify(errors)}`);
+}
+
+// ============================================================
+// 🌐 CORS
+// ============================================================
+
+function setCors(res) {
+  res.setHeader("Access-Control-Allow-Origin", "*");
+  res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type, X-Kirong-User-Id");
+  res.setHeader("Content-Type", "application/json; charset=utf-8");
 }
 
 // ============================================================
 // 🚀 MAIN HANDLER
-// ------------------------------------------------------------
-// This is the piece that was missing from the deployed file —
-// without a default export, Vercel refuses to run the function
-// at all ("Invalid export found in module").
 // ============================================================
 
 export default async function handler(req, res) {
+  setCors(res);
+
+  if (req.method === "OPTIONS") {
+    return res.status(204).end();
+  }
+
   if (req.method !== "POST") {
-    res.setHeader("Allow", "POST");
-    return res.status(405).json({ ok: false, error: "Method not allowed" });
+    return res.status(405).json({ ok: false, error: "Method not allowed." });
   }
 
   try {
-    const { fields, files } = await parseMultipartForm(req);
+    // ----------------------------------------------------------
+    // PARSE REQUEST
+    // ----------------------------------------------------------
 
-    const userId = getUserId(req, fields);
-    const mode = normalizeMode(firstValue(fields.mode));
-    const language = cleanMessage(firstValue(fields.language) || "English", 40);
-    const message = cleanMessage(firstValue(fields.message));
+    let fields = {};
+    let files = {};
 
-    let history = [];
     try {
-      history = sanitizeHistory(JSON.parse(firstValue(fields.history) || "[]"));
-    } catch {
-      history = [];
-    }
-
-    if (!message && !getUploadedFile(files)) {
-      return res.status(400).json({ ok: false, error: "Message or file is required." });
-    }
-
-    // --------------------------------------------------------
-    // 👤 USER + PLAN
-    // --------------------------------------------------------
-
-    const user = await getOrCreateUser(userId);
-    const plan = getUserPlan(user);
-
-    // --------------------------------------------------------
-    // 👑 PRO FEATURE GATE (content/whatsapp/blog/affiliate)
-    // --------------------------------------------------------
-
-    const requiredFeature = featureForMode(mode);
-
-    if (requiredFeature && !canUseFeature(user, plan, requiredFeature)) {
-      return res.status(403).json({
+      const parsed = await parseMultipartForm(req);
+      fields = parsed.fields || {};
+      files = parsed.files || {};
+    } catch (error) {
+      console.error("FORM PARSE ERROR:", error?.message);
+      return res.status(400).json({
         ok: false,
-        code: "PRO_FEATURE",
-        error: `${mode} is a Pro-only feature.`
+        error: "Could not read the request. Check your message or file size.",
+        code: "FORM_PARSE_ERROR"
       });
     }
 
-    // --------------------------------------------------------
-    // 🚦 USAGE LIMITS
-    // --------------------------------------------------------
+    // ----------------------------------------------------------
+    // MESSAGE
+    // ----------------------------------------------------------
 
-    const usageCheck = checkUsageLimit(user, plan);
-    if (usageCheck && usageCheck.allowed === false) {
-      return res.status(429).json({
-        ok: false,
-        error: usageCheck.reason || "Daily usage limit reached. Try again later or upgrade to Pro."
-      });
-    }
+    let message = cleanMessage(firstValue(fields.message));
 
-    const estimatedTokens = estimateTokens(message) + estimateTokens(JSON.stringify(history));
-    const tokenCheck = checkTokenLimit(user, plan, estimatedTokens);
-    if (tokenCheck && tokenCheck.allowed === false) {
-      return res.status(429).json({
-        ok: false,
-        error: tokenCheck.reason || "Token limit reached for your plan."
-      });
-    }
-
-    // --------------------------------------------------------
-    // 📎 FILE HANDLING (image → vision, text → inline content)
-    // --------------------------------------------------------
+    // ----------------------------------------------------------
+    // FILE (text OR image)
+    // ----------------------------------------------------------
 
     const uploadedFile = getUploadedFile(files);
 
-    let fileContextText = "";
+    let fileInfo = null;
     let imageDataUrl = null;
+    let needsVision = false;
 
     if (uploadedFile) {
-      const originalName = uploadedFile.originalFilename || uploadedFile.name || "";
+      const originalName =
+        uploadedFile.originalFilename || uploadedFile.name || "";
 
       if (isImageFile(originalName)) {
-        const imageInfo = readImageAsDataUrl(uploadedFile);
+        fileInfo = readImageAsDataUrl(uploadedFile);
 
-        if (imageInfo?.tooLarge) {
-          fileContextText = `\n\n[The user attached an image ("${imageInfo.name}") but it was too large to process.]`;
-        } else if (imageInfo?.readable && imageInfo.dataUrl) {
-          imageDataUrl = imageInfo.dataUrl;
-        } else {
-          fileContextText = `\n\n[The user attached an image ("${originalName}") but it could not be read.]`;
+        if (fileInfo?.readable && fileInfo.dataUrl) {
+          imageDataUrl = fileInfo.dataUrl;
+          needsVision = true;
         }
       } else {
-        const fileInfo = readUploadedFileText(uploadedFile);
-
-        if (fileInfo?.readable) {
-          fileContextText =
-            `\n\n[Attached file: ${fileInfo.name}]\n` +
-            "```\n" +
-            fileInfo.text +
-            (fileInfo.truncated ? "\n...[truncated]" : "") +
-            "\n```";
-        } else {
-          fileContextText = `\n\n[The user attached a file ("${fileInfo?.name || originalName}") of an unsupported type.]`;
-        }
+        fileInfo = readUploadedFileText(uploadedFile);
       }
     }
 
-    // --------------------------------------------------------
-    // 🧠 BUILD SYSTEM PROMPT + MESSAGES
-    // --------------------------------------------------------
+    // ----------------------------------------------------------
+    // FILE-ONLY REQUEST (no typed message)
+    // ----------------------------------------------------------
 
-    const systemPrompt =
-      buildSystemPrompt({ mode, plan }) +
-      `\n\nRespond in the following language when possible: ${language}.`;
+    if (!message && fileInfo) {
+      message = needsVision
+        ? "Please describe and analyze this image."
+        : `Please analyze the attached file: ${fileInfo.name}`;
+    }
 
-    const chatMessages = [...history];
+    // ----------------------------------------------------------
+    // EMPTY MESSAGE
+    // ----------------------------------------------------------
 
-    if (imageDataUrl) {
-      // Vision-capable providers (OpenAI/OpenRouter) accept this
-      // multi-part content shape; if the fallback chain lands on
-      // Groq/Cerebras instead, they will only see the text part.
-      chatMessages.push({
-        role: "user",
-        content: [
-          { type: "text", text: message || "What's in this image?" },
-          { type: "image_url", image_url: { url: imageDataUrl } }
-        ]
-      });
-    } else {
-      chatMessages.push({
-        role: "user",
-        content: message + fileContextText
+    if (!message) {
+      return res.status(400).json({ ok: false, error: "Message is required." });
+    }
+
+    // ----------------------------------------------------------
+    // ATTACH NON-IMAGE FILE CONTEXT (text files only — images are
+    // sent directly to the model as an image, not as inline text)
+    // ----------------------------------------------------------
+
+    if (fileInfo && !needsVision) {
+      if (fileInfo.readable) {
+        message +=
+          `\n\n--- Attached file: ${fileInfo.name} ---\n` +
+          fileInfo.text +
+          (fileInfo.truncated ? "\n--- (file truncated, showing first portion) ---" : "");
+      } else if (fileInfo.tooLarge) {
+        message +=
+          `\n\n[User attached an image named "${fileInfo.name}" that was too large ` +
+          `to analyze (max ${(MAX_IMAGE_BYTES_FOR_VISION / (1024 * 1024)).toFixed(0)}MB). ` +
+          `Let them know and ask them to try a smaller image.]`;
+      } else {
+        message +=
+          `\n\n[User attached a file named "${fileInfo.name}" that could not be read ` +
+          `(unsupported format). Acknowledge it and ask what they'd like you to do with it, ` +
+          `or ask them to paste the relevant content.]`;
+      }
+    }
+
+    // ----------------------------------------------------------
+    // USER / PLAN
+    // ----------------------------------------------------------
+
+    const userId = getUserId(req, fields);
+    const user = await getOrCreateUser(userId);
+    const plan = getUserPlan(user);
+    const isPro = plan.id === "pro";
+
+    // ----------------------------------------------------------
+    // MODE
+    // ----------------------------------------------------------
+
+    const mode = normalizeMode(firstValue(fields.mode));
+
+    // ----------------------------------------------------------
+    // FEATURE ACCESS (super-modes only — vision is available to
+    // everyone on the free tier too, same as image generation)
+    // ----------------------------------------------------------
+
+    const feature = featureForMode(mode);
+
+    if (feature && !canUseFeature(user, feature)) {
+      return res.status(403).json({
+        ok: false,
+        error: "This feature is available on Kirong AI Pro.",
+        code: "PRO_FEATURE",
+        feature,
+        plan: plan.id
       });
     }
 
-    // --------------------------------------------------------
-    // 🤖 CALL AI (with provider fallback)
-    // --------------------------------------------------------
+    // ----------------------------------------------------------
+    // MESSAGE LIMIT
+    // ----------------------------------------------------------
 
-    const { text, provider } = await generateAIReply(systemPrompt, chatMessages);
+    const usageCheck = checkUsageLimit(user, "message");
 
-    // --------------------------------------------------------
-    // 📊 RECORD USAGE
-    // --------------------------------------------------------
+    if (!usageCheck.allowed) {
+      return res.status(429).json({
+        ok: false,
+        error: "Daily message limit reached.",
+        code: "MESSAGE_LIMIT",
+        plan: plan.id,
+        limit: usageCheck.limit,
+        used: usageCheck.current,
+        remaining: usageCheck.remaining
+      });
+    }
+
+    // ----------------------------------------------------------
+    // HISTORY
+    // ----------------------------------------------------------
+
+    let rawHistory = [];
 
     try {
-      await recordUsage(user, {
-        mode,
-        tokensEstimated: estimatedTokens + estimateTokens(text)
-      });
-
-      await saveUser(user);
-    } catch (usageError) {
-      console.error("USAGE RECORD ERROR:", usageError?.message);
-      // Don't fail the whole request just because usage tracking failed.
+      rawHistory = JSON.parse(firstValue(fields.history) || "[]");
+    } catch {
+      rawHistory = [];
     }
+
+    const history = sanitizeHistory(rawHistory);
+
+    // ----------------------------------------------------------
+    // SYSTEM PROMPT
+    // ----------------------------------------------------------
+
+    const systemPrompt = buildSystemPrompt({ mode, plan: plan.id });
+
+    // ----------------------------------------------------------
+    // TOKEN ESTIMATE (text only — the base64 image data URL is
+    // intentionally excluded here, it isn't text tokens)
+    // ----------------------------------------------------------
+
+    const historyText = history.map(item => `${item.role}: ${item.content}`).join("\n");
+
+    const estimatedInputTokens = estimateTokens(
+      systemPrompt + "\n" + historyText + "\n" + message
+    );
+
+    if (estimatedInputTokens > plan.maxInputTokens) {
+      return res.status(413).json({
+        ok: false,
+        error: "This request is too large for your current plan.",
+        code: "INPUT_TOKEN_LIMIT",
+        estimatedTokens: estimatedInputTokens,
+        limit: plan.maxInputTokens,
+        plan: plan.id
+      });
+    }
+
+    // ----------------------------------------------------------
+    // DAILY TOKEN CHECK
+    // ----------------------------------------------------------
+
+    const tokenCheck = checkTokenLimit(user, {
+      inputTokens: estimatedInputTokens,
+      outputTokens: plan.maxOutputTokens
+    });
+
+    if (!tokenCheck.allowed) {
+      return res.status(429).json({
+        ok: false,
+        error: "Daily AI token limit reached.",
+        code: "TOKEN_LIMIT",
+        reason: tokenCheck.reason,
+        plan: plan.id
+      });
+    }
+
+    // ----------------------------------------------------------
+    // BUILD MESSAGES + GENERATE
+    // ----------------------------------------------------------
+
+    const messages = buildMessages({ systemPrompt, message, history, imageDataUrl });
+
+    const result = await generateAIResponse({
+      messages,
+      maxTokens: plan.maxOutputTokens,
+      isPro,
+      needsVision
+    });
+
+    // ----------------------------------------------------------
+    // RECORD USAGE
+    // ----------------------------------------------------------
+
+    const actualInputTokens = Number(result?.usage?.prompt_tokens) || estimatedInputTokens;
+    const actualOutputTokens =
+      Number(result?.usage?.completion_tokens) || estimateTokens(result.text);
+
+    recordUsage(user, {
+      type: "message",
+      inputTokens: actualInputTokens,
+      outputTokens: actualOutputTokens
+    });
+
+    await saveUser(user);
+
+    // ----------------------------------------------------------
+    // RESPONSE
+    // ----------------------------------------------------------
 
     return res.status(200).json({
       ok: true,
       type: "text",
-      text,
-      provider,
-      mode,
-      usage: getUsageSnapshot ? getUsageSnapshot(user, plan) : undefined
+      text: result.text,
+      reply: result.text,
+      provider: result.provider,
+      model: result.model,
+      plan: plan.id,
+      sawImage: needsVision,
+      usage: getUsageSnapshot(user)
     });
   } catch (error) {
-    console.error("CHAT HANDLER ERROR:", error?.message);
+    console.error("KIRONG AI ERROR:", error);
 
     return res.status(500).json({
       ok: false,
-      error: "Kirong AI ran into a problem processing that request. Please try again."
+      type: "error",
+      error: "Kirong AI is temporarily unavailable.",
+      text: "Kirong AI is temporarily unavailable.",
+      code: "AI_SERVER_ERROR"
     });
   }
 }
