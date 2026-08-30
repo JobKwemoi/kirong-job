@@ -1,0 +1,3 @@
+// Canonical route name used by the frontend and deployment platforms.
+// The original file is kept as a backwards-compatible legacy alias.
+export { default } from "./Payment status·JS";
