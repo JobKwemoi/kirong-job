@@ -140,8 +140,11 @@ const usageBarWrap =
 const usageBarFill =
   document.getElementById("usageBarFill");
 
-const usageBarLabel =
-  document.getElementById("usageBarLabel");
+const usageBarPercent =
+  document.getElementById("usageBarPercent");
+
+const usageLimitsBtn =
+  document.getElementById("usageLimitsBtn");
 
 const languageBtn =
   document.getElementById("languageBtn");
@@ -3219,30 +3222,36 @@ function updatePlanBadge(
 /* ============================================================
    📊 USAGE BAR
    ------------------------------------------------------------
-   Renders the daily message-usage bar under the header. Accepts
-   either a raw usage snapshot ({messages:{used,limit}, ...}) or
-   a wrapper object that has one nested under .usage — both shapes
-   show up depending on whether the data came from the streaming
-   "done" event (chat.js's getUsageSnapshot() result directly) or
-   from /api/user (which may wrap it as {plan, usage:{...}}).
-   Pro/unlimited plans (no numeric limit) hide the bar entirely.
+   Renders the daily usage percentage inside the bar itself, and
+   keeps the full snapshot (messages/images/tokens) around so
+   "View usage limits" can show a detailed breakdown on demand.
+   Accepts either a raw usage snapshot ({messages:{used,limit},
+   images:{...}, tokens:{...}}) or a wrapper object that has one
+   nested under .usage — both shapes show up depending on whether
+   the data came from the streaming "done" event (chat.js's
+   getUsageSnapshot() result directly) or from /api/user.
+   Pro/unlimited plans (no numeric message limit) hide the bar.
 ============================================================ */
 
+let lastUsageSnapshot = null;
+
 function updateUsageBar(source) {
-  if (!usageBarWrap || !usageBarFill || !usageBarLabel) {
+  const usage = source?.messages ? source : source?.usage;
+
+  if (!usageBarWrap || !usageBarFill || !usageBarPercent) {
     return;
   }
 
-  const messages =
-    source?.messages ||
-    source?.usage?.messages;
-
+  const messages = usage?.messages;
   const limit = Number(messages?.limit);
 
   if (!messages || !Number.isFinite(limit) || limit <= 0) {
     usageBarWrap.classList.add("hidden");
+    lastUsageSnapshot = null;
     return;
   }
+
+  lastUsageSnapshot = usage;
 
   const used = Math.max(0, Number(messages.used) || 0);
   const percent = Math.min(100, Math.round((used / limit) * 100));
@@ -3261,8 +3270,61 @@ function updateUsageBar(source) {
     percent >= 100
   );
 
-  usageBarLabel.textContent =
-    `${used}/${limit} messages today`;
+  usageBarPercent.textContent = `${percent}% used`;
+}
+
+function formatUsageLimitRow(label, stat) {
+  if (!stat || !Number.isFinite(Number(stat.limit))) {
+    return `<div class="usageLimitsRow"><span>${escapeHTML(label)}</span><b>Unlimited</b></div>`;
+  }
+
+  const used = Math.max(0, Number(stat.used) || 0);
+  const limit = Number(stat.limit);
+
+  return (
+    `<div class="usageLimitsRow"><span>${escapeHTML(label)}</span>` +
+    `<b>${used} / ${limit}</b></div>`
+  );
+}
+
+function openUsageLimitsModal() {
+  if (!lastUsageSnapshot) {
+    showToast("⚠️ Usage info isn't loaded yet");
+    return;
+  }
+
+  openModal(
+    `
+      <h3>📊 Your Usage Today</h3>
+      <p>Resets daily. Upgrade to Pro for higher limits.</p>
+
+      <div class="modalField">
+        ${formatUsageLimitRow("💬 Messages", lastUsageSnapshot.messages)}
+        ${formatUsageLimitRow("🎨 Images", lastUsageSnapshot.images)}
+        ${formatUsageLimitRow("🔢 Tokens", lastUsageSnapshot.tokens)}
+      </div>
+
+      <div class="modalActions">
+        <button id="usageLimitsCloseBtn">Close</button>
+        <button class="primaryBtn" id="usageLimitsUpgradeBtn">👑 Upgrade to Pro</button>
+      </div>
+    `
+  );
+
+  document
+    .getElementById("usageLimitsCloseBtn")
+    ?.addEventListener("click", closeModal);
+
+  document
+    .getElementById("usageLimitsUpgradeBtn")
+    ?.addEventListener("click", () => {
+      closeModal();
+      openProPaymentModal();
+    });
+}
+
+if (usageLimitsBtn) {
+  usageLimitsBtn.addEventListener("click", openUsageLimitsModal);
 }
 
 /* ============================================================
@@ -5672,6 +5734,192 @@ if (planBadge) {
 }
 
 /* ============================================================
+   🎁 REFERRAL SYSTEM — "Invite & Earn"
+   ------------------------------------------------------------
+   Each user's referral code IS their DEVICE_USER_ID, base64url-
+   encoded by the backend — no separate signup flow needed. A
+   friend opening the link with ?ref=CODE gets the code stored
+   locally, then redeemed automatically (once) via POST, granting
+   both sides a Pro trial per /api/referral.js's logic.
+============================================================ */
+
+const REFERRAL_ENDPOINT = "/api/referral";
+const REFERRAL_PENDING_KEY = "kirong_pending_referral_v1";
+const REFERRAL_REDEEMED_KEY = "kirong_referral_redeemed_v1";
+
+const referralToolCard = document.getElementById("referralToolCard");
+
+// --------------------------------------------------------
+// 🔗 CAPTURE ?ref=CODE FROM THE URL ON FIRST LOAD
+// --------------------------------------------------------
+
+function captureReferralFromUrl() {
+  try {
+    const params = new URLSearchParams(window.location.search);
+    const ref = params.get("ref");
+
+    if (!ref) return;
+
+    // Never overwrite an already-redeemed state, and don't bother
+    // storing a link to yourself if someone shares their own link
+    // back to their own browser/device.
+    if (localStorage.getItem(REFERRAL_REDEEMED_KEY)) return;
+
+    localStorage.setItem(REFERRAL_PENDING_KEY, ref);
+
+    // Clean the URL so refreshing/sharing it again doesn't re-post.
+    params.delete("ref");
+    const cleanUrl =
+      window.location.pathname +
+      (params.toString() ? `?${params.toString()}` : "") +
+      window.location.hash;
+    window.history.replaceState({}, document.title, cleanUrl);
+  } catch {
+    /* localStorage/URL access can fail in some embedded contexts — ignore */
+  }
+}
+
+async function redeemPendingReferral() {
+  let pendingCode = null;
+
+  try {
+    if (localStorage.getItem(REFERRAL_REDEEMED_KEY)) return;
+    pendingCode = localStorage.getItem(REFERRAL_PENDING_KEY);
+  } catch {
+    return;
+  }
+
+  if (!pendingCode) return;
+
+  try {
+    const response = await fetch(REFERRAL_ENDPOINT, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Accept: "application/json",
+        "X-Kirong-User-Id": DEVICE_USER_ID
+      },
+      body: JSON.stringify({ userId: DEVICE_USER_ID, code: pendingCode })
+    });
+
+    const data = await response.json().catch(() => ({}));
+
+    if (response.ok && data.ok) {
+      try {
+        localStorage.setItem(REFERRAL_REDEEMED_KEY, "true");
+        localStorage.removeItem(REFERRAL_PENDING_KEY);
+      } catch {}
+
+      showToast("🎁 Referral applied — enjoy your free Pro days!");
+      refreshUserData();
+    } else if (data.code === "ALREADY_REDEEMED") {
+      // Not this device's first redemption attempt somehow — stop
+      // retrying it every load.
+      try {
+        localStorage.setItem(REFERRAL_REDEEMED_KEY, "true");
+        localStorage.removeItem(REFERRAL_PENDING_KEY);
+      } catch {}
+    }
+    // Any other error (e.g. own-link, invalid code): leave it stored
+    // in case it was a transient network issue, but don't bother the
+    // user with an error toast for something they didn't explicitly
+    // trigger themselves.
+  } catch {
+    // network hiccup — will retry next launch since we didn't clear it
+  }
+}
+
+// --------------------------------------------------------
+// 🖼️ INVITE MODAL
+// --------------------------------------------------------
+
+async function openReferralModal() {
+  openModal(
+    `
+      <h3>🎁 Invite & Earn</h3>
+      <p>Give friends a free trial of Kirong AI Pro. When they join, you both get bonus Pro days 👑</p>
+      <div class="modalField" id="referralLoading">
+        <p class="emptyText">Loading your invite link...</p>
+      </div>
+    `
+  );
+
+  try {
+    const response = await fetch(
+      `${REFERRAL_ENDPOINT}?userId=${encodeURIComponent(DEVICE_USER_ID)}`,
+      {
+        headers: { Accept: "application/json", "X-Kirong-User-Id": DEVICE_USER_ID },
+        cache: "no-store"
+      }
+    );
+
+    const data = await response.json().catch(() => ({}));
+
+    if (!response.ok || !data.ok) {
+      throw new Error(data?.error || `Server ${response.status}`);
+    }
+
+    renderReferralModalContent(data);
+  } catch (error) {
+    const loadingBox = document.getElementById("referralLoading");
+    if (loadingBox) {
+      loadingBox.innerHTML = `<p class="emptyText">⚠️ ${friendlyError(error)}</p>`;
+    }
+  }
+}
+
+function renderReferralModalContent(data) {
+  const modalBox = document.querySelector("#kirongModalOverlay .modalBox");
+  if (!modalBox) return;
+
+  const whatsappShareText = encodeURIComponent(
+    `Karibu Kirong AI 👑 — nikualike ujaribu, umepata siku ${data.rewardDaysForNewUser} za Pro bure: ${data.link}`
+  );
+
+  modalBox.innerHTML = `
+    <h3>🎁 Invite & Earn</h3>
+    <p>Give friends a free trial of Kirong AI Pro. When they join, you both get bonus Pro days 👑</p>
+
+    <div class="modalField">
+      <label>Your invite link</label>
+      <input type="text" id="referralLinkInput" value="${escapeHTML(data.link)}" readonly />
+    </div>
+
+    <div class="modalActions">
+      <button id="referralCopyBtn">📋 Copy Link</button>
+      <a class="primaryBtn" id="referralWhatsappBtn"
+         href="https://wa.me/?text=${whatsappShareText}"
+         target="_blank" rel="noopener noreferrer">📱 Share on WhatsApp</a>
+    </div>
+
+    <div class="proFeatureList" style="margin-top:16px">
+      <div>👥 Friends invited: <b>${Number(data.referralCount) || 0}</b></div>
+      <div>👑 ${
+        data.trialActive
+          ? `Pro trial active until ${new Date(data.proTrialUntil).toLocaleDateString()}`
+          : "No active trial right now — invite someone to start earning days!"
+      }</div>
+    </div>
+
+    <div class="modalActions">
+      <button id="referralCloseBtn">Close</button>
+    </div>
+  `;
+
+  document
+    .getElementById("referralCloseBtn")
+    ?.addEventListener("click", closeModal);
+
+  document
+    .getElementById("referralCopyBtn")
+    ?.addEventListener("click", () => copyText(data.link));
+}
+
+if (referralToolCard) {
+  referralToolCard.addEventListener("click", openReferralModal);
+}
+
+/* ============================================================
    📱 WHATSAPP HELPERS
 ============================================================ */
 
@@ -6260,6 +6508,8 @@ function initOnboarding() {
 ============================================================ */
 
 function init() {
+  captureReferralFromUrl();
+
   applyTranslations();
 
   initOnboarding();
@@ -6281,6 +6531,8 @@ function init() {
   autoResizeInput();
 
   refreshUserData();
+
+  redeemPendingReferral();
 
   console.log(
     "⚡ KIRONG AI V11 MANSION READY"
