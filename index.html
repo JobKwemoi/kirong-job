@@ -21,7 +21,7 @@
     .usageBarWrap {
       display: flex;
       align-items: center;
-      gap: 8px;
+      gap: 10px;
       padding: 6px 16px;
       font-size: 12px;
       color: rgba(255, 255, 255, 0.7);
@@ -32,8 +32,9 @@
       display: none;
     }
     .usageBarTrack {
+      position: relative;
       flex: 1;
-      height: 6px;
+      height: 14px;
       border-radius: 999px;
       background: rgba(255, 255, 255, 0.12);
       overflow: hidden;
@@ -51,9 +52,47 @@
     .usageBarFill.usageBarFull {
       background: linear-gradient(90deg, #ef4444, #f87171);
     }
-    .usageBarLabel {
-      white-space: nowrap;
+    .usageBarPercent {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 9px;
+      font-weight: 700;
+      color: rgba(255, 255, 255, 0.95);
+      text-shadow: 0 1px 2px rgba(0, 0, 0, 0.45);
+      pointer-events: none;
+      letter-spacing: 0.02em;
+    }
+    .usageBarLink {
+      flex-shrink: 0;
+      background: none;
+      border: none;
+      padding: 0;
+      color: #a78bfa;
+      font-size: 12px;
       font-weight: 600;
+      text-decoration: underline;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+    .usageBarLink:hover {
+      color: #c4b5fd;
+    }
+    .usageLimitsRow {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 0;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+      font-size: 14px;
+    }
+    .usageLimitsRow:last-child {
+      border-bottom: none;
+    }
+    .usageLimitsRow b {
+      color: #a78bfa;
     }
   </style>
 </head>
@@ -82,8 +121,9 @@
     <div class="usageBarWrap hidden" id="usageBarWrap" role="status" aria-live="polite">
       <div class="usageBarTrack">
         <div class="usageBarFill" id="usageBarFill"></div>
+        <span class="usageBarPercent" id="usageBarPercent"></span>
       </div>
-      <span class="usageBarLabel" id="usageBarLabel"></span>
+      <button class="usageBarLink" id="usageLimitsBtn" type="button">View usage limits</button>
     </div>
 
     <!-- 👑 ROYAL TABS -->
@@ -238,6 +278,13 @@
           <div class="toolText">
             <b>Ask About a Photo</b>
             <small>Kirong analyzes your image</small>
+          </div>
+        </button>
+        <button class="toolCard" id="referralToolCard">
+          <span class="toolIcon">🎁</span>
+          <div class="toolText">
+            <b>Invite & Earn</b>
+            <small>Give friends Pro, get Pro days free</small>
           </div>
         </button>
       </div>
