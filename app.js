@@ -134,6 +134,15 @@ const imageModeBtn =
 const planBadge =
   document.getElementById("planBadge");
 
+const usageBarWrap =
+  document.getElementById("usageBarWrap");
+
+const usageBarFill =
+  document.getElementById("usageBarFill");
+
+const usageBarLabel =
+  document.getElementById("usageBarLabel");
+
 const languageBtn =
   document.getElementById("languageBtn");
 
@@ -3160,6 +3169,10 @@ async function refreshUserData() {
       updatePlanBadge(
         data
       );
+
+      updateUsageBar(
+        data
+      );
     }
 
     return data;
@@ -3201,6 +3214,55 @@ function updatePlanBadge(
   planBadge.classList.remove(
     "pro"
   );
+}
+
+/* ============================================================
+   📊 USAGE BAR
+   ------------------------------------------------------------
+   Renders the daily message-usage bar under the header. Accepts
+   either a raw usage snapshot ({messages:{used,limit}, ...}) or
+   a wrapper object that has one nested under .usage — both shapes
+   show up depending on whether the data came from the streaming
+   "done" event (chat.js's getUsageSnapshot() result directly) or
+   from /api/user (which may wrap it as {plan, usage:{...}}).
+   Pro/unlimited plans (no numeric limit) hide the bar entirely.
+============================================================ */
+
+function updateUsageBar(source) {
+  if (!usageBarWrap || !usageBarFill || !usageBarLabel) {
+    return;
+  }
+
+  const messages =
+    source?.messages ||
+    source?.usage?.messages;
+
+  const limit = Number(messages?.limit);
+
+  if (!messages || !Number.isFinite(limit) || limit <= 0) {
+    usageBarWrap.classList.add("hidden");
+    return;
+  }
+
+  const used = Math.max(0, Number(messages.used) || 0);
+  const percent = Math.min(100, Math.round((used / limit) * 100));
+
+  usageBarWrap.classList.remove("hidden");
+
+  usageBarFill.style.width = percent + "%";
+
+  usageBarFill.classList.toggle(
+    "usageBarWarn",
+    percent >= 70 && percent < 100
+  );
+
+  usageBarFill.classList.toggle(
+    "usageBarFull",
+    percent >= 100
+  );
+
+  usageBarLabel.textContent =
+    `${used}/${limit} messages today`;
 }
 
 /* ============================================================
@@ -3504,7 +3566,10 @@ async function sendMessage() {
       }
 
       if (event.type === "done") {
-        return; // metadata only (provider/usage) — nothing to render
+        if (event.usage) {
+          updateUsageBar(event.usage);
+        }
+        return; // rest of the metadata (provider/model) — nothing to render
       }
 
       if (event.type === "error" || event.ok === false) {
