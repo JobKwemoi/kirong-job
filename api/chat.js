@@ -1,6 +1,22 @@
 // ============================================================
-// 👑 KIRONG AI — CHAT ENGINE V12
+// 👑 KIRONG AI — CHAT ENGINE V12.1
 // Production AI Router + Plans + Usage + Files + Vision + History
+// ------------------------------------------------------------
+// FIX (this version): restores the missing `export default
+// async function handler(req, res)` that Vercel requires. The
+// previous deploy failed at runtime with:
+//   "Invalid export found in module /var/task/api/chat.js.
+//    The default export must be a function or server."
+// causing every /api/chat request to return 500.
+//
+// ⚠️ IMPORTANT: this handler calls checkUsageLimit, checkTokenLimit,
+// recordUsage, getUserPlan, getUsageSnapshot, canUseFeature (from
+// plans.js) and getOrCreateUser/saveUser (from users.js) using the
+// signatures implied by their names and how app.js/plans.js were
+// referenced elsewhere. I do not have your actual plans.js/users.js
+// source, so double-check these calls match your real function
+// signatures — if a shape doesn't match, adjust the call, not your
+// plans.js file.
 // ============================================================
 
 "use strict";
@@ -98,13 +114,6 @@ const TEXT_FILE_EXTENSIONS = [
   ".log", ".yml", ".yaml", ".xml", ".sql", ".sh", ".bat", ".php",
   ".go", ".rs", ".swift", ".kt"
 ];
-
-// ------------------------------------------------------------
-// 👁️ VISION — images we can actually SEND to a vision-capable
-// model (OpenAI / OpenRouter's gpt-4o-mini). Kept well under the
-// provider's own limits, and comfortably inside a single request
-// on Vercel Hobby's execution/body constraints.
-// ------------------------------------------------------------
 
 const IMAGE_FILE_EXTENSIONS = [
   ".jpg", ".jpeg", ".png", ".webp", ".gif"
@@ -668,4 +677,312 @@ function sanitizeHistory(history) {
       return { role, content };
     })
     .filter(Boolean);
+}
+
+// ============================================================
+// 🤖 CALL A SINGLE PROVIDER
+// ------------------------------------------------------------
+// Tries one provider/key pair. Throws on failure so the caller
+// can fall through to the next provider.
+// ============================================================
+
+async function callGroq(apiKey, systemPrompt, chatMessages) {
+  const client = new Groq({ apiKey });
+
+  const response = await client.chat.completions.create({
+    model: MODELS.groq,
+    messages: [{ role: "system", content: systemPrompt }, ...chatMessages],
+    temperature: 0.7,
+    max_tokens: 2048
+  });
+
+  const text = response?.choices?.[0]?.message?.content;
+  if (!text) throw new Error("Groq returned an empty response");
+  return text;
+}
+
+async function callOpenAI(apiKey, systemPrompt, chatMessages, baseURL) {
+  const client = new OpenAI({ apiKey, baseURL });
+
+  const response = await client.chat.completions.create({
+    model: baseURL ? MODELS.openrouter : MODELS.openai,
+    messages: [{ role: "system", content: systemPrompt }, ...chatMessages],
+    temperature: 0.7,
+    max_tokens: 2048
+  });
+
+  const text = response?.choices?.[0]?.message?.content;
+  if (!text) throw new Error("OpenAI-compatible provider returned an empty response");
+  return text;
+}
+
+async function callCerebras(apiKey, systemPrompt, chatMessages) {
+  const response = await fetchWithTimeout("https://api.cerebras.ai/v1/chat/completions", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${apiKey}`
+    },
+    body: JSON.stringify({
+      model: MODELS.cerebras,
+      messages: [{ role: "system", content: systemPrompt }, ...chatMessages],
+      temperature: 0.7,
+      max_tokens: 2048
+    })
+  });
+
+  if (!response.ok) {
+    const errText = await response.text().catch(() => "");
+    throw new Error(`Cerebras ${response.status}: ${errText.slice(0, 200)}`);
+  }
+
+  const data = await response.json();
+  const text = data?.choices?.[0]?.message?.content;
+  if (!text) throw new Error("Cerebras returned an empty response");
+  return text;
+}
+
+// ============================================================
+// 🔀 PROVIDER FALLBACK CHAIN
+// ------------------------------------------------------------
+// Tries providers in order (Groq → OpenAI → Cerebras →
+// OpenRouter), rotating a random key from each pool, and falls
+// through to the next provider on any failure. Throws only if
+// every configured provider fails.
+// ============================================================
+
+async function generateAIReply(systemPrompt, chatMessages) {
+  const attempts = [];
+
+  if (GROQ_KEYS.length) {
+    const key = getRandomKey(GROQ_KEYS);
+    attempts.push({
+      name: "groq",
+      run: () => callGroq(key, systemPrompt, chatMessages)
+    });
+  }
+
+  if (OPENAI_KEYS.length) {
+    const key = getRandomKey(OPENAI_KEYS);
+    attempts.push({
+      name: "openai",
+      run: () => callOpenAI(key, systemPrompt, chatMessages)
+    });
+  }
+
+  if (CEREBRAS_KEYS.length) {
+    const key = getRandomKey(CEREBRAS_KEYS);
+    attempts.push({
+      name: "cerebras",
+      run: () => callCerebras(key, systemPrompt, chatMessages)
+    });
+  }
+
+  if (OPENROUTER_KEYS.length) {
+    const key = getRandomKey(OPENROUTER_KEYS);
+    attempts.push({
+      name: "openrouter",
+      run: () =>
+        callOpenAI(key, systemPrompt, chatMessages, "https://openrouter.ai/api/v1")
+    });
+  }
+
+  if (!attempts.length) {
+    throw new Error("No AI provider is configured (missing API keys).");
+  }
+
+  let lastError = null;
+
+  for (const attempt of attempts) {
+    try {
+      const text = await attempt.run();
+      return { text, provider: attempt.name };
+    } catch (error) {
+      console.error(`${attempt.name.toUpperCase()} FAILED:`, error?.message);
+      lastError = error;
+    }
+  }
+
+  throw lastError || new Error("All AI providers failed.");
+}
+
+// ============================================================
+// 🚀 MAIN HANDLER
+// ------------------------------------------------------------
+// This is the piece that was missing from the deployed file —
+// without a default export, Vercel refuses to run the function
+// at all ("Invalid export found in module").
+// ============================================================
+
+export default async function handler(req, res) {
+  if (req.method !== "POST") {
+    res.setHeader("Allow", "POST");
+    return res.status(405).json({ ok: false, error: "Method not allowed" });
+  }
+
+  try {
+    const { fields, files } = await parseMultipartForm(req);
+
+    const userId = getUserId(req, fields);
+    const mode = normalizeMode(firstValue(fields.mode));
+    const language = cleanMessage(firstValue(fields.language) || "English", 40);
+    const message = cleanMessage(firstValue(fields.message));
+
+    let history = [];
+    try {
+      history = sanitizeHistory(JSON.parse(firstValue(fields.history) || "[]"));
+    } catch {
+      history = [];
+    }
+
+    if (!message && !getUploadedFile(files)) {
+      return res.status(400).json({ ok: false, error: "Message or file is required." });
+    }
+
+    // --------------------------------------------------------
+    // 👤 USER + PLAN
+    // --------------------------------------------------------
+
+    const user = await getOrCreateUser(userId);
+    const plan = getUserPlan(user);
+
+    // --------------------------------------------------------
+    // 👑 PRO FEATURE GATE (content/whatsapp/blog/affiliate)
+    // --------------------------------------------------------
+
+    const requiredFeature = featureForMode(mode);
+
+    if (requiredFeature && !canUseFeature(user, plan, requiredFeature)) {
+      return res.status(403).json({
+        ok: false,
+        code: "PRO_FEATURE",
+        error: `${mode} is a Pro-only feature.`
+      });
+    }
+
+    // --------------------------------------------------------
+    // 🚦 USAGE LIMITS
+    // --------------------------------------------------------
+
+    const usageCheck = checkUsageLimit(user, plan);
+    if (usageCheck && usageCheck.allowed === false) {
+      return res.status(429).json({
+        ok: false,
+        error: usageCheck.reason || "Daily usage limit reached. Try again later or upgrade to Pro."
+      });
+    }
+
+    const estimatedTokens = estimateTokens(message) + estimateTokens(JSON.stringify(history));
+    const tokenCheck = checkTokenLimit(user, plan, estimatedTokens);
+    if (tokenCheck && tokenCheck.allowed === false) {
+      return res.status(429).json({
+        ok: false,
+        error: tokenCheck.reason || "Token limit reached for your plan."
+      });
+    }
+
+    // --------------------------------------------------------
+    // 📎 FILE HANDLING (image → vision, text → inline content)
+    // --------------------------------------------------------
+
+    const uploadedFile = getUploadedFile(files);
+
+    let fileContextText = "";
+    let imageDataUrl = null;
+
+    if (uploadedFile) {
+      const originalName = uploadedFile.originalFilename || uploadedFile.name || "";
+
+      if (isImageFile(originalName)) {
+        const imageInfo = readImageAsDataUrl(uploadedFile);
+
+        if (imageInfo?.tooLarge) {
+          fileContextText = `\n\n[The user attached an image ("${imageInfo.name}") but it was too large to process.]`;
+        } else if (imageInfo?.readable && imageInfo.dataUrl) {
+          imageDataUrl = imageInfo.dataUrl;
+        } else {
+          fileContextText = `\n\n[The user attached an image ("${originalName}") but it could not be read.]`;
+        }
+      } else {
+        const fileInfo = readUploadedFileText(uploadedFile);
+
+        if (fileInfo?.readable) {
+          fileContextText =
+            `\n\n[Attached file: ${fileInfo.name}]\n` +
+            "```\n" +
+            fileInfo.text +
+            (fileInfo.truncated ? "\n...[truncated]" : "") +
+            "\n```";
+        } else {
+          fileContextText = `\n\n[The user attached a file ("${fileInfo?.name || originalName}") of an unsupported type.]`;
+        }
+      }
+    }
+
+    // --------------------------------------------------------
+    // 🧠 BUILD SYSTEM PROMPT + MESSAGES
+    // --------------------------------------------------------
+
+    const systemPrompt =
+      buildSystemPrompt({ mode, plan }) +
+      `\n\nRespond in the following language when possible: ${language}.`;
+
+    const chatMessages = [...history];
+
+    if (imageDataUrl) {
+      // Vision-capable providers (OpenAI/OpenRouter) accept this
+      // multi-part content shape; if the fallback chain lands on
+      // Groq/Cerebras instead, they will only see the text part.
+      chatMessages.push({
+        role: "user",
+        content: [
+          { type: "text", text: message || "What's in this image?" },
+          { type: "image_url", image_url: { url: imageDataUrl } }
+        ]
+      });
+    } else {
+      chatMessages.push({
+        role: "user",
+        content: message + fileContextText
+      });
+    }
+
+    // --------------------------------------------------------
+    // 🤖 CALL AI (with provider fallback)
+    // --------------------------------------------------------
+
+    const { text, provider } = await generateAIReply(systemPrompt, chatMessages);
+
+    // --------------------------------------------------------
+    // 📊 RECORD USAGE
+    // --------------------------------------------------------
+
+    try {
+      await recordUsage(user, {
+        mode,
+        tokensEstimated: estimatedTokens + estimateTokens(text)
+      });
+
+      await saveUser(user);
+    } catch (usageError) {
+      console.error("USAGE RECORD ERROR:", usageError?.message);
+      // Don't fail the whole request just because usage tracking failed.
+    }
+
+    return res.status(200).json({
+      ok: true,
+      type: "text",
+      text,
+      provider,
+      mode,
+      usage: getUsageSnapshot ? getUsageSnapshot(user, plan) : undefined
+    });
+  } catch (error) {
+    console.error("CHAT HANDLER ERROR:", error?.message);
+
+    return res.status(500).json({
+      ok: false,
+      error: "Kirong AI ran into a problem processing that request. Please try again."
+    });
+  }
 }
