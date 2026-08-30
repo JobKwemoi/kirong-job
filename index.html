@@ -12,6 +12,50 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="/style.css" />
+  <style>
+    /* ============================================================
+       📊 USAGE BAR — minimal self-contained styles so this works
+       even before the corresponding rules are added to style.css.
+       Matches the existing purple accent (#8b5cf6) used elsewhere.
+    ============================================================ */
+    .usageBarWrap {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 16px;
+      font-size: 12px;
+      color: rgba(255, 255, 255, 0.7);
+      background: rgba(139, 92, 246, 0.06);
+      border-bottom: 1px solid rgba(139, 92, 246, 0.12);
+    }
+    .usageBarWrap.hidden {
+      display: none;
+    }
+    .usageBarTrack {
+      flex: 1;
+      height: 6px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.12);
+      overflow: hidden;
+    }
+    .usageBarFill {
+      height: 100%;
+      width: 0%;
+      border-radius: 999px;
+      background: linear-gradient(90deg, #8b5cf6, #a78bfa);
+      transition: width 0.4s ease, background 0.4s ease;
+    }
+    .usageBarFill.usageBarWarn {
+      background: linear-gradient(90deg, #f59e0b, #fbbf24);
+    }
+    .usageBarFill.usageBarFull {
+      background: linear-gradient(90deg, #ef4444, #f87171);
+    }
+    .usageBarLabel {
+      white-space: nowrap;
+      font-weight: 600;
+    }
+  </style>
 </head>
 <body>
   <div class="appShell">
@@ -30,9 +74,17 @@
         <button class="iconBtn" id="exportChatBtn" title="Export Chat" aria-label="Export chat">📤</button>
         <button class="iconBtn" id="clearChatBtn" title="Clear Chat" aria-label="Clear chat">🗑️</button>
         <button class="iconBtn" id="newChatBtn" title="New Chat" aria-label="Start new chat">✨</button>
-        <button class="languageBtn" id="languageBtn" title="Change language" aria-label="Change language">🌐</button>
+        <button class="languageBtn" id="languageBtn" title="Switch to Swahili" aria-label="Switch language">SW</button>
       </div>
     </header>
+
+    <!-- 📊 DAILY USAGE BAR -->
+    <div class="usageBarWrap hidden" id="usageBarWrap" role="status" aria-live="polite">
+      <div class="usageBarTrack">
+        <div class="usageBarFill" id="usageBarFill"></div>
+      </div>
+      <span class="usageBarLabel" id="usageBarLabel"></span>
+    </div>
 
     <!-- 👑 ROYAL TABS -->
     <nav class="kirongTabs" role="tablist" aria-label="Kirong AI sections">
@@ -232,7 +284,7 @@
       <div class="onboardingCrown">👑</div>
       <div class="welcomeEyebrow"><span></span><span data-i18n="onboardingEyebrow">MAKE KIRONG YOURS</span><span></span></div>
       <h2 id="onboardingTitle" data-i18n="onboardingTitle">Welcome to your royal workspace</h2>
-      <p data-i18n="onboardingSubtitle">Choose what you want to do first. We'll use it to shape your starting experience.</p>
+      <p data-i18n="onboardingSubtitle">Choose what you want to do first. We’ll use it to shape your starting experience.</p>
 
       <label class="onboardingNameLabel" for="onboardingName" data-i18n="onboardingNameLabel">What should Kirong call you? <span>(optional)</span></label>
       <input id="onboardingName" class="onboardingNameInput" type="text" maxlength="40" autocomplete="given-name" placeholder="Your name" />
