@@ -5,7 +5,8 @@
   "private": true,
   "description": "Kirong AI — Intelligent Kenyan AI Platform, Content Factory, Student Assistant, WhatsApp Business and AI Creative Engine",
   "scripts": {
-    "start": "node api/chat.js"
+    "start": "node server.js",
+    "dev": "node --watch server.js"
   },
   "dependencies": {
     "@huggingface/inference": "^4.13.0",
