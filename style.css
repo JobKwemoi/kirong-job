@@ -460,14 +460,29 @@ body.offline .appShell::before {
   display: flex;
 }
 
-/* Non-chat tabs scroll internally */
-#projectsTab.active,
-#toolsTab.active,
-#historyTab.active,
-#schoolTab.active {
+/* Non-chat tabs scroll internally — smooth on all platforms, with
+   momentum scrolling on iOS (-webkit-overflow-scrolling). */
+#moreTab.active,
+#historyTab.active {
   overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  scroll-behavior: smooth;
   padding: 20px 18px 28px;
   display: block;
+}
+
+.moreSection + .moreSection {
+  margin-top: 34px;
+  padding-top: 30px;
+  border-top: 1px solid var(--line);
+}
+
+.moreSection .tabHeader h2 {
+  font-size: 16.5px;
+}
+
+.moreSection .tabHeader p {
+  font-size: 12px;
 }
 
 .tabHeader {
@@ -555,6 +570,8 @@ body.offline .appShell::before {
 #chatBox {
   flex: 1;
   overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  scroll-behavior: smooth;
   padding: 22px 18px 12px;
   display: flex;
   flex-direction: column;
