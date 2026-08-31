@@ -46,10 +46,8 @@
     <!-- 👑 ROYAL TABS -->
     <nav class="kirongTabs" role="tablist" aria-label="Kirong AI sections">
       <button class="tabBtn active" data-tab="chat" role="tab" aria-selected="true"><span data-i18n="tabChat">💬 Chat</span></button>
-      <button class="tabBtn" data-tab="projects" role="tab" aria-selected="false"><span data-i18n="tabProjects">📁 Projects</span></button>
-      <button class="tabBtn" data-tab="tools" role="tab" aria-selected="false"><span data-i18n="tabTools">🛠️ Tools</span></button>
       <button class="tabBtn" data-tab="history" role="tab" aria-selected="false"><span data-i18n="tabHistory">🕘 History</span></button>
-      <button class="tabBtn" data-tab="school" role="tab" aria-selected="false"><span data-i18n="tabSchool">🎓 School</span></button>
+      <button class="tabBtn" data-tab="more" role="tab" aria-selected="false"><span data-i18n="tabMore">✨ More</span></button>
     </nav>
 
     <!-- TAB: CHAT -->
@@ -98,113 +96,132 @@
     </section>
 
     <!-- TAB: PROJECTS -->
-    <section class="tabContent" id="projectsTab">
-      <div class="tabHeader">
-        <div>
-          <h2 data-i18n="projectsTitle">Your Projects</h2>
-          <p data-i18n="projectsSubtitle">All your creations in one royal vault</p>
+    <!-- TAB: MORE (Projects + Tools + School, consolidated) -->
+    <section class="tabContent" id="moreTab">
+
+      <div class="moreSection">
+        <div class="tabHeader">
+          <div>
+            <h2 data-i18n="projectsTitle">Your Projects</h2>
+            <p data-i18n="projectsSubtitle">All your creations in one royal vault</p>
+          </div>
+            <button class="primaryBtn" id="newProjectBtn" data-i18n="newProject">+ New</button>
         </div>
-          <button class="primaryBtn" id="newProjectBtn" data-i18n="newProject">+ New</button>
-      </div>
-      <div class="projectsGrid" id="projectsGrid">
-        <p class="emptyText">Loading your projects...</p>
-      </div>
-    </section>
-    <!-- TAB: TOOLS -->
-    <section class="tabContent" id="toolsTab">
-      <div class="tabHeader">
-        <div><h2 data-i18n="toolsTitle">Royal Tools</h2><p data-i18n="toolsSubtitle">Superpowers for Kings & Queens</p></div>
-        <div style="display:flex;gap:8px">
-          <button class="ghostBtn" id="clearToolsBtn">🗑️ Clear</button>
-          <button class="primaryBtn" id="exportToolsBtn">📤 Export</button>
+        <div class="projectsGrid" id="projectsGrid">
+          <p class="emptyText">Loading your projects...</p>
         </div>
       </div>
-      <div class="toolsGrid">
-        <button class="toolCard" data-mode="chat" data-prompt="Write me a professional CV for a ">
-          <span class="toolIcon">📄</span>
-          <div class="toolText">
-            <b>CV Builder</b>
-            <small>Create pro CV in 30s</small>
-          </div>
-        </button>
-        <button class="toolCard" data-mode="chat" data-prompt="Write code for ">
-          <span class="toolIcon">💻</span>
-          <div class="toolText">
-            <b>Code Generator</b>
-            <small>Websites & apps</small>
-          </div>
-        </button>
-        <button class="toolCard" data-mode="chat" data-prompt="Write a professional email to ">
-          <span class="toolIcon">📧</span>
-          <div class="toolText">
-            <b>Email Writer</b>
-            <small>Professional emails</small>
-          </div>
-        </button>
-        <button class="toolCard" data-mode="chat" data-prompt="Give me 3 business ideas for ">
-          <span class="toolIcon">💡</span>
-          <div class="toolText">
-            <b>Biz Ideas</b>
-            <small>For Kenyan market</small>
-          </div>
-        </button>
 
-        <!-- PRO TOOLS PAMOJA NA PRO BADGE KWA JUU -->
-        <button class="toolCard pro" data-mode="content" data-prompt="Create a week's worth of Instagram captions for ">
-          <span class="proBadge">PRO</span>
-          <span class="toolIcon">📝</span>
-          <div class="toolText">
-            <b>Content Factory</b>
-            <small>Social posts, captions, ad copy</small>
+      <div class="moreSection">
+        <div class="tabHeader">
+          <div><h2 data-i18n="toolsTitle">Royal Tools</h2><p data-i18n="toolsSubtitle">Superpowers for Kings & Queens</p></div>
+          <div style="display:flex;gap:8px">
+            <button class="ghostBtn" id="clearToolsBtn">🗑️ Clear</button>
+            <button class="primaryBtn" id="exportToolsBtn">📤 Export</button>
           </div>
-        </button>
-        <button class="toolCard pro" data-mode="whatsapp" data-prompt="Write a WhatsApp broadcast message announcing ">
-          <span class="proBadge">PRO</span>
-          <span class="toolIcon">📱</span>
-          <div class="toolText">
-            <b>WhatsApp Business</b>
-            <small>Customer replies & promos</small>
-          </div>
-        </button>
-        <button class="toolCard pro" data-mode="blog" data-prompt="Write a blog post about ">
-          <span class="proBadge">PRO</span>
-          <span class="toolIcon">✍️</span>
-          <div class="toolText">
-            <b>Blog Engine</b>
-            <small>SEO-ready articles</small>
-          </div>
-        </button>
-        <button class="toolCard pro" data-mode="affiliate" data-prompt="Write a comparison guide for ">
-          <span class="proBadge">PRO</span>
-          <span class="toolIcon">🤝</span>
-          <div class="toolText">
-            <b>Affiliate Engine</b>
-            <small>Buyer guides & reviews</small>
-          </div>
-        </button>
+        </div>
+        <div class="toolsGrid">
+          <button class="toolCard" data-mode="chat" data-prompt="Write me a professional CV for a ">
+            <span class="toolIcon">📄</span>
+            <div class="toolText">
+              <b>CV Builder</b>
+              <small>Create pro CV in 30s</small>
+            </div>
+          </button>
+          <button class="toolCard" data-mode="chat" data-prompt="Write code for ">
+            <span class="toolIcon">💻</span>
+            <div class="toolText">
+              <b>Code Generator</b>
+              <small>Websites & apps</small>
+            </div>
+          </button>
+          <button class="toolCard" data-mode="chat" data-prompt="Write a professional email to ">
+            <span class="toolIcon">📧</span>
+            <div class="toolText">
+              <b>Email Writer</b>
+              <small>Professional emails</small>
+            </div>
+          </button>
+          <button class="toolCard" data-mode="chat" data-prompt="Give me 3 business ideas for ">
+            <span class="toolIcon">💡</span>
+            <div class="toolText">
+              <b>Biz Ideas</b>
+              <small>For Kenyan market</small>
+            </div>
+          </button>
 
-        <button class="toolCard" id="photoEditorCard">
-          <span class="toolIcon">🖼️</span>
-          <div class="toolText">
-            <b>Photo Editor</b>
-            <small>Crop, filters, text & more</small>
-          </div>
-        </button>
-        <button class="toolCard" id="visionToolCard">
-          <span class="toolIcon">👁️</span>
-          <div class="toolText">
-            <b>Ask About a Photo</b>
-            <small>Kirong analyzes your image</small>
-          </div>
-        </button>
-        <button class="toolCard" id="referralToolCard">
-          <span class="toolIcon">🎁</span>
-          <div class="toolText">
-            <b>Invite & Earn</b>
-            <small>Give friends Pro, get Pro days free</small>
-          </div>
-        </button>
+          <!-- PRO TOOLS PAMOJA NA PRO BADGE KWA JUU -->
+          <button class="toolCard pro" data-mode="content" data-prompt="Create a week's worth of Instagram captions for ">
+            <span class="proBadge">PRO</span>
+            <span class="toolIcon">📝</span>
+            <div class="toolText">
+              <b>Content Factory</b>
+              <small>Social posts, captions, ad copy</small>
+            </div>
+          </button>
+          <button class="toolCard pro" data-mode="whatsapp" data-prompt="Write a WhatsApp broadcast message announcing ">
+            <span class="proBadge">PRO</span>
+            <span class="toolIcon">📱</span>
+            <div class="toolText">
+              <b>WhatsApp Business</b>
+              <small>Customer replies & promos</small>
+            </div>
+          </button>
+          <button class="toolCard pro" data-mode="blog" data-prompt="Write a blog post about ">
+            <span class="proBadge">PRO</span>
+            <span class="toolIcon">✍️</span>
+            <div class="toolText">
+              <b>Blog Engine</b>
+              <small>SEO-ready articles</small>
+            </div>
+          </button>
+          <button class="toolCard pro" data-mode="affiliate" data-prompt="Write a comparison guide for ">
+            <span class="proBadge">PRO</span>
+            <span class="toolIcon">🤝</span>
+            <div class="toolText">
+              <b>Affiliate Engine</b>
+              <small>Buyer guides & reviews</small>
+            </div>
+          </button>
+
+          <button class="toolCard" id="photoEditorCard">
+            <span class="toolIcon">🖼️</span>
+            <div class="toolText">
+              <b>Photo Editor</b>
+              <small>Crop, filters, text & more</small>
+            </div>
+          </button>
+          <button class="toolCard" id="visionToolCard">
+            <span class="toolIcon">👁️</span>
+            <div class="toolText">
+              <b>Ask About a Photo</b>
+              <small>Kirong analyzes your image</small>
+            </div>
+          </button>
+          <button class="toolCard" id="referralToolCard">
+            <span class="toolIcon">🎁</span>
+            <div class="toolText">
+              <b>Invite & Earn</b>
+              <small>Give friends Pro, get Pro days free</small>
+            </div>
+          </button>
+        </div>
       </div>
+
+      <div class="moreSection">
+        <div class="tabHeader">
+          <div><h2 data-i18n="schoolTitle">School Mode</h2><p data-i18n="schoolSubtitle">Learn faster with step-by-step explanations</p></div>
+        </div>
+        <div class="toolsGrid">
+          <button class="toolCard" data-mode="school" data-prompt="Help me understand "><span class="toolIcon">🔢</span><div class="toolText"><b>Math Helper</b><small>Step-by-step solutions</small></div></button>
+          <button class="toolCard" data-mode="school" data-prompt="Explain the science behind "><span class="toolIcon">🔬</span><div class="toolText"><b>Science</b><small>Physics, Chemistry, Biology</small></div></button>
+          <button class="toolCard" data-mode="school" data-prompt="Help me write an essay about "><span class="toolIcon">📖</span><div class="toolText"><b>English & Essays</b><small>Writing & comprehension</small></div></button>
+          <button class="toolCard" data-mode="school" data-prompt="Explain the business studies concept of "><span class="toolIcon">💼</span><div class="toolText"><b>Business Studies</b><small>KCSE & college level</small></div></button>
+          <button class="toolCard" data-mode="school" data-prompt="Teach me how to "><span class="toolIcon">💻</span><div class="toolText"><b>Coding & ICT</b><small>Learn programming basics</small></div></button>
+          <button class="toolCard" data-mode="school" data-prompt="Give me practice questions on "><span class="toolIcon">📝</span><div class="toolText"><b>Exam Prep</b><small>Practice questions & revision</small></div></button>
+        </div>
+      </div>
+
     </section>
 
 
@@ -219,21 +236,6 @@
       </div>
       <div class="historyList" id="historyList">
         <p class="emptyText">No conversations yet. Start chatting!</p>
-      </div>
-    </section>
-
-    <!-- TAB: SCHOOL -->
-    <section class="tabContent" id="schoolTab">
-        <div class="tabHeader">
-          <div><h2 data-i18n="schoolTitle">School Mode</h2><p data-i18n="schoolSubtitle">Learn faster with step-by-step explanations</p></div>
-      </div>
-      <div class="toolsGrid">
-        <button class="toolCard" data-mode="school" data-prompt="Help me understand "><span class="toolIcon">🔢</span><b>Math Helper</b><small>Step-by-step solutions</small></button>
-        <button class="toolCard" data-mode="school" data-prompt="Explain the science behind "><span class="toolIcon">🔬</span><b>Science</b><small>Physics, Chemistry, Biology</small></button>
-        <button class="toolCard" data-mode="school" data-prompt="Help me write an essay about "><span class="toolIcon">📖</span><b>English & Essays</b><small>Writing & comprehension</small></button>
-        <button class="toolCard" data-mode="school" data-prompt="Explain the business studies concept of "><span class="toolIcon">💼</span><b>Business Studies</b><small>KCSE & college level</small></button>
-        <button class="toolCard" data-mode="school" data-prompt="Teach me how to "><span class="toolIcon">💻</span><b>Coding & ICT</b><small>Learn programming basics</small></button>
-        <button class="toolCard" data-mode="school" data-prompt="Give me practice questions on "><span class="toolIcon">📝</span><b>Exam Prep</b><small>Practice questions & revision</small></button>
       </div>
     </section>
 
