@@ -410,7 +410,7 @@ function initTabs() {
             );
 
           if (
-            tab === "projects"
+            tab === "more"
           ) {
             renderProjectsGrid();
           }
@@ -6217,6 +6217,7 @@ const TRANSLATIONS = {
     tabProjects: "📁 Projects",
     tabTools: "🛠️ Tools",
     tabHistory: "🕘 History",
+    tabMore: "✨ More",
     tabSchool: "🎓 School",
     coreLabel: "KIRONG AI CORE",
     welcomePrefix: "Welcome,",
@@ -6265,6 +6266,7 @@ const TRANSLATIONS = {
     tabProjects: "📁 Miradi",
     tabTools: "🛠️ Zana",
     tabHistory: "🕘 Historia",
+    tabMore: "✨ Zaidi",
     tabSchool: "🎓 Shule",
     coreLabel: "KIRONG AI CORE",
     welcomePrefix: "Karibu,",
@@ -6313,6 +6315,7 @@ const TRANSLATIONS = {
     tabProjects: "📁 Projets",
     tabTools: "🛠️ Outils",
     tabHistory: "🕘 Historique",
+    tabMore: "✨ Plus",
     tabSchool: "🎓 École",
     coreLabel: "KIRONG AI CORE",
     welcomePrefix: "Bienvenue,",
@@ -6361,6 +6364,7 @@ const TRANSLATIONS = {
     tabProjects: "📁 Proyectos",
     tabTools: "🛠️ Herramientas",
     tabHistory: "🕘 Historial",
+    tabMore: "✨ Más",
     tabSchool: "🎓 Escuela",
     coreLabel: "KIRONG AI CORE",
     welcomePrefix: "Bienvenido,",
@@ -6409,6 +6413,7 @@ const TRANSLATIONS = {
     tabProjects: "📁 प्रोजेक्ट्स",
     tabTools: "🛠️ टूल्स",
     tabHistory: "🕘 इतिहास",
+    tabMore: "✨ और",
     tabSchool: "🎓 स्कूल",
     coreLabel: "KIRONG AI CORE",
     welcomePrefix: "स्वागत है,",
@@ -6615,6 +6620,36 @@ function init() {
   restoreChat();
 
   renderHistoryList();
+
+  // Returning users who already have stored chats land on the
+  // History tab by default, so they immediately see their past
+  // conversations instead of wondering whether Kirong "forgot"
+  // them. Brand-new users with no stored chats yet still land on
+  // Chat with the welcome screen, as before.
+  let existingChatsForLanding =
+    loadJSON(
+      STORAGE_KEYS.chats,
+      null
+    );
+
+  if (!Array.isArray(existingChatsForLanding)) {
+    existingChatsForLanding =
+      loadJSON(
+        STORAGE_KEYS.legacyChats,
+        []
+      );
+  }
+
+  if (
+    Array.isArray(existingChatsForLanding) &&
+    existingChatsForLanding.length > 0
+  ) {
+    document
+      .querySelector(
+        '.tabBtn[data-tab="history"]'
+      )
+      ?.click();
+  }
 
   renderFilePreview();
 
