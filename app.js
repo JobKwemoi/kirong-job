@@ -197,6 +197,8 @@ let currentUserData = null;
 
 let activeAbortController = null;
 
+let userStoppedGeneration = false;
+
 let networkOnline =
   navigator.onLine !== false;
 
@@ -889,13 +891,32 @@ function setSendingState(active) {
     Boolean(active);
 
   if (sendBtn) {
-    sendBtn.disabled =
-      isSending;
+    // Keep the button enabled while sending — it becomes a Stop
+    // button instead of a disabled Send button, so the person can
+    // interrupt a long-running reply instead of just waiting.
+    sendBtn.disabled = false;
 
-    sendBtn.style.opacity =
+    sendBtn.classList.toggle(
+      "stopping",
       isSending
-        ? "0.6"
-        : "";
+    );
+
+    sendBtn.textContent =
+      isSending
+        ? "⏹️"
+        : "🚀";
+
+    sendBtn.title =
+      isSending
+        ? "Stop generating"
+        : "Send";
+
+    sendBtn.setAttribute(
+      "aria-label",
+      isSending
+        ? "Stop generating"
+        : "Send message"
+    );
   }
 
   if (userInput) {
@@ -912,6 +933,27 @@ function setSendingState(active) {
     imageModeBtn.disabled =
       isSending;
   }
+}
+
+/* ============================================================
+   🛑 STOP GENERATING
+   ------------------------------------------------------------
+   Aborts the in-flight request. sendMessage()'s streaming loop
+   catches the resulting AbortError and finalizes whatever text
+   had already streamed in, instead of discarding it or treating
+   it as a connection failure.
+============================================================ */
+
+function stopGenerating() {
+  if (!isSending || !activeAbortController) {
+    return;
+  }
+
+  userStoppedGeneration = true;
+
+  try {
+    activeAbortController.abort();
+  } catch {}
 }
 
 /* ============================================================
@@ -3017,8 +3059,11 @@ async function fetchWithTimeout(
   const externalSignal =
     options.signal;
 
+  let timedOutInternally = false;
+
   const timer =
     setTimeout(() => {
+      timedOutInternally = true;
       activeAbortController.abort();
     }, timeout);
 
@@ -3036,9 +3081,18 @@ async function fetchWithTimeout(
       error?.name ===
       "AbortError"
     ) {
-      throw new Error(
-        "Request timed out. Please try again."
-      );
+      // Only our own timeout timer gets the friendly "timed out"
+      // message. An abort triggered some other way (e.g. the user
+      // pressing Stop before the response even arrived) rethrows
+      // the original AbortError so the caller can tell the two
+      // apart via error.name, instead of both looking identical.
+      if (timedOutInternally) {
+        throw new Error(
+          "Request timed out. Please try again."
+        );
+      }
+
+      throw error;
     }
 
     if (
@@ -3335,6 +3389,8 @@ async function sendMessage() {
   if (isSending) {
     return;
   }
+
+  userStoppedGeneration = false;
 
   const message =
     String(
@@ -3658,36 +3714,48 @@ async function sendMessage() {
 
       let buffer = "";
 
-      while (true) {
-        const { value, done } = await reader.read();
-        if (done) break;
+      try {
+        while (true) {
+          const { value, done } = await reader.read();
+          if (done) break;
 
-        buffer += decoder.decode(value, { stream: true });
+          buffer += decoder.decode(value, { stream: true });
 
-        const lines = buffer.split("\n");
-        buffer = lines.pop() || "";
+          const lines = buffer.split("\n");
+          buffer = lines.pop() || "";
 
-        for (const line of lines) {
-          if (!line.trim()) continue;
+          for (const line of lines) {
+            if (!line.trim()) continue;
 
-          let event;
-          try {
-            event = JSON.parse(line);
-          } catch {
-            continue; // skip malformed/partial lines
+            let event;
+            try {
+              event = JSON.parse(line);
+            } catch {
+              continue; // skip malformed/partial lines
+            }
+
+            handleEvent(event);
           }
-
-          handleEvent(event);
         }
-      }
 
-      // Flush any trailing content left in the buffer with no
-      // final newline.
-      if (buffer.trim()) {
-        try {
-          handleEvent(JSON.parse(buffer));
-        } catch {
-          /* ignore trailing partial line */
+        // Flush any trailing content left in the buffer with no
+        // final newline.
+        if (buffer.trim()) {
+          try {
+            handleEvent(JSON.parse(buffer));
+          } catch {
+            /* ignore trailing partial line */
+          }
+        }
+      } catch (readError) {
+        if (readError?.name === "AbortError") {
+          // Either the user pressed Stop, or the request hit
+          // REQUEST_TIMEOUT — either way, keep whatever text has
+          // already streamed in instead of discarding it. Which
+          // note to attach (below) depends on which of those two
+          // it was, via the userStoppedGeneration flag.
+        } else {
+          throw readError;
         }
       }
     } else {
@@ -3711,14 +3779,30 @@ async function sendMessage() {
     // RESOLVE WHAT WE GOT
     // ----------------------------------------------------------
 
-    if (errorMessage && !sawChunk && !imageEvent && !legacyEvent) {
+    if (userStoppedGeneration && !sawChunk && !imageEvent && !legacyEvent) {
+      // Stopped before anything was written — quietly drop the
+      // empty live bubble, no error, no assistant message needed.
+      liveMessageEl?.remove();
+
+      selectedFile = null;
+      if (fileInput) fileInput.value = "";
+      renderFilePreview();
+      saveCurrentChat();
+
+      return;
+    }
+
+    if (userStoppedGeneration && sawChunk) {
+      accumulatedText += "\n\n⏹️ *(stopped)*";
+      if (liveContentEl) {
+        liveContentEl.innerHTML = renderMarkdown(accumulatedText);
+      }
+    } else if (errorMessage && !sawChunk && !imageEvent && !legacyEvent) {
       liveMessageEl?.remove();
       const err = new Error(errorMessage);
       if (errorCode) err.code = errorCode;
       throw err;
-    }
-
-    if (errorMessage && sawChunk) {
+    } else if (errorMessage && sawChunk) {
       // Partial answer was shown, then the stream failed — keep
       // what was written and append a short note instead of
       // discarding it.
@@ -3782,6 +3866,12 @@ async function sendMessage() {
     saveCurrentChat();
     refreshUserData();
   } catch (error) {
+    if (userStoppedGeneration && error?.name === "AbortError") {
+      // Stopped before the response even started arriving —
+      // nothing to show, just stop quietly.
+      return;
+    }
+
     if (error?.code === "PRO_FEATURE") {
       const toolLabel =
         MODE_LABELS[activeMode]?.label || "This feature";
@@ -6001,7 +6091,7 @@ document.addEventListener(
       isSending &&
       activeAbortController
     ) {
-      activeAbortController.abort();
+      stopGenerating();
 
       showToast(
         "⏹️ Request stopped"
@@ -6056,7 +6146,13 @@ if (newChatBtn) {
 if (sendBtn) {
   sendBtn.addEventListener(
     "click",
-    sendMessage
+    () => {
+      if (isSending) {
+        stopGenerating();
+      } else {
+        sendMessage();
+      }
+    }
   );
 }
 
