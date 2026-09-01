@@ -14,11 +14,51 @@
   <link rel="stylesheet" href="/style.css" />
 </head>
 <body>
+  <div class="appLayout">
+
+    <!-- 👑 SIDEBAR (permanent on desktop, off-canvas drawer on mobile) -->
+    <aside class="sidebar" id="sidebar" aria-label="Navigation">
+      <div class="sidebarTop">
+        <div class="sidebarBrand">
+          <div class="logo" aria-hidden="true">K</div>
+          <h1>Kirong AI</h1>
+        </div>
+        <button class="iconBtn sidebarCloseBtn" id="sidebarCloseBtn" aria-label="Close menu">✕</button>
+      </div>
+
+      <button class="sidebarNewChatBtn" id="sidebarNewChatBtn" type="button">
+        <span>✨</span> <span data-i18n="sidebarNewChat">New chat</span>
+      </button>
+
+      <div class="sidebarSearch">
+        <span class="sidebarSearchIcon" aria-hidden="true">🔍</span>
+        <input type="text" id="historySearchInput" data-i18n-placeholder="sidebarSearchPlaceholder" placeholder="Search chats..." aria-label="Search your chats" />
+      </div>
+
+      <nav class="sidebarNav" role="tablist" aria-label="Kirong AI sections">
+        <button class="tabBtn active" data-tab="chat" role="tab" aria-selected="true">💬 <span data-i18n="tabChat">Chat</span></button>
+        <button class="tabBtn" data-tab="history" role="tab" aria-selected="false">🕘 <span data-i18n="tabHistory">History</span></button>
+        <button class="tabBtn" data-tab="more" role="tab" aria-selected="false">✨ <span data-i18n="tabMore">More</span></button>
+      </nav>
+
+      <div class="sidebarRecentsLabel" data-i18n="sidebarRecents">Recents</div>
+      <div class="historyList sidebarHistoryList" id="sidebarHistoryList">
+        <p class="emptyText">No conversations yet. Start chatting!</p>
+      </div>
+
+      <div class="sidebarFooter">
+        <button class="planBadge" id="sidebarPlanBadge" title="Your plan — tap to upgrade" aria-label="Current plan: Free, tap to upgrade">👑 Free</button>
+        <button class="languageBtn" id="languageBtn" title="Switch language" aria-label="Switch language">SW</button>
+      </div>
+    </aside>
+
+    <div class="sidebarOverlay" id="sidebarOverlay"></div>
+
   <div class="appShell">
     <!-- TOP BAR -->
     <header class="topBar">
+      <button class="iconBtn sidebarToggle" id="sidebarToggle" aria-label="Open menu">☰</button>
       <div class="brand">
-        <div class="logo" aria-hidden="true">K</div>
         <div>
           <h1>Kirong AI</h1>
           <div id="statusText"><span class="dot"></span><span data-i18n="statusActive">Royal Intelligence Active</span></div>
@@ -29,7 +69,6 @@
         <button class="iconBtn" id="voiceReplyBtn" title="Toggle voice replies" aria-label="Toggle voice replies" aria-pressed="false">🔇</button>
         <button class="iconBtn" id="exportChatBtn" title="Export Chat" aria-label="Export chat">📤</button>
         <button class="iconBtn" id="clearChatBtn" title="Clear Chat" aria-label="Clear chat">🗑️</button>
-        <button class="languageBtn" id="languageBtn" title="Switch to Swahili" aria-label="Switch language">🌍</button>
         <button class="iconBtn" id="newChatBtn" title="New Chat" aria-label="Start new chat">✨</button>
       </div>
     </header>
@@ -42,13 +81,6 @@
       </div>
       <button class="usageBarLink" id="usageLimitsBtn" type="button">View usage limits</button>
     </div>
-
-    <!-- 👑 ROYAL TABS -->
-    <nav class="kirongTabs" role="tablist" aria-label="Kirong AI sections">
-      <button class="tabBtn active" data-tab="chat" role="tab" aria-selected="true"><span data-i18n="tabChat">💬 Chat</span></button>
-      <button class="tabBtn" data-tab="history" role="tab" aria-selected="false"><span data-i18n="tabHistory">🕘 History</span></button>
-      <button class="tabBtn" data-tab="more" role="tab" aria-selected="false"><span data-i18n="tabMore">✨ More</span></button>
-    </nav>
 
     <!-- TAB: CHAT -->
     <section class="tabContent active" id="chatTab">
@@ -238,6 +270,8 @@
         <p class="emptyText">No conversations yet. Start chatting!</p>
       </div>
     </section>
+
+  </div>
 
   </div>
 
