@@ -523,113 +523,82 @@ if (historySearchInput) {
   });
 }
 
+// --------------------------------------------------------
+// 👉 EDGE-SWIPE GESTURE — swipe right from the screen's left
+// edge to open the sidebar, swipe left anywhere to close it,
+// same as ChatGPT's mobile app. Only listens on touch devices;
+// desktop mouse users already have the permanent sidebar (CSS
+// disables the drawer transform above 900px) so this is a no-op
+// there regardless.
+// --------------------------------------------------------
+
+(function initSidebarSwipeGesture() {
+  const EDGE_ZONE_PX = 28; // how close to the left edge a swipe must start to open
+  const SWIPE_THRESHOLD_PX = 60; // minimum horizontal travel to trigger
+  const MAX_VERTICAL_DRIFT_PX = 60; // ignore mostly-vertical touches (scrolling)
+
+  let touchStartX = null;
+  let touchStartY = null;
+  let startedAtEdge = false;
+  let sidebarWasOpenAtStart = false;
+
+  document.addEventListener(
+    "touchstart",
+    (event) => {
+      const touch = event.touches?.[0];
+      if (!touch) return;
+
+      touchStartX = touch.clientX;
+      touchStartY = touch.clientY;
+      startedAtEdge = touch.clientX <= EDGE_ZONE_PX;
+      sidebarWasOpenAtStart =
+        sidebar?.classList.contains("open") || false;
+    },
+    { passive: true }
+  );
+
+  document.addEventListener(
+    "touchend",
+    (event) => {
+      if (touchStartX === null) return;
+
+      const touch = event.changedTouches?.[0];
+      if (!touch) return;
+
+      const deltaX = touch.clientX - touchStartX;
+      const deltaY = Math.abs(touch.clientY - touchStartY);
+
+      if (deltaY <= MAX_VERTICAL_DRIFT_PX) {
+        if (
+          !sidebarWasOpenAtStart &&
+          startedAtEdge &&
+          deltaX >= SWIPE_THRESHOLD_PX
+        ) {
+          openSidebar();
+        } else if (
+          sidebarWasOpenAtStart &&
+          deltaX <= -SWIPE_THRESHOLD_PX
+        ) {
+          closeSidebar();
+        }
+      }
+
+      touchStartX = null;
+      touchStartY = null;
+    },
+    { passive: true }
+  );
+})();
+
 /* ============================================================
    👑 ROYAL GUIDELINES
+   ------------------------------------------------------------
+   The quickGrid prompt buttons this used to manage were removed
+   to declutter the chat screen — kept as a no-op stub since
+   showWelcome() still calls it.
 ============================================================ */
 
-function initRoyalGuidelines() {
-  const grid =
-    document.querySelector(
-      ".quickGrid"
-    );
-
-  const welcome =
-    document.getElementById(
-      "kirongWelcome"
-    );
-
-  if (!grid) return;
-
-  const hasVisited =
-    localStorage.getItem(
-      STORAGE_KEYS.visited
-    );
-
-  if (!hasVisited) {
-    grid.classList.add("show");
-
-    let timer =
-      setTimeout(() => {
-        if (!grid.dataset.used) {
-          grid.classList.add("hide");
-
-          setTimeout(() => {
-            welcome?.classList.add(
-              "hideWelcome"
-            );
-          }, 500);
-
-          localStorage.setItem(
-            STORAGE_KEYS.visited,
-            "true"
-          );
-        }
-      }, 4000);
-
-    grid.addEventListener(
-      "mouseenter",
-      () => clearTimeout(timer)
-    );
-
-    grid.addEventListener(
-      "mouseleave",
-      () => {
-        timer = setTimeout(() => {
-          if (!grid.dataset.used) {
-            grid.classList.add(
-              "hide"
-            );
-
-            localStorage.setItem(
-              STORAGE_KEYS.visited,
-              "true"
-            );
-          }
-        }, 2000);
-      }
-    );
-
-    grid
-      .querySelectorAll(".qBtn")
-      .forEach((btn) => {
-        btn.addEventListener(
-          "click",
-          () => {
-            grid.dataset.used =
-              "true";
-
-            grid.classList.add(
-              "hide"
-            );
-
-            localStorage.setItem(
-              STORAGE_KEYS.visited,
-              "true"
-            );
-
-            if (userInput) {
-              userInput.value =
-                btn.dataset.prompt ||
-                "";
-
-              sendMessage();
-            }
-          }
-        );
-      });
-  } else {
-    grid.classList.add("hide");
-
-    if (
-      welcome &&
-      chatBox &&
-      chatBox.children.length > 1
-    ) {
-      welcome.style.display =
-        "none";
-    }
-  }
-}
+function initRoyalGuidelines() {}
 
 /* ============================================================
    🛡️ HTML SAFETY
@@ -2782,70 +2751,12 @@ function showWelcome() {
         <br><br>
         What can I help you with today?
       </p>
-
-      <div class="quickGrid">
-        <button
-          class="qBtn"
-          data-prompt="Build me a modern portfolio website"
-        >
-          💻 Build Website
-        </button>
-
-        <button
-          class="qBtn"
-          data-prompt="Give me 3 business ideas with 10k in Kenya"
-        >
-          💡 10K Biz Idea
-        </button>
-
-        <button
-          class="qBtn"
-          data-prompt="Write me a professional CV for a software developer"
-        >
-          📄 Pro CV
-        </button>
-
-        <button
-          class="qBtn"
-          data-prompt="Explain Python like I'm 12 years old"
-        >
-          📚 Learn Fast
-        </button>
-      </div>
     </div>
     `;
-
-  bindQuickButtons();
 
   initRoyalGuidelines();
 
   applyTranslations();
-}
-
-function bindQuickButtons() {
-  document
-    .querySelectorAll(
-      ".qBtn"
-    )
-    .forEach((button) => {
-      button.addEventListener(
-        "click",
-        () => {
-          const prompt =
-            button.dataset
-              .prompt || "";
-
-          if (userInput) {
-            userInput.value =
-              prompt;
-
-            autoResizeInput();
-
-            sendMessage();
-          }
-        }
-      );
-    });
 }
 
 /* ============================================================
@@ -6213,34 +6124,6 @@ document.addEventListener(
 );
 
 /* ============================================================
-   🧩 QUICK QA BUTTONS
-============================================================ */
-
-document
-  .querySelectorAll(
-    ".qa"
-  )
-  .forEach((button) => {
-    button.addEventListener(
-      "click",
-      () => {
-        if (!userInput) {
-          return;
-        }
-
-        userInput.value =
-          button.dataset
-            .prompt ||
-          "";
-
-        autoResizeInput();
-
-        userInput.focus();
-      }
-    );
-  });
-
-/* ============================================================
    🆕 NEW CHAT
 ============================================================ */
 
@@ -6612,6 +6495,17 @@ function applyTranslations() {
 
   if (languageBtn) {
     languageBtn.title = dict.languagePickerTitle;
+
+    const flagSpan =
+      document.getElementById(
+        "languageBtnFlag"
+      );
+
+    if (flagSpan) {
+      flagSpan.textContent =
+        LANGUAGE_FLAGS[lang] ||
+        "🇬🇧";
+    }
   }
 
   if (userInput && !imageModeOn) {
@@ -6754,36 +6648,6 @@ function init() {
   restoreChat();
 
   renderHistoryList();
-
-  // Returning users who already have stored chats land on the
-  // History tab by default, so they immediately see their past
-  // conversations instead of wondering whether Kirong "forgot"
-  // them. Brand-new users with no stored chats yet still land on
-  // Chat with the welcome screen, as before.
-  let existingChatsForLanding =
-    loadJSON(
-      STORAGE_KEYS.chats,
-      null
-    );
-
-  if (!Array.isArray(existingChatsForLanding)) {
-    existingChatsForLanding =
-      loadJSON(
-        STORAGE_KEYS.legacyChats,
-        []
-      );
-  }
-
-  if (
-    Array.isArray(existingChatsForLanding) &&
-    existingChatsForLanding.length > 0
-  ) {
-    document
-      .querySelector(
-        '.tabBtn[data-tab="history"]'
-      )
-      ?.click();
-  }
 
   renderFilePreview();
 
