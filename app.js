@@ -161,6 +161,27 @@ const finishOnboardingBtn =
 const skipOnboardingBtn =
   document.getElementById("skipOnboarding");
 
+const sidebar =
+  document.getElementById("sidebar");
+
+const sidebarToggle =
+  document.getElementById("sidebarToggle");
+
+const sidebarCloseBtn =
+  document.getElementById("sidebarCloseBtn");
+
+const sidebarOverlay =
+  document.getElementById("sidebarOverlay");
+
+const sidebarNewChatBtn =
+  document.getElementById("sidebarNewChatBtn");
+
+const sidebarPlanBadge =
+  document.getElementById("sidebarPlanBadge");
+
+const historySearchInput =
+  document.getElementById("historySearchInput");
+
 /* ============================================================
    🧠 STATE
 ============================================================ */
@@ -420,9 +441,86 @@ function initTabs() {
           ) {
             renderHistoryList();
           }
+
+          closeSidebar();
         }
       );
     });
+}
+
+/* ============================================================
+   👑 SIDEBAR (ChatGPT-style: New chat, search, recents)
+   ------------------------------------------------------------
+   Permanent panel on desktop (CSS overrides the fixed/transform
+   rules at >=900px), off-canvas drawer on mobile — opened via the
+   hamburger button in the top bar, closed via the ✕ button, an
+   overlay tap, or automatically after picking a nav item / chat.
+============================================================ */
+
+function openSidebar() {
+  sidebar?.classList.add("open");
+  sidebarOverlay?.classList.add("show");
+}
+
+function closeSidebar() {
+  sidebar?.classList.remove("open");
+  sidebarOverlay?.classList.remove("show");
+}
+
+function toggleSidebar() {
+  if (sidebar?.classList.contains("open")) {
+    closeSidebar();
+  } else {
+    openSidebar();
+  }
+}
+
+if (sidebarToggle) {
+  sidebarToggle.addEventListener("click", toggleSidebar);
+}
+
+if (sidebarCloseBtn) {
+  sidebarCloseBtn.addEventListener("click", closeSidebar);
+}
+
+if (sidebarOverlay) {
+  sidebarOverlay.addEventListener("click", closeSidebar);
+}
+
+if (sidebarNewChatBtn) {
+  sidebarNewChatBtn.addEventListener("click", () => {
+    startNewChat();
+
+    document
+      .querySelector('.tabBtn[data-tab="chat"]')
+      ?.click();
+
+    closeSidebar();
+  });
+}
+
+if (sidebarPlanBadge) {
+  sidebarPlanBadge.addEventListener("click", () => openProPaymentModal());
+}
+
+// --------------------------------------------------------
+// 🔍 SEARCH CHATS (sidebar Recents list only)
+// --------------------------------------------------------
+
+if (historySearchInput) {
+  historySearchInput.addEventListener("input", () => {
+    const query = historySearchInput.value.trim().toLowerCase();
+    const items =
+      document.querySelectorAll("#sidebarHistoryList .historyItem");
+
+    items.forEach((item) => {
+      const matches =
+        !query ||
+        (item.dataset.searchText || "").includes(query);
+
+      item.style.display = matches ? "" : "none";
+    });
+  });
 }
 
 /* ============================================================
@@ -2755,12 +2853,12 @@ function bindQuickButtons() {
 ============================================================ */
 
 function renderHistoryList() {
-  const list =
-    document.getElementById(
-      "historyList"
-    );
+  const targets = [
+    document.getElementById("historyList"),
+    document.getElementById("sidebarHistoryList")
+  ].filter(Boolean);
 
-  if (!list) {
+  if (!targets.length) {
     return;
   }
 
@@ -2779,57 +2877,71 @@ function renderHistoryList() {
   }
 
   if (!chats.length) {
-    list.innerHTML =
-      '<p class="emptyText">No conversations yet. Start chatting!</p>';
+    targets.forEach((list) => {
+      list.innerHTML =
+        '<p class="emptyText">No conversations yet. Start chatting!</p>';
+    });
 
     return;
   }
 
-  list.innerHTML =
-    "";
+  targets.forEach((list) => {
+    list.innerHTML = "";
 
-  chats
-    .slice(0, 30)
-    .forEach(
-      (chat) => {
-        const item =
-          document.createElement(
-            "div"
+    chats
+      .slice(0, 30)
+      .forEach(
+        (chat) => {
+          const item =
+            document.createElement(
+              "div"
+            );
+
+          const title =
+            chat.title ||
+            "New Chat";
+
+          item.className =
+            "historyItem" +
+            (chat.id ===
+            currentChatId
+              ? " active"
+              : "");
+
+          // Used by the sidebar search box to filter without
+          // touching the DOM structure — plain lowercase title.
+          item.dataset.searchText =
+            title.toLowerCase();
+
+          item.innerHTML =
+            `<div>` +
+            `<b>${escapeHTML(
+              title
+            )}</b>` +
+            `<small>${new Date(
+              chat.updatedAt ||
+                Date.now()
+            ).toLocaleDateString()}</small>` +
+            `</div>` +
+            `<button aria-label="Open chat">↗️</button>`;
+
+          item.addEventListener(
+            "click",
+            () => {
+              openChat(
+                chat.id
+              );
+
+              closeSidebar();
+            }
           );
 
-        item.className =
-          "historyItem" +
-          (chat.id ===
-          currentChatId
-            ? " active"
-            : "");
-
-        item.innerHTML =
-          `<div>` +
-          `<b>${escapeHTML(
-            chat.title ||
-              "New Chat"
-          )}</b>` +
-          `<small>${new Date(
-            chat.updatedAt ||
-              Date.now()
-          ).toLocaleDateString()}</small>` +
-          `</div>` +
-          `<button aria-label="Open chat">↗️</button>`;
-
-        item.addEventListener(
-          "click",
-          () =>
-            openChat(
-              chat.id
-            )
-        );
-
-        list.appendChild(
-          item
-        );
-      }
-    );
+          list.appendChild(
+            item
+          );
+        }
+      );
+  });
 }
 
 /* ============================================================
@@ -3241,7 +3353,12 @@ async function refreshUserData() {
 function updatePlanBadge(
   data
 ) {
-  if (!planBadge) {
+  const badges =
+    [planBadge, sidebarPlanBadge].filter(
+      Boolean
+    );
+
+  if (!badges.length) {
     return;
   }
 
@@ -3250,27 +3367,22 @@ function updatePlanBadge(
     data?.user?.plan ||
     data?.subscription?.plan;
 
-  if (
+  const isPro =
     String(plan)
       .toLowerCase() ===
-    "pro"
-  ) {
-    planBadge.textContent =
-      "👑 PRO";
+    "pro";
 
-    planBadge.classList.add(
-      "pro"
+  badges.forEach((badge) => {
+    badge.textContent =
+      isPro
+        ? "👑 PRO"
+        : "FREE";
+
+    badge.classList.toggle(
+      "pro",
+      isPro
     );
-
-    return;
-  }
-
-  planBadge.textContent =
-    "FREE";
-
-  planBadge.classList.remove(
-    "pro"
-  );
+  });
 }
 
 /* ============================================================
@@ -6218,6 +6330,9 @@ const TRANSLATIONS = {
     tabTools: "🛠️ Tools",
     tabHistory: "🕘 History",
     tabMore: "✨ More",
+    sidebarNewChat: "New chat",
+    sidebarSearchPlaceholder: "Search chats...",
+    sidebarRecents: "Recents",
     tabSchool: "🎓 School",
     coreLabel: "KIRONG AI CORE",
     welcomePrefix: "Welcome,",
@@ -6267,6 +6382,9 @@ const TRANSLATIONS = {
     tabTools: "🛠️ Zana",
     tabHistory: "🕘 Historia",
     tabMore: "✨ Zaidi",
+    sidebarNewChat: "Ongea Mpya",
+    sidebarSearchPlaceholder: "Tafuta mazungumzo...",
+    sidebarRecents: "Ya Karibuni",
     tabSchool: "🎓 Shule",
     coreLabel: "KIRONG AI CORE",
     welcomePrefix: "Karibu,",
@@ -6316,6 +6434,9 @@ const TRANSLATIONS = {
     tabTools: "🛠️ Outils",
     tabHistory: "🕘 Historique",
     tabMore: "✨ Plus",
+    sidebarNewChat: "Nouvelle discussion",
+    sidebarSearchPlaceholder: "Rechercher des discussions...",
+    sidebarRecents: "Récents",
     tabSchool: "🎓 École",
     coreLabel: "KIRONG AI CORE",
     welcomePrefix: "Bienvenue,",
@@ -6365,6 +6486,9 @@ const TRANSLATIONS = {
     tabTools: "🛠️ Herramientas",
     tabHistory: "🕘 Historial",
     tabMore: "✨ Más",
+    sidebarNewChat: "Nuevo chat",
+    sidebarSearchPlaceholder: "Buscar chats...",
+    sidebarRecents: "Recientes",
     tabSchool: "🎓 Escuela",
     coreLabel: "KIRONG AI CORE",
     welcomePrefix: "Bienvenido,",
@@ -6414,6 +6538,9 @@ const TRANSLATIONS = {
     tabTools: "🛠️ टूल्स",
     tabHistory: "🕘 इतिहास",
     tabMore: "✨ और",
+    sidebarNewChat: "नई चैट",
+    sidebarSearchPlaceholder: "चैट खोजें...",
+    sidebarRecents: "हाल की",
     tabSchool: "🎓 स्कूल",
     coreLabel: "KIRONG AI CORE",
     welcomePrefix: "स्वागत है,",
@@ -6470,6 +6597,13 @@ function applyTranslations() {
     const key = el.dataset.i18n;
     if (dict[key]) {
       el.textContent = dict[key];
+    }
+  });
+
+  document.querySelectorAll("[data-i18n-placeholder]").forEach((el) => {
+    const key = el.dataset.i18nPlaceholder;
+    if (dict[key]) {
+      el.placeholder = dict[key];
     }
   });
 
