@@ -1869,7 +1869,11 @@ async function transcribeRecording(blob) {
     const data = await response.json().catch(() => ({}));
 
     if (!response.ok || !data.ok) {
-      throw new Error(data?.error || `Server ${response.status}`);
+      throw new Error(
+        response.ok
+          ? extractApiError(data)
+          : `${extractApiError(data)} (Server ${response.status})`
+      );
     }
 
     if (userInput) {
@@ -2165,7 +2169,11 @@ async function speakText(text, button) {
     const data = await response.json().catch(() => ({}));
 
     if (!response.ok || !data.ok || !data.audio) {
-      throw new Error(data?.error || `Server ${response.status}`);
+      throw new Error(
+        response.ok
+          ? extractApiError(data)
+          : `${extractApiError(data)} (Server ${response.status})`
+      );
     }
 
     const audio = new Audio(data.audio);
@@ -4535,8 +4543,7 @@ async function apiFetchProjects() {
     !data.ok
   ) {
     throw new Error(
-      data?.error ||
-        `Server ${response.status}`
+      extractApiError(data)
     );
   }
 
@@ -4598,8 +4605,7 @@ async function apiCreateProject({
     !data.ok
   ) {
     throw new Error(
-      data?.error ||
-        `Server ${response.status}`
+      extractApiError(data)
     );
   }
 
@@ -4660,8 +4666,7 @@ async function apiUpdateProject({
     !data.ok
   ) {
     throw new Error(
-      data?.error ||
-        `Server ${response.status}`
+      extractApiError(data)
     );
   }
 
@@ -4706,8 +4711,7 @@ async function apiDeleteProject(
     !data.ok
   ) {
     throw new Error(
-      data?.error ||
-        `Server ${response.status}`
+      extractApiError(data)
     );
   }
 }
@@ -5751,7 +5755,11 @@ async function initiateProPayment() {
     const data = await response.json().catch(() => ({}));
 
     if (!response.ok || !data.ok) {
-      throw new Error(data?.error || `Server ${response.status}`);
+      throw new Error(
+        response.ok
+          ? extractApiError(data)
+          : `${extractApiError(data)} (Server ${response.status})`
+      );
     }
 
     if (statusBox) {
@@ -5969,7 +5977,11 @@ async function openReferralModal() {
     const data = await response.json().catch(() => ({}));
 
     if (!response.ok || !data.ok) {
-      throw new Error(data?.error || `Server ${response.status}`);
+      throw new Error(
+        response.ok
+          ? extractApiError(data)
+          : `${extractApiError(data)} (Server ${response.status})`
+      );
     }
 
     renderReferralModalContent(data);
