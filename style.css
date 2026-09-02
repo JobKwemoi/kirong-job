@@ -1,5 +1,5 @@
 :root { --ink:#172033; --muted:#687087; --paper:#fff; --canvas:#f7f7fb; --line:#e6e7ee; --brand:#5b43d6; --brand-dark:#402aa9; --brand-soft:#eeebff; --danger:#c53947; --shadow:0 16px 40px rgba(29,32,61,.08); --radius:16px; font-family:"DM Sans",system-ui,sans-serif; color:var(--ink); background:var(--canvas); }
-* { box-sizing:border-box; }
+* { box-sizing:border-box; }a
 html { min-height:100%; }
 body { min-width:320px; min-height:100vh; margin:0; background:var(--canvas); }
 button,input,textarea { font:inherit; }
