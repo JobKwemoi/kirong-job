@@ -5,6 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="description" content="Kirong AI — a practical assistant for learning, creating, and getting work done.">
     <meta name="theme-color" content="#0f172a">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <link rel="manifest" href="manifest.json">
     <title>Kirong AI</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -107,6 +111,15 @@
     <div id="onboardingOverlay" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="onboarding-title">
       <div class="modal-box onboarding"><span class="welcome-crown" aria-hidden="true">♛</span><h2 id="onboarding-title">Welcome to Kirong AI</h2><p>Tell us how you would like to be addressed.</p><label for="onboardingName">Your name</label><input id="onboardingName" type="text" autocomplete="name" placeholder="e.g. Amina"><div class="onboarding-options"><button class="onboardingOption active" type="button" data-value="personal">Personal</button><button class="onboardingOption" type="button" data-value="business">Business</button><button class="onboardingOption" type="button" data-value="student">Student</button></div><div class="modal-actions"><button id="skipOnboarding" class="button button-secondary" type="button">Skip for now</button><button id="finishOnboarding" class="button button-primary" type="button">Continue</button></div></div>
     </div>
-    <script src="script.js" defer></script>
+    <script src="app.js" defer></script>
+    <script>
+      if ("serviceWorker" in navigator) {
+        window.addEventListener("load", () => {
+          navigator.serviceWorker.register("./service-worker.js").catch((error) => {
+            console.warn("Service worker registration failed:", error);
+          });
+        });
+      }
+    </script>
   </body>
 </html>
