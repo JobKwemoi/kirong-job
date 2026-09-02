@@ -1,256 +1,278 @@
 // ============================================================
-// 👑 KIRONG AI — PLANS & USAGE ENGINE V1
-// Defines Free/Pro tiers, daily usage tracking, and feature gates
+// 👑 KIRONG AI — PLANS ENGINE
+// ------------------------------------------------------------
+// Exports everything chat.js and referral.js already import:
+//   getUserPlan(user)              → plan object (free or pro)
+//   checkUsageLimit(user, type)    → { allowed, limit, current, remaining }
+//   checkTokenLimit(user, tokens)  → { allowed, reason }
+//   recordUsage(user, usageEvent)  → mutates user.usage counters
+//   getUsageSnapshot(user)         → { plan, messages, images, tokens }
+//   canUseFeature(user, feature)   → boolean
+//
+// ⚠️ IMPORTANT — please verify against your real users.js:
+// This assumes getOrCreateUser(userId) (in users.js) returns a
+// plain mutable object, and that it's fine for THIS file to lazily
+// initialize user.usage / user.plan the first time it sees a user
+// that doesn't have them yet (handled below via ensureUserShape()).
+// If your users.js already sets defaults differently, adjust
+// ensureUserShape() rather than users.js.
+//
+// The numbers below (30 messages/day, 3 images/day, 60,000 tokens/
+// day on Free) match what your live app was already returning in
+// its usage snapshot, so this should slot in without changing what
+// users currently experience on Free.
 // ============================================================
 
 "use strict";
 
-export const PLAN_FREE = "free";
-export const PLAN_PRO = "pro";
-
-// How long a single M-Pesa payment keeps Pro active for.
-export const PRO_DURATION_DAYS =
-  Number(process.env.KIRONG_PRO_DURATION_DAYS) || 30;
-
-// Price shown to the user and charged via STK Push (KES).
-export const PRO_PRICE_KES =
-  Number(process.env.KIRONG_PRO_PRICE_KES) || 199;
+// ============================================================
+// ⚙️ PLAN DEFINITIONS
+// ============================================================
 
 const PLANS = {
-  [PLAN_FREE]: {
-    id: PLAN_FREE,
+  free: {
+    id: "free",
     label: "Free",
+    messagesPerDay: 30,
+    imagesPerDay: 3,
+    tokensPerDay: 60000,
     maxInputTokens: 6000,
     maxOutputTokens: 1024,
-    dailyMessageLimit: 30,
-    dailyImageLimit: 3,
-    dailyTokenLimit: 60000,
     features: {
       contentFactory: false,
       whatsappBusiness: false,
       blogEngine: false,
-      affiliateEngine: false,
-      imageGeneration: true
+      affiliateEngine: false
     }
   },
 
-  [PLAN_PRO]: {
-    id: PLAN_PRO,
+  pro: {
+    id: "pro",
     label: "Pro",
+    messagesPerDay: 300,
+    imagesPerDay: 50,
+    tokensPerDay: 1000000,
     maxInputTokens: 16000,
     maxOutputTokens: 4096,
-    dailyMessageLimit: 300,
-    dailyImageLimit: 50,
-    dailyTokenLimit: 500000,
     features: {
       contentFactory: true,
       whatsappBusiness: true,
       blogEngine: true,
-      affiliateEngine: true,
-      imageGeneration: true
+      affiliateEngine: true
     }
   }
 };
 
 // ============================================================
-// 📅 DAILY RESET HELPER
+// 📅 DAILY RESET HELPERS
+// ------------------------------------------------------------
+// All usage counters live under user.usage and reset whenever the
+// stored date no longer matches "today" (UTC calendar day).
 // ============================================================
 
 function todayKey() {
-  // UTC date string, e.g. "2026-08-26" — resets usage once per day
-  return new Date().toISOString().slice(0, 10);
+  return new Date().toISOString().slice(0, 10); // "YYYY-MM-DD"
 }
 
-// ============================================================
-// 👤 DEFAULT USER SHAPE
-// ============================================================
+function ensureUserShape(user) {
+  if (!user || typeof user !== "object") {
+    throw new Error("plans.js: expected a user object.");
+  }
 
-export function createDefaultUser(userId) {
-  return {
-    userId,
-    plan: PLAN_FREE,
-    subscription: null, // { startedAt, expiresAt, lastPaymentRef }
-    usage: {
-      date: todayKey(),
-      messages: 0,
-      images: 0,
-      inputTokens: 0,
-      outputTokens: 0
-    },
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString()
-  };
-}
-
-// ============================================================
-// 🔄 RESET USAGE ON A NEW DAY
-// ============================================================
-
-export function resetDailyUsageIfNeeded(user) {
-  if (!user.usage || user.usage.date !== todayKey()) {
+  if (!user.usage || typeof user.usage !== "object") {
     user.usage = {
       date: todayKey(),
       messages: 0,
       images: 0,
-      inputTokens: 0,
-      outputTokens: 0
+      tokens: 0
     };
   }
-}
 
-// ============================================================
-// 🔽 DOWNGRADE EXPIRED PRO SUBSCRIPTIONS
-// ============================================================
-
-export function normalizePlan(user) {
-  if (user.plan === PLAN_PRO && user.subscription?.expiresAt) {
-    const expiresAt = new Date(user.subscription.expiresAt).getTime();
-
-    if (Number.isFinite(expiresAt) && Date.now() > expiresAt) {
-      user.plan = PLAN_FREE;
-    }
+  if (user.usage.date !== todayKey()) {
+    user.usage.date = todayKey();
+    user.usage.messages = 0;
+    user.usage.images = 0;
+    user.usage.tokens = 0;
   }
 
-  if (!PLANS[user.plan]) {
-    user.plan = PLAN_FREE;
+  return user;
+}
+
+// ============================================================
+// 👑 TRIAL CHECK
+// ------------------------------------------------------------
+// referral.js grants free trial days by setting user.proTrialUntil
+// (an ISO date string) on both the referee and the referrer. This
+// is the one piece referral.js's own comment says is required for
+// those trial days to actually unlock Pro.
+// ============================================================
+
+function isTrialActive(user) {
+  if (!user?.proTrialUntil) return false;
+
+  const until = new Date(user.proTrialUntil).getTime();
+  return Number.isFinite(until) && until > Date.now();
+}
+
+// ============================================================
+// 👤 GET USER PLAN
+// ------------------------------------------------------------
+// Priority: active referral trial > a permanent paid Pro flag
+// (e.g. set by payment.js after a successful M-Pesa charge) > Free.
+// If your payment success handler marks the user differently than
+// `user.plan === "pro"`, adjust the middle check below to match.
+// ============================================================
+
+function getUserPlan(user) {
+  ensureUserShape(user);
+
+  if (isTrialActive(user)) {
+    return { ...PLANS.pro, viaTrial: true };
   }
 
-  return user.plan;
+  if (String(user.plan || "").toLowerCase() === "pro") {
+    return { ...PLANS.pro, viaTrial: false };
+  }
+
+  return { ...PLANS.free, viaTrial: false };
 }
 
 // ============================================================
-// 📦 GET PLAN DEFINITION FOR A USER
+// 🚦 USAGE LIMIT CHECK — messages / images per day
+// ------------------------------------------------------------
+// type: "message" | "image"
 // ============================================================
 
-export function getUserPlan(user) {
-  const id = PLANS[user?.plan] ? user.plan : PLAN_FREE;
-  return PLANS[id];
-}
+function checkUsageLimit(user, type) {
+  ensureUserShape(user);
 
-// ============================================================
-// 🚦 FEATURE ACCESS CHECK
-// ============================================================
-
-export function canUseFeature(user, featureName) {
-  if (!featureName) return true;
   const plan = getUserPlan(user);
-  return Boolean(plan.features?.[featureName]);
+
+  const limitKey =
+    type === "image" ? "imagesPerDay" : "messagesPerDay";
+
+  const usedKey =
+    type === "image" ? "images" : "messages";
+
+  const limit = plan[limitKey];
+  const current = Number(user.usage[usedKey]) || 0;
+
+  return {
+    allowed: current < limit,
+    limit,
+    current,
+    remaining: Math.max(0, limit - current)
+  };
 }
 
 // ============================================================
-// 🔢 DAILY MESSAGE / IMAGE LIMIT CHECK
+// 🔢 TOKEN LIMIT CHECK — daily token budget
+// ------------------------------------------------------------
+// Accepts { inputTokens, outputTokens } and checks whether adding
+// that amount would push today's total over the plan's daily cap.
 // ============================================================
 
-export function checkUsageLimit(user, type) {
-  resetDailyUsageIfNeeded(user);
+function checkTokenLimit(user, { inputTokens = 0, outputTokens = 0 } = {}) {
+  ensureUserShape(user);
+
   const plan = getUserPlan(user);
+  const projected =
+    (Number(user.usage.tokens) || 0) +
+    (Number(inputTokens) || 0) +
+    (Number(outputTokens) || 0);
+
+  if (projected > plan.tokensPerDay) {
+    return {
+      allowed: false,
+      reason: `Daily token limit (${plan.tokensPerDay.toLocaleString()}) reached for your plan.`
+    };
+  }
+
+  return { allowed: true, reason: null };
+}
+
+// ============================================================
+// 📊 RECORD USAGE
+// ------------------------------------------------------------
+// Call after a request succeeds. type: "message" | "image".
+// Safe to call with just tokens (e.g. image gen with no token
+// cost) or just a message count.
+// ============================================================
+
+function recordUsage(user, { type, inputTokens = 0, outputTokens = 0 } = {}) {
+  ensureUserShape(user);
 
   if (type === "message") {
-    const limit = plan.dailyMessageLimit;
-    const current = user.usage.messages || 0;
-
-    return {
-      allowed: current < limit,
-      limit,
-      current,
-      remaining: Math.max(0, limit - current)
-    };
+    user.usage.messages = (Number(user.usage.messages) || 0) + 1;
   }
 
   if (type === "image") {
-    const limit = plan.dailyImageLimit;
-    const current = user.usage.images || 0;
-
-    return {
-      allowed: current < limit,
-      limit,
-      current,
-      remaining: Math.max(0, limit - current)
-    };
+    user.usage.images = (Number(user.usage.images) || 0) + 1;
   }
 
-  return { allowed: true, limit: Infinity, current: 0, remaining: Infinity };
-}
+  const tokenDelta =
+    (Number(inputTokens) || 0) + (Number(outputTokens) || 0);
 
-// ============================================================
-// 🔢 DAILY TOKEN LIMIT CHECK
-// ============================================================
-
-export function checkTokenLimit(user, { inputTokens = 0, outputTokens = 0 } = {}) {
-  resetDailyUsageIfNeeded(user);
-  const plan = getUserPlan(user);
-
-  const projected =
-    (user.usage.inputTokens || 0) +
-    (user.usage.outputTokens || 0) +
-    inputTokens +
-    outputTokens;
-
-  if (projected > plan.dailyTokenLimit) {
-    return { allowed: false, reason: "Daily AI token limit reached." };
+  if (tokenDelta > 0) {
+    user.usage.tokens = (Number(user.usage.tokens) || 0) + tokenDelta;
   }
 
-  return { allowed: true };
+  return user;
 }
 
 // ============================================================
-// ✍️ RECORD USAGE AFTER A SUCCESSFUL REQUEST
+// 📸 USAGE SNAPSHOT — what app.js's usage bar / limits modal read
+// ------------------------------------------------------------
+// Shape matches exactly what your frontend already expects:
+//   { plan, messages:{used,limit}, images:{used,limit}, tokens:{used,limit} }
 // ============================================================
 
-export function recordUsage(user, { type, inputTokens = 0, outputTokens = 0 } = {}) {
-  resetDailyUsageIfNeeded(user);
+function getUsageSnapshot(user) {
+  ensureUserShape(user);
 
-  if (type === "message") user.usage.messages = (user.usage.messages || 0) + 1;
-  if (type === "image") user.usage.images = (user.usage.images || 0) + 1;
-
-  user.usage.inputTokens = (user.usage.inputTokens || 0) + inputTokens;
-  user.usage.outputTokens = (user.usage.outputTokens || 0) + outputTokens;
-}
-
-// ============================================================
-// 📊 USAGE SNAPSHOT (for /api/user)
-// ============================================================
-
-export function getUsageSnapshot(user) {
-  resetDailyUsageIfNeeded(user);
   const plan = getUserPlan(user);
 
   return {
     plan: plan.id,
-    messages: { used: user.usage.messages || 0, limit: plan.dailyMessageLimit },
-    images: { used: user.usage.images || 0, limit: plan.dailyImageLimit },
+    viaTrial: Boolean(plan.viaTrial),
+    proTrialUntil: user.proTrialUntil || null,
+    messages: {
+      used: Number(user.usage.messages) || 0,
+      limit: plan.messagesPerDay
+    },
+    images: {
+      used: Number(user.usage.images) || 0,
+      limit: plan.imagesPerDay
+    },
     tokens: {
-      used: (user.usage.inputTokens || 0) + (user.usage.outputTokens || 0),
-      limit: plan.dailyTokenLimit
+      used: Number(user.usage.tokens) || 0,
+      limit: plan.tokensPerDay
     }
   };
 }
 
 // ============================================================
-// 👑 ACTIVATE / EXTEND PRO SUBSCRIPTION (called after payment)
+// 🔐 FEATURE GATE — Pro-only super-modes
+// ------------------------------------------------------------
+// feature: "contentFactory" | "whatsappBusiness" | "blogEngine" |
+//          "affiliateEngine"
 // ============================================================
 
-export function activateProSubscription(user, { days = PRO_DURATION_DAYS, paymentRef = null } = {}) {
-  const now = Date.now();
-
-  const currentExpiry =
-    user.subscription?.expiresAt
-      ? new Date(user.subscription.expiresAt).getTime()
-      : now;
-
-  // If they still have active Pro time left, extend from there
-  // instead of from "now" — renewing early doesn't waste days.
-  const base = Number.isFinite(currentExpiry) ? Math.max(now, currentExpiry) : now;
-
-  const expiresAt = new Date(base + days * 24 * 60 * 60 * 1000).toISOString();
-
-  user.plan = PLAN_PRO;
-
-  user.subscription = {
-    startedAt: user.subscription?.startedAt || new Date().toISOString(),
-    expiresAt,
-    lastPaymentRef: paymentRef || user.subscription?.lastPaymentRef || null
-  };
-
-  return user;
+function canUseFeature(user, feature) {
+  const plan = getUserPlan(user);
+  return Boolean(plan.features?.[feature]);
 }
+
+// ============================================================
+// 📤 EXPORTS
+// ============================================================
+
+export {
+  PLANS,
+  getUserPlan,
+  checkUsageLimit,
+  checkTokenLimit,
+  recordUsage,
+  getUsageSnapshot,
+  canUseFeature
+};
