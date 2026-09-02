@@ -74,6 +74,41 @@ function todayKey() {
   return new Date().toISOString().slice(0, 10); // "YYYY-MM-DD"
 }
 
+// ============================================================
+// 🆕 CREATE DEFAULT USER
+// ------------------------------------------------------------
+// Imported by users.js to build a brand-new user record the
+// first time getOrCreateUser(userId) sees an unknown id.
+//
+// ⚠️ I don't have your users.js source, so this shape is my best
+// guess based on what plans.js and referral.js already need:
+//   - usage: today's counters (required by checkUsageLimit etc.)
+//   - plan: "free" until upgraded, or a trial makes getUserPlan()
+//     treat them as Pro without changing this field
+//   - referredBy / referralCount / proTrialUntil: the fields
+//     referral.js reads and writes
+// If your users.js merges this with its own additional fields
+// (e.g. name, createdAt, deviceInfo), that's fine — this is only
+// the subset plans.js/referral.js care about. Adjust field names
+// here (not in users.js) if something doesn't line up.
+// ============================================================
+
+function createDefaultUser(userId) {
+  return {
+    id: userId || null,
+    plan: "free",
+    usage: {
+      date: todayKey(),
+      messages: 0,
+      images: 0,
+      tokens: 0
+    },
+    referredBy: null,
+    referralCount: 0,
+    proTrialUntil: null
+  };
+}
+
 function ensureUserShape(user) {
   if (!user || typeof user !== "object") {
     throw new Error("plans.js: expected a user object.");
@@ -269,6 +304,7 @@ function canUseFeature(user, feature) {
 
 export {
   PLANS,
+  createDefaultUser,
   getUserPlan,
   checkUsageLimit,
   checkTokenLimit,
