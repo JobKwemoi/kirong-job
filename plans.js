@@ -1,26 +1,25 @@
+```js
 // ============================================================
-// 👑 KIRONG AI — PLANS ENGINE
+// 👑 KIRONG AI — PLANS ENGINE V15
 // ------------------------------------------------------------
-// Exports everything chat.js and referral.js already import:
-//   getUserPlan(user)              → plan object (free or pro)
-//   checkUsageLimit(user, type)    → { allowed, limit, current, remaining }
-//   checkTokenLimit(user, tokens)  → { allowed, reason }
-//   recordUsage(user, usageEvent)  → mutates user.usage counters
-//   getUsageSnapshot(user)         → { plan, messages, images, tokens }
-//   canUseFeature(user, feature)   → boolean
+// Central plan + usage engine for Kirong AI.
 //
-// ⚠️ IMPORTANT — please verify against your real users.js:
-// This assumes getOrCreateUser(userId) (in users.js) returns a
-// plain mutable object, and that it's fine for THIS file to lazily
-// initialize user.usage / user.plan the first time it sees a user
-// that doesn't have them yet (handled below via ensureUserShape()).
-// If your users.js already sets defaults differently, adjust
-// ensureUserShape() rather than users.js.
+// Exports:
+//   PLANS
+//   createDefaultUser()
+//   normalizePlan()
+//   resetDailyUsageIfNeeded()
+//   getUserPlan()
+//   checkUsageLimit()
+//   checkTokenLimit()
+//   recordUsage()
+//   getUsageSnapshot()
+//   canUseFeature()
 //
-// The numbers below (30 messages/day, 3 images/day, 60,000 tokens/
-// day on Free) match what your live app was already returning in
-// its usage snapshot, so this should slot in without changing what
-// users currently experience on Free.
+// Compatible with:
+//   users.js V14
+//   chat.js V13
+//   referral/payment logic
 // ============================================================
 
 "use strict";
@@ -33,11 +32,14 @@ const PLANS = {
   free: {
     id: "free",
     label: "Free",
+
     messagesPerDay: 30,
     imagesPerDay: 3,
     tokensPerDay: 60000,
+
     maxInputTokens: 6000,
     maxOutputTokens: 1024,
+
     features: {
       contentFactory: false,
       whatsappBusiness: false,
@@ -49,11 +51,14 @@ const PLANS = {
   pro: {
     id: "pro",
     label: "Pro",
+
     messagesPerDay: 300,
     imagesPerDay: 50,
     tokensPerDay: 1000000,
+
     maxInputTokens: 16000,
     maxOutputTokens: 4096,
+
     features: {
       contentFactory: true,
       whatsappBusiness: true,
@@ -64,70 +69,207 @@ const PLANS = {
 };
 
 // ============================================================
-// 📅 DAILY RESET HELPERS
-// ------------------------------------------------------------
-// All usage counters live under user.usage and reset whenever the
-// stored date no longer matches "today" (UTC calendar day).
+// 📅 DATE HELPER
 // ============================================================
 
 function todayKey() {
-  return new Date().toISOString().slice(0, 10); // "YYYY-MM-DD"
+  return new Date()
+    .toISOString()
+    .slice(0, 10);
+}
+
+// ============================================================
+// 🧱 USAGE DEFAULTS
+// ============================================================
+
+function createDefaultUsage() {
+  return {
+    date: todayKey(),
+    messages: 0,
+    images: 0,
+    tokens: 0
+  };
 }
 
 // ============================================================
 // 🆕 CREATE DEFAULT USER
 // ------------------------------------------------------------
-// Imported by users.js to build a brand-new user record the
-// first time getOrCreateUser(userId) sees an unknown id.
-//
-// ⚠️ I don't have your users.js source, so this shape is my best
-// guess based on what plans.js and referral.js already need:
-//   - usage: today's counters (required by checkUsageLimit etc.)
-//   - plan: "free" until upgraded, or a trial makes getUserPlan()
-//     treat them as Pro without changing this field
-//   - referredBy / referralCount / proTrialUntil: the fields
-//     referral.js reads and writes
-// If your users.js merges this with its own additional fields
-// (e.g. name, createdAt, deviceInfo), that's fine — this is only
-// the subset plans.js/referral.js care about. Adjust field names
-// here (not in users.js) if something doesn't line up.
+// This is imported directly by users.js.
+// Keep both userId and id for compatibility with different
+// parts of the application.
 // ============================================================
 
 function createDefaultUser(userId) {
+  const id =
+    String(userId || "anonymous")
+      .trim();
+
   return {
-    id: userId || null,
+    userId: id,
+    id,
+
     plan: "free",
-    usage: {
-      date: todayKey(),
-      messages: 0,
-      images: 0,
-      tokens: 0
-    },
+
+    usage: createDefaultUsage(),
+
     referredBy: null,
     referralCount: 0,
-    proTrialUntil: null
+    proTrialUntil: null,
+
+    createdAt:
+      new Date().toISOString(),
+
+    updatedAt:
+      new Date().toISOString()
   };
 }
 
-function ensureUserShape(user) {
-  if (!user || typeof user !== "object") {
-    throw new Error("plans.js: expected a user object.");
+// ============================================================
+// 🔧 NORMALIZE PLAN
+// ------------------------------------------------------------
+// Returns ONLY:
+//   "free"
+//   "pro"
+//
+// This is intentionally separate from getUserPlan(), which
+// returns the complete plan object.
+//
+// users.js uses:
+//   normalizePlan(user) === "pro"
+// ============================================================
+
+function normalizePlan(user) {
+  if (
+    !user ||
+    typeof user !== "object"
+  ) {
+    return "free";
   }
 
-  if (!user.usage || typeof user.usage !== "object") {
+  const rawPlan =
+    String(
+      user.plan || "free"
+    )
+      .trim()
+      .toLowerCase();
+
+  if (rawPlan === "pro") {
+    user.plan = "pro";
+    return "pro";
+  }
+
+  user.plan = "free";
+
+  return "free";
+}
+
+// ============================================================
+// 🔄 RESET DAILY USAGE
+// ------------------------------------------------------------
+// Resets counters when the stored usage date is different
+// from today's UTC date.
+//
+// Mutates the existing user object and returns it.
+// ============================================================
+
+function resetDailyUsageIfNeeded(user) {
+  if (
+    !user ||
+    typeof user !== "object"
+  ) {
+    throw new Error(
+      "plans.js: expected a user object."
+    );
+  }
+
+  if (
+    !user.usage ||
+    typeof user.usage !== "object"
+  ) {
+    user.usage =
+      createDefaultUsage();
+
+    return user;
+  }
+
+  const today =
+    todayKey();
+
+  if (
+    user.usage.date !== today
+  ) {
     user.usage = {
-      date: todayKey(),
+      date: today,
       messages: 0,
       images: 0,
       tokens: 0
     };
   }
 
-  if (user.usage.date !== todayKey()) {
-    user.usage.date = todayKey();
-    user.usage.messages = 0;
-    user.usage.images = 0;
-    user.usage.tokens = 0;
+  user.usage.messages =
+    Math.max(
+      0,
+      Number(user.usage.messages) || 0
+    );
+
+  user.usage.images =
+    Math.max(
+      0,
+      Number(user.usage.images) || 0
+    );
+
+  user.usage.tokens =
+    Math.max(
+      0,
+      Number(user.usage.tokens) || 0
+    );
+
+  return user;
+}
+
+// ============================================================
+// 🧱 ENSURE USER SHAPE
+// ============================================================
+
+function ensureUserShape(user) {
+  if (
+    !user ||
+    typeof user !== "object"
+  ) {
+    throw new Error(
+      "plans.js: expected a user object."
+    );
+  }
+
+  resetDailyUsageIfNeeded(user);
+
+  normalizePlan(user);
+
+  if (
+    !Object.prototype.hasOwnProperty.call(
+      user,
+      "referredBy"
+    )
+  ) {
+    user.referredBy = null;
+  }
+
+  if (
+    !Object.prototype.hasOwnProperty.call(
+      user,
+      "referralCount"
+    )
+  ) {
+    user.referralCount = 0;
+  }
+
+  if (
+    !Object.prototype.hasOwnProperty.call(
+      user,
+      "proTrialUntil"
+    )
+  ) {
+    user.proTrialUntil = null;
   }
 
   return user;
@@ -135,167 +277,362 @@ function ensureUserShape(user) {
 
 // ============================================================
 // 👑 TRIAL CHECK
-// ------------------------------------------------------------
-// referral.js grants free trial days by setting user.proTrialUntil
-// (an ISO date string) on both the referee and the referrer. This
-// is the one piece referral.js's own comment says is required for
-// those trial days to actually unlock Pro.
 // ============================================================
 
 function isTrialActive(user) {
-  if (!user?.proTrialUntil) return false;
+  if (
+    !user?.proTrialUntil
+  ) {
+    return false;
+  }
 
-  const until = new Date(user.proTrialUntil).getTime();
-  return Number.isFinite(until) && until > Date.now();
+  const until =
+    new Date(
+      user.proTrialUntil
+    ).getTime();
+
+  return (
+    Number.isFinite(until) &&
+    until > Date.now()
+  );
 }
 
 // ============================================================
 // 👤 GET USER PLAN
 // ------------------------------------------------------------
-// Priority: active referral trial > a permanent paid Pro flag
-// (e.g. set by payment.js after a successful M-Pesa charge) > Free.
-// If your payment success handler marks the user differently than
-// `user.plan === "pro"`, adjust the middle check below to match.
+// Priority:
+//   1. Active Pro trial
+//   2. Permanent Pro
+//   3. Free
 // ============================================================
 
 function getUserPlan(user) {
   ensureUserShape(user);
 
-  if (isTrialActive(user)) {
-    return { ...PLANS.pro, viaTrial: true };
+  if (
+    isTrialActive(user)
+  ) {
+    return {
+      ...PLANS.pro,
+      viaTrial: true
+    };
   }
 
-  if (String(user.plan || "").toLowerCase() === "pro") {
-    return { ...PLANS.pro, viaTrial: false };
+  if (
+    normalizePlan(user) ===
+    "pro"
+  ) {
+    return {
+      ...PLANS.pro,
+      viaTrial: false
+    };
   }
-
-  return { ...PLANS.free, viaTrial: false };
-}
-
-// ============================================================
-// 🚦 USAGE LIMIT CHECK — messages / images per day
-// ------------------------------------------------------------
-// type: "message" | "image"
-// ============================================================
-
-function checkUsageLimit(user, type) {
-  ensureUserShape(user);
-
-  const plan = getUserPlan(user);
-
-  const limitKey =
-    type === "image" ? "imagesPerDay" : "messagesPerDay";
-
-  const usedKey =
-    type === "image" ? "images" : "messages";
-
-  const limit = plan[limitKey];
-  const current = Number(user.usage[usedKey]) || 0;
 
   return {
-    allowed: current < limit,
-    limit,
-    current,
-    remaining: Math.max(0, limit - current)
+    ...PLANS.free,
+    viaTrial: false
   };
 }
 
 // ============================================================
-// 🔢 TOKEN LIMIT CHECK — daily token budget
+// 🚦 USAGE LIMIT CHECK
 // ------------------------------------------------------------
-// Accepts { inputTokens, outputTokens } and checks whether adding
-// that amount would push today's total over the plan's daily cap.
+// type:
+//   "message"
+//   "image"
 // ============================================================
 
-function checkTokenLimit(user, { inputTokens = 0, outputTokens = 0 } = {}) {
+function checkUsageLimit(
+  user,
+  type
+) {
   ensureUserShape(user);
 
-  const plan = getUserPlan(user);
-  const projected =
-    (Number(user.usage.tokens) || 0) +
-    (Number(inputTokens) || 0) +
-    (Number(outputTokens) || 0);
+  const plan =
+    getUserPlan(user);
 
-  if (projected > plan.tokensPerDay) {
+  const isImage =
+    String(type || "")
+      .toLowerCase() ===
+    "image";
+
+  const limitKey =
+    isImage
+      ? "imagesPerDay"
+      : "messagesPerDay";
+
+  const usedKey =
+    isImage
+      ? "images"
+      : "messages";
+
+  const limit =
+    Number(
+      plan[limitKey]
+    ) || 0;
+
+  const current =
+    Number(
+      user.usage[usedKey]
+    ) || 0;
+
+  return {
+    allowed:
+      current < limit,
+
+    limit,
+
+    current,
+
+    remaining:
+      Math.max(
+        0,
+        limit - current
+      )
+  };
+}
+
+// ============================================================
+// 🔢 TOKEN LIMIT CHECK
+// ============================================================
+
+function checkTokenLimit(
+  user,
+  {
+    inputTokens = 0,
+    outputTokens = 0
+  } = {}
+) {
+  ensureUserShape(user);
+
+  const plan =
+    getUserPlan(user);
+
+  const input =
+    Math.max(
+      0,
+      Number(inputTokens) || 0
+    );
+
+  const output =
+    Math.max(
+      0,
+      Number(outputTokens) || 0
+    );
+
+  const current =
+    Math.max(
+      0,
+      Number(
+        user.usage.tokens
+      ) || 0
+    );
+
+  const projected =
+    current +
+    input +
+    output;
+
+  const limit =
+    Number(
+      plan.tokensPerDay
+    ) || 0;
+
+  if (
+    projected > limit
+  ) {
     return {
       allowed: false,
-      reason: `Daily token limit (${plan.tokensPerDay.toLocaleString()}) reached for your plan.`
+
+      reason:
+        `Daily token limit (${limit.toLocaleString()}) reached for your plan.`,
+
+      limit,
+
+      current,
+
+      requested:
+        input + output,
+
+      remaining:
+        Math.max(
+          0,
+          limit - current
+        )
     };
   }
 
-  return { allowed: true, reason: null };
+  return {
+    allowed: true,
+
+    reason: null,
+
+    limit,
+
+    current,
+
+    requested:
+      input + output,
+
+    remaining:
+      Math.max(
+        0,
+        limit - projected
+      )
+  };
 }
 
 // ============================================================
 // 📊 RECORD USAGE
 // ------------------------------------------------------------
-// Call after a request succeeds. type: "message" | "image".
-// Safe to call with just tokens (e.g. image gen with no token
-// cost) or just a message count.
+// type:
+//   "message"
+//   "image"
+//
+// Token usage can be recorded independently.
 // ============================================================
 
-function recordUsage(user, { type, inputTokens = 0, outputTokens = 0 } = {}) {
+function recordUsage(
+  user,
+  {
+    type,
+    inputTokens = 0,
+    outputTokens = 0
+  } = {}
+) {
   ensureUserShape(user);
 
-  if (type === "message") {
-    user.usage.messages = (Number(user.usage.messages) || 0) + 1;
+  if (
+    type === "message"
+  ) {
+    user.usage.messages =
+      (
+        Number(
+          user.usage.messages
+        ) || 0
+      ) + 1;
   }
 
-  if (type === "image") {
-    user.usage.images = (Number(user.usage.images) || 0) + 1;
+  if (
+    type === "image"
+  ) {
+    user.usage.images =
+      (
+        Number(
+          user.usage.images
+        ) || 0
+      ) + 1;
   }
+
+  const input =
+    Math.max(
+      0,
+      Number(inputTokens) || 0
+    );
+
+  const output =
+    Math.max(
+      0,
+      Number(outputTokens) || 0
+    );
 
   const tokenDelta =
-    (Number(inputTokens) || 0) + (Number(outputTokens) || 0);
+    input + output;
 
-  if (tokenDelta > 0) {
-    user.usage.tokens = (Number(user.usage.tokens) || 0) + tokenDelta;
+  if (
+    tokenDelta > 0
+  ) {
+    user.usage.tokens =
+      (
+        Number(
+          user.usage.tokens
+        ) || 0
+      ) + tokenDelta;
   }
 
   return user;
 }
 
 // ============================================================
-// 📸 USAGE SNAPSHOT — what app.js's usage bar / limits modal read
+// 📸 USAGE SNAPSHOT
 // ------------------------------------------------------------
-// Shape matches exactly what your frontend already expects:
-//   { plan, messages:{used,limit}, images:{used,limit}, tokens:{used,limit} }
+// Frontend shape:
+//
+// {
+//   plan,
+//   viaTrial,
+//   proTrialUntil,
+//   messages: { used, limit },
+//   images:   { used, limit },
+//   tokens:   { used, limit }
+// }
 // ============================================================
 
 function getUsageSnapshot(user) {
   ensureUserShape(user);
 
-  const plan = getUserPlan(user);
+  const plan =
+    getUserPlan(user);
 
   return {
-    plan: plan.id,
-    viaTrial: Boolean(plan.viaTrial),
-    proTrialUntil: user.proTrialUntil || null,
+    plan:
+      plan.id,
+
+    viaTrial:
+      Boolean(
+        plan.viaTrial
+      ),
+
+    proTrialUntil:
+      user.proTrialUntil ||
+      null,
+
     messages: {
-      used: Number(user.usage.messages) || 0,
-      limit: plan.messagesPerDay
+      used:
+        Number(
+          user.usage.messages
+        ) || 0,
+
+      limit:
+        plan.messagesPerDay
     },
+
     images: {
-      used: Number(user.usage.images) || 0,
-      limit: plan.imagesPerDay
+      used:
+        Number(
+          user.usage.images
+        ) || 0,
+
+      limit:
+        plan.imagesPerDay
     },
+
     tokens: {
-      used: Number(user.usage.tokens) || 0,
-      limit: plan.tokensPerDay
+      used:
+        Number(
+          user.usage.tokens
+        ) || 0,
+
+      limit:
+        plan.tokensPerDay
     }
   };
 }
 
 // ============================================================
-// 🔐 FEATURE GATE — Pro-only super-modes
-// ------------------------------------------------------------
-// feature: "contentFactory" | "whatsappBusiness" | "blogEngine" |
-//          "affiliateEngine"
+// 🔐 FEATURE GATE
 // ============================================================
 
-function canUseFeature(user, feature) {
-  const plan = getUserPlan(user);
-  return Boolean(plan.features?.[feature]);
+function canUseFeature(
+  user,
+  feature
+) {
+  const plan =
+    getUserPlan(user);
+
+  return Boolean(
+    plan.features?.[feature]
+  );
 }
 
 // ============================================================
@@ -304,11 +641,23 @@ function canUseFeature(user, feature) {
 
 export {
   PLANS,
+
   createDefaultUser,
+
+  normalizePlan,
+
+  resetDailyUsageIfNeeded,
+
   getUserPlan,
+
   checkUsageLimit,
+
   checkTokenLimit,
+
   recordUsage,
+
   getUsageSnapshot,
+
   canUseFeature
 };
+```
