@@ -1,5 +1,5 @@
 // ============================================================
-// 👑 KIRONG AI — USER STORAGE V14
+// 👑 KIRONG AI — USER STORAGE V15
 // Vercel Blob + User Profiles + Usage
 // ============================================================
 
@@ -16,14 +16,22 @@ import {
   normalizePlan
 } from "./plans.js";
 
+// ============================================================
+// 🔐 ENVIRONMENT
+// ============================================================
+
 const TOKEN =
   process.env.BLOB_READ_WRITE_TOKEN;
+
+// ============================================================
+// 📁 USER STORAGE PREFIX
+// ============================================================
 
 const USER_PREFIX =
   "kirong-ai/users/";
 
 // ============================================================
-// 🔐 SAFE ID
+// 🔐 SAFE USER ID
 // ============================================================
 
 function safeId(id) {
@@ -34,7 +42,7 @@ function safeId(id) {
 }
 
 // ============================================================
-// 📁 PATH
+// 📁 USER BLOB PATH
 // ============================================================
 
 function userPath(userId) {
@@ -42,7 +50,7 @@ function userPath(userId) {
 }
 
 // ============================================================
-// 🔐 TOKEN
+// 🔐 REQUIRE BLOB TOKEN
 // ============================================================
 
 function requireToken() {
@@ -54,23 +62,25 @@ function requireToken() {
 }
 
 // ============================================================
-// 📥 GET
+// 📥 GET USER
 // ============================================================
 
 export async function getUser(userId) {
   requireToken();
 
-  const id = safeId(userId);
+  const id =
+    safeId(userId);
 
   try {
-    const result = await get(
-      userPath(id),
-      {
-        token: TOKEN,
-        access: "private",
-        useCache: false
-      }
-    );
+    const result =
+      await get(
+        userPath(id),
+        {
+          token: TOKEN,
+          access: "private",
+          useCache: false
+        }
+      );
 
     if (
       !result ||
@@ -88,7 +98,8 @@ export async function getUser(userId) {
     let user;
 
     try {
-      user = JSON.parse(text);
+      user =
+        JSON.parse(text);
     } catch {
       return null;
     }
@@ -100,14 +111,31 @@ export async function getUser(userId) {
       return null;
     }
 
+    // --------------------------------------------------------
+    // NORMALIZE ID
+    // --------------------------------------------------------
+
     user.userId =
       safeId(
         user.userId || id
       );
 
-    resetDailyUsageIfNeeded(user);
+    if (!user.id) {
+      user.id =
+        user.userId;
+    }
 
-    normalizePlan(user);
+    // --------------------------------------------------------
+    // NORMALIZE USAGE + PLAN
+    // --------------------------------------------------------
+
+    resetDailyUsageIfNeeded(
+      user
+    );
+
+    normalizePlan(
+      user
+    );
 
     return user;
   }
@@ -117,6 +145,10 @@ export async function getUser(userId) {
       String(
         error?.message || ""
       ).toLowerCase();
+
+    // --------------------------------------------------------
+    // USER DOES NOT EXIST
+    // --------------------------------------------------------
 
     if (
       error?.name ===
@@ -128,12 +160,16 @@ export async function getUser(userId) {
       return null;
     }
 
+    // --------------------------------------------------------
+    // REAL STORAGE ERROR
+    // --------------------------------------------------------
+
     throw error;
   }
 }
 
 // ============================================================
-// 💾 SAVE
+// 💾 SAVE USER
 // ============================================================
 
 export async function saveUser(user) {
@@ -154,19 +190,53 @@ export async function saveUser(user) {
     );
   }
 
+  // ----------------------------------------------------------
+  // NORMALIZE ID
+  // ----------------------------------------------------------
+
   user.userId =
-    safeId(user.userId);
+    safeId(
+      user.userId
+    );
 
-  resetDailyUsageIfNeeded(user);
+  if (!user.id) {
+    user.id =
+      user.userId;
+  }
 
-  normalizePlan(user);
+  // ----------------------------------------------------------
+  // NORMALIZE USER STATE
+  // ----------------------------------------------------------
+
+  resetDailyUsageIfNeeded(
+    user
+  );
+
+  normalizePlan(
+    user
+  );
+
+  // ----------------------------------------------------------
+  // TIMESTAMPS
+  // ----------------------------------------------------------
+
+  if (!user.createdAt) {
+    user.createdAt =
+      new Date().toISOString();
+  }
 
   user.updatedAt =
     new Date().toISOString();
 
+  // ----------------------------------------------------------
+  // SAVE TO VERCEL BLOB
+  // ----------------------------------------------------------
+
   const blob =
     await put(
-      userPath(user.userId),
+      userPath(
+        user.userId
+      ),
 
       JSON.stringify(
         user,
@@ -182,9 +252,11 @@ export async function saveUser(user) {
         contentType:
           "application/json",
 
-        addRandomSuffix: false,
+        addRandomSuffix:
+          false,
 
-        allowOverwrite: true
+        allowOverwrite:
+          true
       }
     );
 
@@ -197,30 +269,52 @@ export async function saveUser(user) {
 }
 
 // ============================================================
-// 👤 GET OR CREATE
+// 👤 GET OR CREATE USER
 // ============================================================
 
-export async function getOrCreateUser(userId) {
-  const id = safeId(userId);
+export async function getOrCreateUser(
+  userId
+) {
+  const id =
+    safeId(userId);
+
+  // ----------------------------------------------------------
+  // TRY EXISTING USER
+  // ----------------------------------------------------------
 
   let user =
     await getUser(id);
 
   if (user) {
-    resetDailyUsageIfNeeded(user);
-    normalizePlan(user);
+    resetDailyUsageIfNeeded(
+      user
+    );
+
+    normalizePlan(
+      user
+    );
 
     return user;
   }
 
+  // ----------------------------------------------------------
+  // CREATE NEW USER
+  // ----------------------------------------------------------
+
   user =
     createDefaultUser(id);
 
-  return await saveUser(user);
+  // ----------------------------------------------------------
+  // SAVE NEW USER
+  // ----------------------------------------------------------
+
+  return await saveUser(
+    user
+  );
 }
 
 // ============================================================
-// 🔄 UPDATE
+// 🔄 UPDATE USER
 // ============================================================
 
 export async function updateUser(
@@ -228,7 +322,9 @@ export async function updateUser(
   updates = {}
 ) {
   const user =
-    await getOrCreateUser(userId);
+    await getOrCreateUser(
+      userId
+    );
 
   if (
     !updates ||
@@ -239,14 +335,24 @@ export async function updateUser(
     );
   }
 
+  // ----------------------------------------------------------
+  // PROTECTED FIELDS
+  // ----------------------------------------------------------
+
   const {
     userId: ignoredUserId,
+    id: ignoredId,
     createdAt: ignoredCreatedAt,
     usage: ignoredUsage,
     plan: ignoredPlan,
     subscription: ignoredSubscription,
+    proTrialUntil: ignoredTrial,
     ...safeUpdates
   } = updates;
+
+  // ----------------------------------------------------------
+  // APPLY SAFE UPDATES
+  // ----------------------------------------------------------
 
   Object.assign(
     user,
@@ -256,36 +362,59 @@ export async function updateUser(
   user.userId =
     safeId(userId);
 
-  return await saveUser(user);
+  if (!user.id) {
+    user.id =
+      user.userId;
+  }
+
+  return await saveUser(
+    user
+  );
 }
 
 // ============================================================
-// 📊 USAGE
+// 📊 GET USER USAGE
 // ============================================================
 
-export async function getUserUsage(userId) {
+export async function getUserUsage(
+  userId
+) {
   const user =
-    await getOrCreateUser(userId);
+    await getOrCreateUser(
+      userId
+    );
 
   return {
-    userId: user.userId,
+    userId:
+      user.userId,
 
-    plan: user.plan,
+    plan:
+      user.plan,
 
-    usage: user.usage,
+    usage:
+      user.usage,
 
     subscription:
-      user.subscription || null
+      user.subscription ||
+      null,
+
+    proTrialUntil:
+      user.proTrialUntil ||
+      null
   };
 }
 
 // ============================================================
-// 👑 PRO CHECK
+// 👑 PRO USER CHECK
 // ============================================================
 
-export async function isProUser(userId) {
+export async function isProUser(
+  userId
+) {
   const user =
-    await getOrCreateUser(userId);
+    await getOrCreateUser(
+      userId
+    );
 
   return (
     normalizePlan(user) ===
@@ -294,11 +423,17 @@ export async function isProUser(userId) {
 }
 
 // ============================================================
-// 📦 PATH
+// 📦 USER STORAGE PATH
 // ============================================================
 
-export function getUserStoragePath(userId) {
+export function getUserStoragePath(
+  userId
+) {
   return userPath(
     safeId(userId)
   );
 }
+
+// ============================================================
+// 👑 END USERS ENGINE
+// ============================================================
