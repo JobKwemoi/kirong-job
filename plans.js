@@ -1,6 +1,5 @@
-```js
 // ============================================================
-// 👑 KIRONG AI — PLANS ENGINE V15
+// 👑 KIRONG AI — PLANS ENGINE V16
 // ------------------------------------------------------------
 // Central plan + usage engine for Kirong AI.
 //
@@ -17,7 +16,7 @@
 //   canUseFeature()
 //
 // Compatible with:
-//   users.js V14
+//   users.js V15
 //   chat.js V13
 //   referral/payment logic
 // ============================================================
@@ -69,7 +68,7 @@ const PLANS = {
 };
 
 // ============================================================
-// 📅 DATE HELPER
+// 📅 TODAY KEY
 // ============================================================
 
 function todayKey() {
@@ -79,66 +78,79 @@ function todayKey() {
 }
 
 // ============================================================
-// 🧱 USAGE DEFAULTS
+// 🧱 DEFAULT USAGE
 // ============================================================
 
 function createDefaultUsage() {
   return {
-    date: todayKey(),
+    date:
+      todayKey(),
+
     messages: 0,
+
     images: 0,
+
     tokens: 0
   };
 }
 
 // ============================================================
 // 🆕 CREATE DEFAULT USER
-// ------------------------------------------------------------
-// This is imported directly by users.js.
-// Keep both userId and id for compatibility with different
-// parts of the application.
 // ============================================================
 
-function createDefaultUser(userId) {
+function createDefaultUser(
+  userId
+) {
   const id =
-    String(userId || "anonymous")
-      .trim();
+    String(
+      userId ||
+      "anonymous"
+    ).trim();
+
+  const now =
+    new Date().toISOString();
 
   return {
-    userId: id,
-    id,
+    userId:
+      id,
 
-    plan: "free",
+    id:
+      id,
 
-    usage: createDefaultUsage(),
+    plan:
+      "free",
 
-    referredBy: null,
-    referralCount: 0,
-    proTrialUntil: null,
+    usage:
+      createDefaultUsage(),
+
+    referredBy:
+      null,
+
+    referralCount:
+      0,
+
+    proTrialUntil:
+      null,
 
     createdAt:
-      new Date().toISOString(),
+      now,
 
     updatedAt:
-      new Date().toISOString()
+      now
   };
 }
 
 // ============================================================
 // 🔧 NORMALIZE PLAN
 // ------------------------------------------------------------
-// Returns ONLY:
+// Returns:
 //   "free"
 //   "pro"
-//
-// This is intentionally separate from getUserPlan(), which
-// returns the complete plan object.
-//
-// users.js uses:
-//   normalizePlan(user) === "pro"
 // ============================================================
 
-function normalizePlan(user) {
+function normalizePlan(
+  user
+) {
   if (
     !user ||
     typeof user !== "object"
@@ -148,31 +160,34 @@ function normalizePlan(user) {
 
   const rawPlan =
     String(
-      user.plan || "free"
+      user.plan ||
+      "free"
     )
       .trim()
       .toLowerCase();
 
-  if (rawPlan === "pro") {
-    user.plan = "pro";
+  if (
+    rawPlan === "pro"
+  ) {
+    user.plan =
+      "pro";
+
     return "pro";
   }
 
-  user.plan = "free";
+  user.plan =
+    "free";
 
   return "free";
 }
 
 // ============================================================
 // 🔄 RESET DAILY USAGE
-// ------------------------------------------------------------
-// Resets counters when the stored usage date is different
-// from today's UTC date.
-//
-// Mutates the existing user object and returns it.
 // ============================================================
 
-function resetDailyUsageIfNeeded(user) {
+function resetDailyUsageIfNeeded(
+  user
+) {
   if (
     !user ||
     typeof user !== "object"
@@ -181,6 +196,10 @@ function resetDailyUsageIfNeeded(user) {
       "plans.js: expected a user object."
     );
   }
+
+  // ----------------------------------------------------------
+  // CREATE USAGE IF MISSING
+  // ----------------------------------------------------------
 
   if (
     !user.usage ||
@@ -195,33 +214,55 @@ function resetDailyUsageIfNeeded(user) {
   const today =
     todayKey();
 
+  // ----------------------------------------------------------
+  // RESET WHEN DAY CHANGES
+  // ----------------------------------------------------------
+
   if (
-    user.usage.date !== today
+    user.usage.date !==
+    today
   ) {
     user.usage = {
-      date: today,
-      messages: 0,
-      images: 0,
-      tokens: 0
+      date:
+        today,
+
+      messages:
+        0,
+
+      images:
+        0,
+
+      tokens:
+        0
     };
   }
+
+  // ----------------------------------------------------------
+  // SANITIZE COUNTERS
+  // ----------------------------------------------------------
 
   user.usage.messages =
     Math.max(
       0,
-      Number(user.usage.messages) || 0
+      Number(
+        user.usage.messages
+      ) || 0
     );
 
   user.usage.images =
     Math.max(
       0,
-      Number(user.usage.images) || 0
+      Number(
+        user.usage.images
+      ) || 0
     );
 
   user.usage.tokens =
     Math.max(
       0,
-      Number(user.usage.tokens) || 0
+      Number(
+        user.usage.tokens
+      ) || 0
     );
 
   return user;
@@ -231,7 +272,9 @@ function resetDailyUsageIfNeeded(user) {
 // 🧱 ENSURE USER SHAPE
 // ============================================================
 
-function ensureUserShape(user) {
+function ensureUserShape(
+  user
+) {
   if (
     !user ||
     typeof user !== "object"
@@ -241,9 +284,37 @@ function ensureUserShape(user) {
     );
   }
 
-  resetDailyUsageIfNeeded(user);
+  resetDailyUsageIfNeeded(
+    user
+  );
 
-  normalizePlan(user);
+  normalizePlan(
+    user
+  );
+
+  // ----------------------------------------------------------
+  // ID
+  // ----------------------------------------------------------
+
+  if (
+    !user.userId &&
+    user.id
+  ) {
+    user.userId =
+      String(user.id);
+  }
+
+  if (
+    !user.id &&
+    user.userId
+  ) {
+    user.id =
+      String(user.userId);
+  }
+
+  // ----------------------------------------------------------
+  // REFERRAL DATA
+  // ----------------------------------------------------------
 
   if (
     !Object.prototype.hasOwnProperty.call(
@@ -251,7 +322,8 @@ function ensureUserShape(user) {
       "referredBy"
     )
   ) {
-    user.referredBy = null;
+    user.referredBy =
+      null;
   }
 
   if (
@@ -260,7 +332,8 @@ function ensureUserShape(user) {
       "referralCount"
     )
   ) {
-    user.referralCount = 0;
+    user.referralCount =
+      0;
   }
 
   if (
@@ -269,17 +342,20 @@ function ensureUserShape(user) {
       "proTrialUntil"
     )
   ) {
-    user.proTrialUntil = null;
+    user.proTrialUntil =
+      null;
   }
 
   return user;
 }
 
 // ============================================================
-// 👑 TRIAL CHECK
+// 👑 PRO TRIAL CHECK
 // ============================================================
 
-function isTrialActive(user) {
+function isTrialActive(
+  user
+) {
   if (
     !user?.proTrialUntil
   ) {
@@ -293,7 +369,8 @@ function isTrialActive(user) {
 
   return (
     Number.isFinite(until) &&
-    until > Date.now()
+    until >
+      Date.now()
   );
 }
 
@@ -306,17 +383,31 @@ function isTrialActive(user) {
 //   3. Free
 // ============================================================
 
-function getUserPlan(user) {
-  ensureUserShape(user);
+function getUserPlan(
+  user
+) {
+  ensureUserShape(
+    user
+  );
+
+  // ----------------------------------------------------------
+  // ACTIVE TRIAL
+  // ----------------------------------------------------------
 
   if (
     isTrialActive(user)
   ) {
     return {
       ...PLANS.pro,
-      viaTrial: true
+
+      viaTrial:
+        true
     };
   }
+
+  // ----------------------------------------------------------
+  // PERMANENT PRO
+  // ----------------------------------------------------------
 
   if (
     normalizePlan(user) ===
@@ -324,13 +415,21 @@ function getUserPlan(user) {
   ) {
     return {
       ...PLANS.pro,
-      viaTrial: false
+
+      viaTrial:
+        false
     };
   }
 
+  // ----------------------------------------------------------
+  // FREE
+  // ----------------------------------------------------------
+
   return {
     ...PLANS.free,
-    viaTrial: false
+
+    viaTrial:
+      false
   };
 }
 
@@ -346,14 +445,24 @@ function checkUsageLimit(
   user,
   type
 ) {
-  ensureUserShape(user);
+  ensureUserShape(
+    user
+  );
 
   const plan =
-    getUserPlan(user);
+    getUserPlan(
+      user
+    );
+
+  const normalizedType =
+    String(
+      type || ""
+    )
+      .trim()
+      .toLowerCase();
 
   const isImage =
-    String(type || "")
-      .toLowerCase() ===
+    normalizedType ===
     "image";
 
   const limitKey =
@@ -378,7 +487,8 @@ function checkUsageLimit(
 
   return {
     allowed:
-      current < limit,
+      current <
+      limit,
 
     limit,
 
@@ -387,7 +497,8 @@ function checkUsageLimit(
     remaining:
       Math.max(
         0,
-        limit - current
+        limit -
+          current
       )
   };
 }
@@ -403,21 +514,29 @@ function checkTokenLimit(
     outputTokens = 0
   } = {}
 ) {
-  ensureUserShape(user);
+  ensureUserShape(
+    user
+  );
 
   const plan =
-    getUserPlan(user);
+    getUserPlan(
+      user
+    );
 
   const input =
     Math.max(
       0,
-      Number(inputTokens) || 0
+      Number(
+        inputTokens
+      ) || 0
     );
 
   const output =
     Math.max(
       0,
-      Number(outputTokens) || 0
+      Number(
+        outputTokens
+      ) || 0
     );
 
   const current =
@@ -428,21 +547,30 @@ function checkTokenLimit(
       ) || 0
     );
 
-  const projected =
-    current +
+  const requested =
     input +
     output;
+
+  const projected =
+    current +
+    requested;
 
   const limit =
     Number(
       plan.tokensPerDay
     ) || 0;
 
+  // ----------------------------------------------------------
+  // LIMIT EXCEEDED
+  // ----------------------------------------------------------
+
   if (
-    projected > limit
+    projected >
+    limit
   ) {
     return {
-      allowed: false,
+      allowed:
+        false,
 
       reason:
         `Daily token limit (${limit.toLocaleString()}) reached for your plan.`,
@@ -451,33 +579,39 @@ function checkTokenLimit(
 
       current,
 
-      requested:
-        input + output,
+      requested,
 
       remaining:
         Math.max(
           0,
-          limit - current
+          limit -
+            current
         )
     };
   }
 
-  return {
-    allowed: true,
+  // ----------------------------------------------------------
+  // ALLOWED
+  // ----------------------------------------------------------
 
-    reason: null,
+  return {
+    allowed:
+      true,
+
+    reason:
+      null,
 
     limit,
 
     current,
 
-    requested:
-      input + output,
+    requested,
 
     remaining:
       Math.max(
         0,
-        limit - projected
+        limit -
+          projected
       )
   };
 }
@@ -488,8 +622,6 @@ function checkTokenLimit(
 // type:
 //   "message"
 //   "image"
-//
-// Token usage can be recorded independently.
 // ============================================================
 
 function recordUsage(
@@ -500,10 +632,17 @@ function recordUsage(
     outputTokens = 0
   } = {}
 ) {
-  ensureUserShape(user);
+  ensureUserShape(
+    user
+  );
+
+  // ----------------------------------------------------------
+  // MESSAGE
+  // ----------------------------------------------------------
 
   if (
-    type === "message"
+    type ===
+    "message"
   ) {
     user.usage.messages =
       (
@@ -513,8 +652,13 @@ function recordUsage(
       ) + 1;
   }
 
+  // ----------------------------------------------------------
+  // IMAGE
+  // ----------------------------------------------------------
+
   if (
-    type === "image"
+    type ===
+    "image"
   ) {
     user.usage.images =
       (
@@ -524,30 +668,41 @@ function recordUsage(
       ) + 1;
   }
 
+  // ----------------------------------------------------------
+  // TOKENS
+  // ----------------------------------------------------------
+
   const input =
     Math.max(
       0,
-      Number(inputTokens) || 0
+      Number(
+        inputTokens
+      ) || 0
     );
 
   const output =
     Math.max(
       0,
-      Number(outputTokens) || 0
+      Number(
+        outputTokens
+      ) || 0
     );
 
   const tokenDelta =
-    input + output;
+    input +
+    output;
 
   if (
-    tokenDelta > 0
+    tokenDelta >
+    0
   ) {
     user.usage.tokens =
       (
         Number(
           user.usage.tokens
         ) || 0
-      ) + tokenDelta;
+      ) +
+      tokenDelta;
   }
 
   return user;
@@ -555,24 +710,19 @@ function recordUsage(
 
 // ============================================================
 // 📸 USAGE SNAPSHOT
-// ------------------------------------------------------------
-// Frontend shape:
-//
-// {
-//   plan,
-//   viaTrial,
-//   proTrialUntil,
-//   messages: { used, limit },
-//   images:   { used, limit },
-//   tokens:   { used, limit }
-// }
 // ============================================================
 
-function getUsageSnapshot(user) {
-  ensureUserShape(user);
+function getUsageSnapshot(
+  user
+) {
+  ensureUserShape(
+    user
+  );
 
   const plan =
-    getUserPlan(user);
+    getUserPlan(
+      user
+    );
 
   return {
     plan:
@@ -628,15 +778,19 @@ function canUseFeature(
   feature
 ) {
   const plan =
-    getUserPlan(user);
+    getUserPlan(
+      user
+    );
 
   return Boolean(
-    plan.features?.[feature]
+    plan.features?.[
+      feature
+    ]
   );
 }
 
 // ============================================================
-// 📤 EXPORTS
+// 📤 EXPLICIT EXPORTS
 // ============================================================
 
 export {
@@ -660,4 +814,7 @@ export {
 
   canUseFeature
 };
-```
+
+// ============================================================
+// 👑 END PLANS ENGINE
+// ============================================================
