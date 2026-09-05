@@ -1,25 +1,24 @@
 // ============================================================
-// 👑 KIRONG AI — PROJECTS STORAGE V1
-// Vercel Blob backed project records (private, per-user)
+// 👑 KIRONG AI — PROJECTS STORAGE (Netlify Functions v2)
+// Netlify Blobs backed project records (private, per-user)
+// ------------------------------------------------------------
+// Same behavior as your Vercel version — only the storage calls
+// changed (@vercel/blob → @netlify/blobs) and the request/
+// response handling (Node req/res → Web Request/Response).
 // ============================================================
 
 "use strict";
 
-import { put, get, list, del } from "@vercel/blob";
+import { getStore } from "@netlify/blobs";
 
-const TOKEN = process.env.BLOB_READ_WRITE_TOKEN;
-const PROJECT_PREFIX = "kirong-ai/projects/";
+export const config = { path: "/api/projects" };
+
+const PROJECTS_STORE = "kirong-projects";
 const MAX_TITLE_LENGTH = 120;
 const MAX_CONTENT_LENGTH = 50000;
 const MAX_TYPE_LENGTH = 40;
 
 const ALLOWED_TYPES = ["website", "cv", "business", "code", "note"];
-
-function requireToken() {
-  if (!TOKEN) {
-    throw new Error("BLOB_READ_WRITE_TOKEN is missing.");
-  }
-}
 
 function safeId(id) {
   return String(id || "anonymous")
@@ -32,12 +31,12 @@ function newProjectId() {
   return "proj_" + Date.now() + "_" + Math.random().toString(36).slice(2, 8);
 }
 
-function projectPath(userId, projectId) {
-  return `${PROJECT_PREFIX}${safeId(userId)}/${safeId(projectId)}.json`;
+function projectKey(userId, projectId) {
+  return `${safeId(userId)}/${safeId(projectId)}`;
 }
 
 function userProjectPrefix(userId) {
-  return `${PROJECT_PREFIX}${safeId(userId)}/`;
+  return `${safeId(userId)}/`;
 }
 
 function normalizeType(type) {
@@ -45,120 +44,66 @@ function normalizeType(type) {
   return ALLOWED_TYPES.includes(t) ? t : "note";
 }
 
-// ============================================================
-// 📥 READ A SINGLE PROJECT BLOB
-// ============================================================
-
-async function readProject(path) {
-  try {
-    const result = await get(path, {
-      token: TOKEN,
-      access: "private",
-      useCache: false
-    });
-
-    if (!result || result.statusCode !== 200 || !result.stream) {
-      return null;
-    }
-
-    const text = await new Response(result.stream).text();
-
-    try {
-      return JSON.parse(text);
-    } catch {
-      return null;
-    }
-  } catch (error) {
-    const message = String(error?.message || "").toLowerCase();
-
-    // Missing blob = normal condition (project doesn't exist)
-    if (
-      error?.name === "BlobNotFoundError" ||
-      message.includes("not found") ||
-      message.includes("does not exist") ||
-      message.includes("404")
-    ) {
-      return null;
-    }
-
-    throw error;
-  }
+function store() {
+  return getStore(PROJECTS_STORE);
 }
 
 // ============================================================
-// 📋 LIST ALL PROJECTS FOR A USER
+// 📥 READ / 📋 LIST / 💾 SAVE / 🗑️ DELETE
 // ============================================================
 
+async function readProject(userId, projectId) {
+  return await store().get(projectKey(userId, projectId), { type: "json" });
+}
+
 async function listProjectsForUser(userId) {
-  requireToken();
-
   const prefix = userProjectPrefix(userId);
-
-  const result = await list({
-    token: TOKEN,
-    access: "private",
-    prefix
-  });
-
+  const result = await store().list({ prefix });
   const blobs = result?.blobs || [];
 
   const projects = [];
-
   for (const b of blobs) {
-    const project = await readProject(b.pathname);
+    const project = await store().get(b.key, { type: "json" });
     if (project) projects.push(project);
   }
 
   projects.sort((a, b) => (b.updatedAt || "").localeCompare(a.updatedAt || ""));
-
   return projects;
 }
 
-// ============================================================
-// 💾 SAVE / DELETE
-// ============================================================
-
 async function saveProject(project) {
-  requireToken();
-
-  const path = projectPath(project.userId, project.id);
-
-  await put(
-    path,
-    JSON.stringify(project, null, 2),
-    {
-      token: TOKEN,
-      access: "private",
-      contentType: "application/json",
-      addRandomSuffix: false,
-      allowOverwrite: true
-    }
-  );
-
+  await store().setJSON(projectKey(project.userId, project.id), project);
   return project;
 }
 
 async function deleteProject(userId, projectId) {
-  requireToken();
-  await del(projectPath(userId, projectId), { token: TOKEN });
+  await store().delete(projectKey(userId, projectId));
 }
 
 // ============================================================
-// 🌐 CORS
+// 🌐 RESPONSE HELPERS
 // ============================================================
 
-function setCors(res) {
-  res.setHeader("Access-Control-Allow-Origin", "*");
-  res.setHeader("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
-  res.setHeader("Access-Control-Allow-Headers", "Content-Type, X-Kirong-User-Id");
-  res.setHeader("Content-Type", "application/json; charset=utf-8");
+function corsHeaders(extra = {}) {
+  return {
+    "Access-Control-Allow-Origin": "*",
+    "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
+    "Access-Control-Allow-Headers": "Content-Type, X-Kirong-User-Id",
+    ...extra
+  };
 }
 
-function getUserId(req) {
-  const fromQuery = req.query?.userId;
-  const fromHeader = req.headers["x-kirong-user-id"];
-  const fromBody = req.body?.userId;
+function jsonResponse(body, status = 200) {
+  return new Response(JSON.stringify(body), {
+    status,
+    headers: corsHeaders({ "Content-Type": "application/json; charset=utf-8" })
+  });
+}
 
+function getUserId(req, url, body) {
+  const fromQuery = url.searchParams.get("userId");
+  const fromHeader = req.headers.get("x-kirong-user-id");
+  const fromBody = body?.userId;
   return safeId(fromQuery || fromHeader || fromBody || "anonymous");
 }
 
@@ -166,35 +111,32 @@ function getUserId(req) {
 // 🚀 MAIN HANDLER
 // ============================================================
 
-export default async function handler(req, res) {
-  setCors(res);
-
+export default async (req) => {
   if (req.method === "OPTIONS") {
-    return res.status(204).end();
+    return new Response(null, { status: 204, headers: corsHeaders() });
   }
 
-  try {
-    const userId = getUserId(req);
+  const url = new URL(req.url);
 
+  try {
     // ----------------------------------------------------------
     // GET — list all projects, or fetch one by ?id=
     // ----------------------------------------------------------
 
     if (req.method === "GET") {
-      const projectId = req.query?.id;
+      const userId = getUserId(req, url, null);
+      const projectId = url.searchParams.get("id");
 
       if (projectId) {
-        const project = await readProject(projectPath(userId, projectId));
-
+        const project = await readProject(userId, projectId);
         if (!project) {
-          return res.status(404).json({ ok: false, error: "Project not found." });
+          return jsonResponse({ ok: false, error: "Project not found." }, 404);
         }
-
-        return res.status(200).json({ ok: true, project });
+        return jsonResponse({ ok: true, project });
       }
 
       const projects = await listProjectsForUser(userId);
-      return res.status(200).json({ ok: true, projects });
+      return jsonResponse({ ok: true, projects });
     }
 
     // ----------------------------------------------------------
@@ -202,12 +144,14 @@ export default async function handler(req, res) {
     // ----------------------------------------------------------
 
     if (req.method === "POST") {
-      const body = req.body || {};
+      let body = {};
+      try { body = await req.json(); } catch { body = {}; }
 
+      const userId = getUserId(req, url, body);
       const title = String(body.title || "Untitled Project").trim().slice(0, MAX_TITLE_LENGTH);
 
       if (!title) {
-        return res.status(400).json({ ok: false, error: "Title is required." });
+        return jsonResponse({ ok: false, error: "Title is required." }, 400);
       }
 
       const project = {
@@ -221,8 +165,7 @@ export default async function handler(req, res) {
       };
 
       await saveProject(project);
-
-      return res.status(200).json({ ok: true, project });
+      return jsonResponse({ ok: true, project });
     }
 
     // ----------------------------------------------------------
@@ -230,17 +173,19 @@ export default async function handler(req, res) {
     // ----------------------------------------------------------
 
     if (req.method === "PUT") {
-      const body = req.body || {};
+      let body = {};
+      try { body = await req.json(); } catch { body = {}; }
+
+      const userId = getUserId(req, url, body);
       const projectId = body.id;
 
       if (!projectId) {
-        return res.status(400).json({ ok: false, error: "Project id is required." });
+        return jsonResponse({ ok: false, error: "Project id is required." }, 400);
       }
 
-      const existing = await readProject(projectPath(userId, projectId));
-
+      const existing = await readProject(userId, projectId);
       if (!existing) {
-        return res.status(404).json({ ok: false, error: "Project not found." });
+        return jsonResponse({ ok: false, error: "Project not found." }, 404);
       }
 
       if (typeof body.title === "string") {
@@ -259,8 +204,7 @@ export default async function handler(req, res) {
       existing.updatedAt = new Date().toISOString();
 
       await saveProject(existing);
-
-      return res.status(200).json({ ok: true, project: existing });
+      return jsonResponse({ ok: true, project: existing });
     }
 
     // ----------------------------------------------------------
@@ -268,25 +212,26 @@ export default async function handler(req, res) {
     // ----------------------------------------------------------
 
     if (req.method === "DELETE") {
-      const projectId = req.query?.id || req.body?.id;
+      let body = {};
+      try { body = await req.json(); } catch { body = {}; }
+
+      const userId = getUserId(req, url, body);
+      const projectId = url.searchParams.get("id") || body.id;
 
       if (!projectId) {
-        return res.status(400).json({ ok: false, error: "Project id is required." });
+        return jsonResponse({ ok: false, error: "Project id is required." }, 400);
       }
 
       await deleteProject(userId, projectId);
-
-      return res.status(200).json({ ok: true });
+      return jsonResponse({ ok: true });
     }
 
-    return res.status(405).json({ ok: false, error: "Method not allowed." });
+    return jsonResponse({ ok: false, error: "Method not allowed." }, 405);
   } catch (error) {
     console.error("KIRONG PROJECTS ERROR:", error);
-
-    return res.status(500).json({
-      ok: false,
-      error: "Projects storage is temporarily unavailable.",
-      code: "PROJECTS_SERVER_ERROR"
-    });
+    return jsonResponse(
+      { ok: false, error: "Projects storage is temporarily unavailable.", code: "PROJECTS_SERVER_ERROR" },
+      500
+    );
   }
-}
+};
