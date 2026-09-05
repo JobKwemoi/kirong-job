@@ -1,29 +1,29 @@
 // ============================================================
-// 👑 KIRONG AI — SPEECH-TO-TEXT ENGINE V1 (Whisper via Hugging Face)
-// Fallback voice input for browsers with no native SpeechRecognition
-// (e.g. desktop Firefox) — records audio, transcribes server-side.
+// 👑 KIRONG AI — SPEECH-TO-TEXT ENGINE (Netlify Functions v2)
+// Whisper via Hugging Face — fallback voice input for browsers
+// with no native SpeechRecognition (e.g. desktop Firefox).
 // ============================================================
 
 "use strict";
 
+export const config = { path: "/api/stt" };
+
 const HUGGINGFACE_KEYS = parseKeys(
-  process.env.HUGGINGFACE_API_KEYS ||
-  process.env.HUGGINGFACE_API_KEY
+  process.env.HUGGINGFACE_API_KEYS || process.env.HUGGINGFACE_API_KEY
 );
 
 const STT_MODEL = process.env.HUGGINGFACE_STT_MODEL || "openai/whisper-large-v3-turbo";
 
-// Vercel Hobby caps request bodies around 4.5MB. Base64 inflates
-// bytes by ~33%, so we cap the raw audio well under that so the
-// encoded JSON payload never gets rejected before we even see it.
+// Netlify's default body-size limit is generous enough for a few
+// seconds of audio, but we still cap it so base64 inflation never
+// produces a payload large enough to be slow/costly to handle.
 const MAX_AUDIO_BYTES = 3 * 1024 * 1024;
 
-export const config = { maxDuration: 10 };
 const PROVIDER_TIMEOUT_MS = 8000;
 
 function parseKeys(value) {
   if (!value) return [];
-  return String(value).split(/[\n,]+/).map(k => k.trim()).filter(Boolean);
+  return String(value).split(/[\n,]+/).map((k) => k.trim()).filter(Boolean);
 }
 
 function rotateKey(keys, index) {
@@ -41,50 +41,61 @@ async function fetchWithTimeout(url, options = {}, timeoutMs = PROVIDER_TIMEOUT_
   }
 }
 
-function setCors(res) {
-  res.setHeader("Access-Control-Allow-Origin", "*");
-  res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
-  res.setHeader("Access-Control-Allow-Headers", "Content-Type, X-Kirong-User-Id");
-  res.setHeader("Content-Type", "application/json; charset=utf-8");
+function corsHeaders(extra = {}) {
+  return {
+    "Access-Control-Allow-Origin": "*",
+    "Access-Control-Allow-Methods": "POST, OPTIONS",
+    "Access-Control-Allow-Headers": "Content-Type, X-Kirong-User-Id",
+    ...extra
+  };
 }
 
-export default async function handler(req, res) {
-  setCors(res);
+function jsonResponse(body, status = 200) {
+  return new Response(JSON.stringify(body), {
+    status,
+    headers: corsHeaders({ "Content-Type": "application/json; charset=utf-8" })
+  });
+}
 
-  if (req.method === "OPTIONS") return res.status(204).end();
+export default async (req) => {
+  if (req.method === "OPTIONS") {
+    return new Response(null, { status: 204, headers: corsHeaders() });
+  }
+
   if (req.method !== "POST") {
-    return res.status(405).json({ ok: false, error: "Method not allowed." });
+    return jsonResponse({ ok: false, error: "Method not allowed." }, 405);
   }
 
   try {
     if (!HUGGINGFACE_KEYS.length) {
-      return res.status(503).json({
-        ok: false,
-        error: "Voice input isn't configured yet.",
-        code: "STT_NOT_CONFIGURED"
-      });
+      return jsonResponse(
+        { ok: false, error: "Voice input isn't configured yet.", code: "STT_NOT_CONFIGURED" },
+        503
+      );
     }
 
-    const body = req.body || {};
+    let body = {};
+    try { body = await req.json(); } catch { body = {}; }
+
     const rawAudio = body.audio;
     const mimeType = typeof body.mimeType === "string" ? body.mimeType : "audio/webm";
 
     if (!rawAudio) {
-      return res.status(400).json({ ok: false, error: "No audio provided." });
+      return jsonResponse({ ok: false, error: "No audio provided." }, 400);
     }
 
     const base64Data = String(rawAudio).replace(/^data:[^;]+;base64,/, "");
     const audioBuffer = Buffer.from(base64Data, "base64");
 
     if (audioBuffer.length === 0) {
-      return res.status(400).json({ ok: false, error: "Empty recording." });
+      return jsonResponse({ ok: false, error: "Empty recording." }, 400);
     }
 
     if (audioBuffer.length > MAX_AUDIO_BYTES) {
-      return res.status(413).json({
-        ok: false,
-        error: "Recording too long — keep voice messages short (a few seconds)."
-      });
+      return jsonResponse(
+        { ok: false, error: "Recording too long — keep voice messages short (a few seconds)." },
+        413
+      );
     }
 
     const key = rotateKey(HUGGINGFACE_KEYS, Math.floor(Math.random() * HUGGINGFACE_KEYS.length));
@@ -95,20 +106,16 @@ export default async function handler(req, res) {
         `https://api-inference.huggingface.co/models/${STT_MODEL}`,
         {
           method: "POST",
-          headers: {
-            Authorization: `Bearer ${key}`,
-            "Content-Type": mimeType
-          },
+          headers: { Authorization: `Bearer ${key}`, "Content-Type": mimeType },
           body: audioBuffer
         }
       );
     } catch (error) {
       if (error?.name === "AbortError") {
-        return res.status(504).json({
-          ok: false,
-          error: "Transcription took too long (model may be cold-starting). Try again.",
-          code: "STT_TIMEOUT"
-        });
+        return jsonResponse(
+          { ok: false, error: "Transcription took too long (model may be cold-starting). Try again.", code: "STT_TIMEOUT" },
+          504
+        );
       }
       throw error;
     }
@@ -121,18 +128,12 @@ export default async function handler(req, res) {
     const data = await response.json().catch(() => ({}));
     const text = typeof data?.text === "string" ? data.text.trim() : "";
 
-    return res.status(200).json({
-      ok: true,
-      text,
-      note: text ? null : "No speech detected."
-    });
+    return jsonResponse({ ok: true, text, note: text ? null : "No speech detected." });
   } catch (error) {
     console.error("KIRONG STT ERROR:", error);
-
-    return res.status(500).json({
-      ok: false,
-      error: "Voice transcription is temporarily unavailable.",
-      code: "STT_SERVER_ERROR"
-    });
+    return jsonResponse(
+      { ok: false, error: "Voice transcription is temporarily unavailable.", code: "STT_SERVER_ERROR" },
+      500
+    );
   }
-}
+};
