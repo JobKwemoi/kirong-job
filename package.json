@@ -1,14 +1,10 @@
 {
-"name": "kirong-job-ai",
-"version": "7.0.0",
-"type": "module",
-"dependencies": {
-"@huggingface/inference": "^4.13.0",
-"@vercel/blob": "^2.0.0",
-"formidable": "^3.5.1",
-"groq-sdk": "^0.27.0",
-"mammoth": "^1.6.0",
-"openai": "^5.0.0",
-"pdf-parse": "^1.1.1"
-}
+  "name": "kirong-ai",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "openai": "^4.68.0",
+    "groq-sdk": "^0.7.0",
+    "@netlify/blobs": "^8.1.0"
+  }
 }
