@@ -1,37 +1,24 @@
 // ============================================================
-// 👑 KIRONG AI — IMAGE GENERATION ENGINE V3
-// Pollinations.ai (instant, primary) + Hugging Face (timeout-safe fallback)
+// 👑 KIRONG AI — IMAGE GENERATION ENGINE (Netlify Functions v2)
+// Pollinations.ai (instant, primary) + Hugging Face (fallback)
+// ------------------------------------------------------------
+// Same logic as your Vercel version. Netlify's function timeout
+// works differently from Vercel's (no `config.maxDuration` export
+// — Netlify Functions default to a 10s synchronous limit, up to
+// 26s if needed, configurable in netlify.toml if you ever need
+// more), so that export was dropped; everything else is identical.
 // ============================================================
 
 "use strict";
 
+export const config = { path: "/api/image" };
+
 const HUGGINGFACE_KEYS = parseKeys(
-  process.env.HUGGINGFACE_API_KEYS ||
-  process.env.HUGGINGFACE_API_KEY
+  process.env.HUGGINGFACE_API_KEYS || process.env.HUGGINGFACE_API_KEY
 );
 
-// Fast, free-tier-friendly model. Override with an env var if you
-// prefer a different Hugging Face text-to-image model.
-const HF_MODEL =
-  process.env.HUGGINGFACE_IMAGE_MODEL ||
-  "black-forest-labs/FLUX.1-schnell";
-
+const HF_MODEL = process.env.HUGGINGFACE_IMAGE_MODEL || "black-forest-labs/FLUX.1-schnell";
 const MAX_PROMPT_LENGTH = 600;
-
-// ------------------------------------------------------------
-// IMPORTANT — Vercel Hobby (free) plan hard-caps serverless
-// functions at 10 seconds, REGARDLESS of what maxDuration says.
-// maxDuration: 10 here just documents that ceiling; if you're on
-// Vercel Pro, you can raise this (e.g. 30) AND raise
-// PROVIDER_TIMEOUT_MS below to match. On Hobby, leave both as-is.
-// ------------------------------------------------------------
-export const config = {
-  maxDuration: 10
-};
-
-// Must stay comfortably UNDER the platform's hard timeout, so our
-// own clean JSON error fires before Vercel kills the function and
-// returns its own non-JSON crash response (the "[object Object]" bug).
 const PROVIDER_TIMEOUT_MS = 8000;
 
 async function fetchWithTimeout(url, options = {}, timeoutMs = PROVIDER_TIMEOUT_MS) {
@@ -44,16 +31,9 @@ async function fetchWithTimeout(url, options = {}, timeoutMs = PROVIDER_TIMEOUT_
   }
 }
 
-// ============================================================
-// 🧩 PARSE MULTIPLE API KEYS (same pattern as chat.js)
-// ============================================================
-
 function parseKeys(value) {
   if (!value) return [];
-  return String(value)
-    .split(/[\n,]+/)
-    .map(key => key.trim())
-    .filter(Boolean);
+  return String(value).split(/[\n,]+/).map((key) => key.trim()).filter(Boolean);
 }
 
 function rotateKey(keys, index) {
@@ -61,35 +41,20 @@ function rotateKey(keys, index) {
   return keys[index % keys.length];
 }
 
-// ============================================================
-// 🧹 CLEAN PROMPT
-// ============================================================
-
 function cleanPrompt(prompt) {
   if (typeof prompt !== "string") return "";
   return prompt.trim().slice(0, MAX_PROMPT_LENGTH);
 }
 
-// ============================================================
-// 👤 GET USER ID (kept for future Pro-gating in Phase 4 —
-// not enforced yet, so this endpoint doesn't touch users.js)
-// ============================================================
-
 function getUserId(req, body) {
   const fromBody = body?.userId;
-  const fromHeader = req.headers["x-kirong-user-id"];
+  const fromHeader = req.headers.get("x-kirong-user-id");
   const id = fromBody || fromHeader || "anonymous";
   return String(id).trim().slice(0, 100);
 }
 
 // ============================================================
 // 🎨 PROVIDER 1: POLLINATIONS.AI (free, no key, near-instant)
-// ============================================================
-// We do NOT verify this URL with a fetch here — building it is
-// synchronous and costs ~0ms of function time, which is exactly
-// what we want given the 10s platform ceiling. If the URL turns
-// out to be broken, the frontend <img> element's onerror handler
-// catches that gracefully instead of the whole request failing.
 // ============================================================
 
 function tryPollinations(prompt) {
@@ -111,22 +76,15 @@ async function tryHuggingFace(prompt) {
     throw new Error("Hugging Face unavailable.");
   }
 
-  const key = rotateKey(
-    HUGGINGFACE_KEYS,
-    Math.floor(Math.random() * HUGGINGFACE_KEYS.length)
-  );
+  const key = rotateKey(HUGGINGFACE_KEYS, Math.floor(Math.random() * HUGGINGFACE_KEYS.length));
 
   let response;
-
   try {
     response = await fetchWithTimeout(
       `https://api-inference.huggingface.co/models/${HF_MODEL}`,
       {
         method: "POST",
-        headers: {
-          "Authorization": `Bearer ${key}`,
-          "Content-Type": "application/json"
-        },
+        headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
         body: JSON.stringify({ inputs: prompt })
       }
     );
@@ -145,7 +103,6 @@ async function tryHuggingFace(prompt) {
   const contentType = response.headers.get("content-type") || "";
 
   if (!contentType.startsWith("image/")) {
-    // HF sometimes returns 200 with a JSON error (e.g. "model is loading")
     const text = await response.text();
     throw new Error(`Hugging Face did not return an image: ${text.slice(0, 200)}`);
   }
@@ -158,54 +115,55 @@ async function tryHuggingFace(prompt) {
 }
 
 // ============================================================
-// 🌐 CORS
+// 🌐 RESPONSE HELPERS
 // ============================================================
 
-function setCors(res) {
-  res.setHeader("Access-Control-Allow-Origin", "*");
-  res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
-  res.setHeader("Access-Control-Allow-Headers", "Content-Type, X-Kirong-User-Id");
-  res.setHeader("Content-Type", "application/json; charset=utf-8");
+function corsHeaders(extra = {}) {
+  return {
+    "Access-Control-Allow-Origin": "*",
+    "Access-Control-Allow-Methods": "POST, OPTIONS",
+    "Access-Control-Allow-Headers": "Content-Type, X-Kirong-User-Id",
+    ...extra
+  };
+}
+
+function jsonResponse(body, status = 200) {
+  return new Response(JSON.stringify(body), {
+    status,
+    headers: corsHeaders({ "Content-Type": "application/json; charset=utf-8" })
+  });
 }
 
 // ============================================================
 // 🚀 MAIN HANDLER
 // ============================================================
 
-export default async function handler(req, res) {
-  setCors(res);
-
+export default async (req) => {
   if (req.method === "OPTIONS") {
-    return res.status(204).end();
+    return new Response(null, { status: 204, headers: corsHeaders() });
   }
 
   if (req.method !== "POST") {
-    return res.status(405).json({ ok: false, error: "Method not allowed." });
+    return jsonResponse({ ok: false, error: "Method not allowed." }, 405);
   }
 
   try {
-    const body = req.body || {};
+    let body = {};
+    try { body = await req.json(); } catch { body = {}; }
+
     const prompt = cleanPrompt(body.prompt);
 
     if (!prompt) {
-      return res.status(400).json({
-        ok: false,
-        error: "Describe what image you want."
-      });
+      return jsonResponse({ ok: false, error: "Describe what image you want." }, 400);
     }
 
     const userId = getUserId(req, body);
-    void userId; // reserved for Phase 4 Pro-gating
+    void userId; // reserved for future Pro-gating
 
     // Pollinations first — synchronous, essentially free in function time.
-    let result = tryPollinations(prompt);
+    const result = tryPollinations(prompt);
 
-    // If you ever want to force Hugging Face instead/also, this is
-    // where a fallback attempt would go. Kept simple + fast for now:
-    // Pollinations practically never fails in a way we can detect
-    // server-side without spending time we don't have on Hobby plan.
-
-    return res.status(200).json({
+    return jsonResponse({
       ok: true,
       type: "image",
       image: result.image,
@@ -215,13 +173,15 @@ export default async function handler(req, res) {
     });
   } catch (error) {
     console.error("KIRONG IMAGE ERROR:", error);
-
-    return res.status(500).json({
-      ok: false,
-      type: "error",
-      error: "Image generation is temporarily unavailable.",
-      text: "Image generation is temporarily unavailable.",
-      code: "IMAGE_SERVER_ERROR"
-    });
+    return jsonResponse(
+      {
+        ok: false,
+        type: "error",
+        error: "Image generation is temporarily unavailable.",
+        text: "Image generation is temporarily unavailable.",
+        code: "IMAGE_SERVER_ERROR"
+      },
+      500
+    );
   }
-}
+};
