@@ -1,0 +1,23 @@
+# ============================================================
+# 👑 KIRONG AI — NETLIFY CONFIG
+# ------------------------------------------------------------
+# Frontend (index.html, style.css, app.js, manifest.json,
+# service-worker.js) is published as-is from the repo root.
+#
+# API functions live in netlify/functions/*.js and use the
+# modern Functions v2 format (Web-standard Request/Response).
+# Each function declares its own route via `export const config
+# = { path: "/api/xxx" }` inside the file, so no manual
+# redirects are needed for those — Netlify wires them up
+# automatically at build/deploy time.
+# ============================================================
+
+[build]
+  publish = "."
+  functions = "netlify/functions"
+
+[functions]
+  # esbuild bundles npm packages (openai, groq-sdk, @netlify/blobs)
+  # into each function automatically — no extra config needed
+  # beyond making sure they're listed in package.json.
+  node_bundler = "esbuild"
